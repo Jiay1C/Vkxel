@@ -18,13 +18,15 @@ jobs:
       PROJECT_NAME: Vkxel
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up CMake
+      - name: CMake
         uses: lukka/get-cmake@latest
 
-      - name: Configure CMake
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Generate
         run: cmake -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
 
       - name: Build
@@ -33,7 +35,7 @@ jobs:
       - name: Test
         run: ctest --test-dir build -C ${{ matrix.build_type }} --verbose
 
-      - name: Upload Artifact
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.PROJECT_NAME }}-${{ matrix.os }}-${{ matrix.build_type }}
