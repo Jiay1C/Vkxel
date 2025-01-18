@@ -1,0 +1,40 @@
+name: Build
+
+on:
+  push:
+    branches:
+  pull_request:
+    branches:
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }} (${{ matrix.build_type }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest]
+        build_type: [Debug, RelWithDebInfo, Release]
+    env:
+      PROJECT_NAME: Vkxel
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up CMake
+        uses: lukka/get-cmake@latest
+
+      - name: Configure CMake
+        run: cmake -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+
+      - name: Build
+        run: cmake --build build --config ${{ matrix.build_type }} --verbose
+
+      - name: Test
+        run: ctest --test-dir build -C ${{ matrix.build_type }} --verbose
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.PROJECT_NAME }}-${{ matrix.os }}-${{ matrix.build_type }}
+          path: build/${{ env.PROJECT_NAME }}
