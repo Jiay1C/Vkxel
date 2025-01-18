@@ -2,8 +2,8 @@
 // Created by jiayi on 1/18/2025.
 //
 
-#ifndef WINDOW_H
-#define WINDOW_H
+#ifndef VKXEL_WINDOW_H
+#define VKXEL_WINDOW_H
 
 #include <cstdint>
 #include <string>
@@ -40,4 +40,4 @@ private:
 
 } // Vkxel
 
-#endif //WINDOW_H
+#endif //VKXEL_WINDOW_H

@@ -2,8 +2,8 @@
 // Created by jiayi on 1/18/2025.
 //
 
-#ifndef MACRO_H
-#define MACRO_H
+#ifndef VKXEL_CHECK_H
+#define VKXEL_CHECK_H
 
 #include "vulkan/vk_enum_string_helper.h"
 #include <cassert>
@@ -38,4 +38,4 @@
     }																									               \
 }
 
-#endif //MACRO_H
+#endif //VKXEL_CHECK_H

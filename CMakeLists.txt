@@ -17,7 +17,11 @@ include("${CMAKE_CURRENT_SOURCE_DIR}/${VCPKG_CMAKE_PATH}")
 find_package(glfw3 3.4 REQUIRED)
 
 # Vulkan
-find_package(Vulkan 1.3 REQUIRED)
+set(VULKAN_HEADERS_PATH "${EXTERNAL_PATH}/Vulkan-Headers")
+add_subdirectory(${VULKAN_HEADERS_PATH})
+
+set(VULKAN_LOADER_PATH "${EXTERNAL_PATH}/Vulkan-Loader")
+add_subdirectory(${VULKAN_LOADER_PATH})
 
 # vk-bootstrap
 set(VK_BOOTSTRAP_PATH "${EXTERNAL_PATH}/vk-bootstrap")
@@ -52,7 +56,8 @@ include_directories(
 # Link Vulkan, GLFW, and other necessary libraries
 target_link_libraries(${PROJECT_NAME} PRIVATE
         glfw
-        Vulkan::Vulkan
+        Vulkan::Headers
+        Vulkan::Loader
         vk-bootstrap::vk-bootstrap
         GPUOpen::VulkanMemoryAllocator
         glm::glm
