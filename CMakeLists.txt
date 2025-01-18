@@ -23,6 +23,9 @@ add_subdirectory(${VULKAN_HEADERS_PATH})
 set(VULKAN_LOADER_PATH "${EXTERNAL_PATH}/Vulkan-Loader")
 add_subdirectory(${VULKAN_LOADER_PATH})
 
+set(VULKAN_UTILITY_PATH "${EXTERNAL_PATH}/Vulkan-Utility-Libraries")
+add_subdirectory(${VULKAN_UTILITY_PATH})
+
 # vk-bootstrap
 set(VK_BOOTSTRAP_PATH "${EXTERNAL_PATH}/vk-bootstrap")
 add_subdirectory(${VK_BOOTSTRAP_PATH})
@@ -58,6 +61,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         glfw
         Vulkan::Headers
         Vulkan::Loader
+        Vulkan::UtilityHeaders
         vk-bootstrap::vk-bootstrap
         GPUOpen::VulkanMemoryAllocator
         glm::glm
