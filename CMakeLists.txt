@@ -34,6 +34,9 @@ add_subdirectory(${GLM_PATH})
 # Set the source files
 set(SOURCES
         source/main.cpp
+        source/window.cpp
+        source/window.h
+        source/check.h
 )
 
 # Define the executable
