@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.20)
 project(Vkxel)
 
+# Ensure the compiler is MSVC
+if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    message(FATAL_ERROR "${PROJECT_NAME} requires the MSVC toolchain.")
+endif()
+
 # Set C++ Standard to 20
 set(CMAKE_CXX_STANDARD LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
@@ -59,7 +64,6 @@ include_directories(
 )
 
 # Link libraries
-# Link Vulkan, GLFW, and other necessary libraries
 target_link_libraries(${PROJECT_NAME} PRIVATE
         glfw
         Vulkan::Headers
@@ -69,6 +73,12 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         GPUOpen::VulkanMemoryAllocator
         glm::glm
 )
+
+# Enable all warnings during compile
+target_compile_options(${PROJECT_NAME} PRIVATE /W4)
+
+# Add RELEASE macro in Release
+target_compile_definitions(${PROJECT_NAME} PRIVATE $<$<CONFIG:Release>:RELEASE>)
 
 # Output directories
 set_target_properties(${PROJECT_NAME} PROPERTIES
