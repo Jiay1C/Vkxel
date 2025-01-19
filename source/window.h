@@ -16,9 +16,9 @@ namespace Vkxel {
 
 class Window {
 public:
-    void SetResolution(uint32_t width, uint32_t height);
-    void SetTitle(std::string_view title);
-    void SetInstance(VkInstance instance);
+    Window& SetResolution(uint32_t width, uint32_t height);
+    Window& SetTitle(std::string_view title);
+    Window& SetInstance(VkInstance instance);
 
     void Create();
     void Destroy();

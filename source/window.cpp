@@ -8,15 +8,18 @@
 #include "check.h"
 
 namespace Vkxel {
-    void Window::SetResolution(const uint32_t width, const uint32_t height) {
+    Window& Window::SetResolution(const uint32_t width, const uint32_t height) {
         _width = width;
         _height = height;
+        return *this;
     }
-    void Window::SetTitle(const std::string_view title) {
+    Window& Window::SetTitle(const std::string_view title) {
         _title = title;
+        return *this;
     }
-    void Window::SetInstance(const VkInstance instance) {
+    Window& Window::SetInstance(const VkInstance instance) {
         _instance = instance;
+        return *this;
     }
 
     void Window::Create() {
@@ -27,11 +30,11 @@ namespace Vkxel {
         _window = glfwCreateWindow(_width, _height, _title.data(), nullptr, nullptr);
         CHECK_NOTNULL(_window);
 
-        // CHECK_RESULT_VK(glfwCreateWindowSurface(_instance, _window, nullptr, &_surface));
+        CHECK_RESULT_VK(glfwCreateWindowSurface(_instance, _window, nullptr, &_surface));
     }
 
     void Window::Destroy() {
-        // vkDestroySurfaceKHR(_instance, _surface, nullptr);
+        vkDestroySurfaceKHR(_instance, _surface, nullptr);
         glfwDestroyWindow(_window);
         glfwTerminate();
     }

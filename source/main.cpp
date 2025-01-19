@@ -1,15 +1,13 @@
-#include "window.h"
+#include "renderer.h"
 
 int main() {
-    Vkxel::Window window;
-    window.SetResolution(800, 600);
-    window.SetTitle("Vkxel");
-    window.Create();
+    Vkxel::Renderer renderer;
 
-    while (!window.Update()) {
-    }
-
-    window.Destroy();
+    renderer.Init();
+    renderer.Allocate();
+    while (!renderer.Render()) {}
+    renderer.Release();
+    renderer.Destroy();
 
     return 0;
 }

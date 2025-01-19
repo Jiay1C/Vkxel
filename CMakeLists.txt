@@ -17,26 +17,26 @@ include("${CMAKE_CURRENT_SOURCE_DIR}/${VCPKG_CMAKE_PATH}")
 find_package(glfw3 3.4 REQUIRED)
 
 # Vulkan
-set(VULKAN_HEADERS_PATH "${EXTERNAL_PATH}/Vulkan-Headers")
-add_subdirectory(${VULKAN_HEADERS_PATH})
+set(VULKAN_HEADERS_PATH "Vulkan-Headers")
+add_subdirectory(${EXTERNAL_PATH}/${VULKAN_HEADERS_PATH})
 
-set(VULKAN_LOADER_PATH "${EXTERNAL_PATH}/Vulkan-Loader")
-add_subdirectory(${VULKAN_LOADER_PATH})
+set(VULKAN_LOADER_PATH "Vulkan-Loader")
+add_subdirectory(${EXTERNAL_PATH}/${VULKAN_LOADER_PATH})
 
-set(VULKAN_UTILITY_PATH "${EXTERNAL_PATH}/Vulkan-Utility-Libraries")
-add_subdirectory(${VULKAN_UTILITY_PATH})
+set(VULKAN_UTILITY_PATH "Vulkan-Utility-Libraries")
+add_subdirectory(${EXTERNAL_PATH}/${VULKAN_UTILITY_PATH})
 
 # vk-bootstrap
-set(VK_BOOTSTRAP_PATH "${EXTERNAL_PATH}/vk-bootstrap")
-add_subdirectory(${VK_BOOTSTRAP_PATH})
+set(VK_BOOTSTRAP_PATH "vk-bootstrap")
+add_subdirectory(${EXTERNAL_PATH}/${VK_BOOTSTRAP_PATH})
 
 # VulkanMemoryAllocator
-set(VULKAN_MEMORY_ALLOCATOR_PATH "${EXTERNAL_PATH}/VulkanMemoryAllocator")
-add_subdirectory(${VULKAN_MEMORY_ALLOCATOR_PATH})
+set(VULKAN_MEMORY_ALLOCATOR_PATH "VulkanMemoryAllocator")
+add_subdirectory(${EXTERNAL_PATH}/${VULKAN_MEMORY_ALLOCATOR_PATH})
 
 # glm
-set(GLM_PATH "${EXTERNAL_PATH}/glm")
-add_subdirectory(${GLM_PATH})
+set(GLM_PATH "glm")
+add_subdirectory(${EXTERNAL_PATH}/${GLM_PATH})
 
 # Set the source files
 set(SOURCES
@@ -44,6 +44,9 @@ set(SOURCES
         source/window.cpp
         source/window.h
         source/check.h
+        source/renderer.cpp
+        source/renderer.h
+        source/application.h
 )
 
 # Define the executable
