@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.25)
 project(Vkxel)
 
 # Ensure the compiler is MSVC
@@ -46,6 +46,13 @@ add_subdirectory(${EXTERNAL_PATH}/${GLM_PATH})
 # slang
 set(SLANG_PATH "slang")
 set(SLANG_USE_SYSTEM_VULKAN_HEADERS ON)
+set(SLANG_ENABLE_SLANG_RHI OFF)
+set(SLANG_ENABLE_DXIL OFF)
+set(SLANG_ENABLE_GFX OFF)
+set(SLANG_ENABLE_SLANGD OFF)
+set(SLANG_ENABLE_SLANGC OFF)
+set(SLANG_ENABLE_TESTS OFF)
+set(SLANG_ENABLE_EXAMPLES OFF)
 add_subdirectory(${EXTERNAL_PATH}/${SLANG_PATH})
 
 # Set the source files
