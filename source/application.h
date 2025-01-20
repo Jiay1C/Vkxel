@@ -15,6 +15,9 @@ namespace Vkxel {
 
 class Application {
 public:
+    Application()=delete;
+    ~Application()=delete;
+
     static constexpr std::string_view Name = "Vkxel";
     static constexpr std::uint32_t Version = 0;
     static constexpr uint32_t VulkanVersion = VK_API_VERSION_1_3;

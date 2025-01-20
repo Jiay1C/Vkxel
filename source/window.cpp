@@ -48,7 +48,7 @@ namespace Vkxel {
         return _surface;
     }
 
-    bool Window::Update() const {
+    bool Window::Update() {
         glfwPollEvents();
         return glfwWindowShouldClose(_window);
     }

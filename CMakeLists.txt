@@ -12,6 +12,10 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+set(LIBRARY_OUTPUT_PATH "lib")
+set(RUNTIME_OUTPUT_PATH "bin")
+set(ARCHIVE_OUTPUT_PATH "arc")
+
 set(EXTERNAL_PATH "external")
 
 set(VCPKG_MANIFEST_MODE ON)
@@ -46,14 +50,21 @@ add_subdirectory(${EXTERNAL_PATH}/${GLM_PATH})
 # slang
 set(SLANG_PATH "slang")
 set(SLANG_USE_SYSTEM_VULKAN_HEADERS ON)
+set(SLANG_EMBED_CORE_MODULE_SOURCE OFF)
 set(SLANG_ENABLE_SLANG_RHI OFF)
 set(SLANG_ENABLE_DXIL OFF)
 set(SLANG_ENABLE_GFX OFF)
 set(SLANG_ENABLE_SLANGD OFF)
 set(SLANG_ENABLE_SLANGC OFF)
+set(SLANG_ENABLE_SLANG_GLSLANG OFF)
 set(SLANG_ENABLE_TESTS OFF)
 set(SLANG_ENABLE_EXAMPLES OFF)
 add_subdirectory(${EXTERNAL_PATH}/${SLANG_PATH})
+set_target_properties(slang PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${PROJECT_NAME}/${RUNTIME_OUTPUT_PATH}
+        ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${PROJECT_NAME}/${ARCHIVE_OUTPUT_PATH}
+        LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${PROJECT_NAME}/${LIBRARY_OUTPUT_PATH}
+)
 
 # Set the source files
 set(SOURCES
@@ -64,6 +75,10 @@ set(SOURCES
         source/renderer.cpp
         source/renderer.h
         source/application.h
+        source/shader.cpp
+        source/shader.h
+        source/file.cpp
+        source/file.h
 )
 
 # Define the executable
@@ -95,10 +110,19 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE $<$<CONFIG:Release>:RELEASE>)
 
 # Output directories
 set_target_properties(${PROJECT_NAME} PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${PROJECT_NAME}/bin
-        ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${PROJECT_NAME}/lib
-        LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${PROJECT_NAME}/lib
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${PROJECT_NAME}/${RUNTIME_OUTPUT_PATH}
+        ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${PROJECT_NAME}/${ARCHIVE_OUTPUT_PATH}
+        LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${PROJECT_NAME}/${LIBRARY_OUTPUT_PATH}
 )
+
+# Copy shader folder to the binary directory after building
+add_custom_target(${PROJECT_NAME}_Shader ALL
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/shader
+        $<TARGET_FILE_DIR:${PROJECT_NAME}>/shader
+        COMMENT "Copying shader folder to binary directory."
+)
+add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_Shader)
 
 # Group source files in folders (optional, for IDEs like Visual Studio)
 source_group(TREE ${CMAKE_SOURCE_DIR} FILES ${SOURCES})
