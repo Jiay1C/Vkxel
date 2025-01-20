@@ -48,6 +48,14 @@ namespace Vkxel {
         return _surface;
     }
 
+    uint32_t Window::GetWidth() const {
+        return _width;
+    }
+
+    uint32_t Window::GetHeight() const {
+        return _height;
+    }
+
     bool Window::Update() {
         glfwPollEvents();
         return glfwWindowShouldClose(_window);

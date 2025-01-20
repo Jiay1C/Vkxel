@@ -10,6 +10,7 @@
 #include <vector>
 #include <string_view>
 
+#include "vulkan/vulkan.h"
 #include "slang.h"
 #include "slang-com-ptr.h"
 
@@ -19,7 +20,8 @@ class ShaderLoader {
 public:
     static ShaderLoader& Instance();
 
-    std::vector<uint8_t> Load(std::string_view shader, bool force_compile = false);
+    std::vector<uint8_t> LoadToBinary(std::string_view shader, bool force_compile = false);
+    VkShaderModule LoadToModule(VkDevice device, std::string_view shader, bool force_compile = false);
     void ClearSpirvCache();
     void SetResourceFolder(std::string_view resource_folder);
 

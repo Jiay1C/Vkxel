@@ -26,6 +26,9 @@ public:
     GLFWwindow* GetWindow() const;
     VkSurfaceKHR GetSurface() const;
 
+    uint32_t GetWidth() const;
+    uint32_t GetHeight() const;
+
     bool Update();
 
 private:

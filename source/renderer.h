@@ -39,6 +39,7 @@ private:
 
     // Resource Related Handle
 
+    VkPipelineLayout _pipeline_layout = nullptr;
     VkPipeline _pipeline = nullptr;
 
 

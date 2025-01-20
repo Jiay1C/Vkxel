@@ -7,6 +7,7 @@
 #include <string>
 #include <string_view>
 #include <filesystem>
+#include <utility>
 
 #include "slang.h"
 #include "slang-com-ptr.h"
@@ -27,7 +28,7 @@ namespace Vkxel {
         return instance;
     }
 
-    std::vector<uint8_t> ShaderLoader::Load(std::string_view shader, bool force_compile) {
+    std::vector<uint8_t> ShaderLoader::LoadToBinary(std::string_view shader, bool force_compile) {
         std::string full_path = _shader_resource_folder;
         full_path += shader;
         std::string spirv_full_path = full_path + _spirv_extension;
@@ -42,6 +43,19 @@ namespace Vkxel {
         File::WriteBinaryFile(spirv_full_path, spirv);
         return spirv;
     }
+
+    VkShaderModule ShaderLoader::LoadToModule(VkDevice device, std::string_view shader, bool force_compile) {
+        std::vector<uint8_t> shader_code = LoadToBinary(shader, force_compile);
+        VkShaderModuleCreateInfo shader_module_create_info{
+            .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+            .codeSize = shader_code.size(),
+            .pCode = reinterpret_cast<const uint32_t *>(shader_code.data())
+        };
+        VkShaderModule shader_module;
+        CHECK_RESULT_VK(vkCreateShaderModule(device, &shader_module_create_info, nullptr, &shader_module));
+        return shader_module;
+    }
+
 
     void ShaderLoader::ClearSpirvCache() {
         for (const auto& entry : std::filesystem::directory_iterator(_shader_resource_folder)) {
