@@ -19,3 +19,6 @@
 [submodule "external/Vulkan-Utility-Libraries"]
 	path = external/Vulkan-Utility-Libraries
 	url = https://github.com/KhronosGroup/Vulkan-Utility-Libraries.git
+[submodule "external/slang"]
+	path = external/slang
+	url = https://github.com/shader-slang/slang.git

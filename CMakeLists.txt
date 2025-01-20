@@ -15,8 +15,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(EXTERNAL_PATH "external")
 
 set(VCPKG_MANIFEST_MODE ON)
-set(VCPKG_CMAKE_PATH "${EXTERNAL_PATH}/vcpkg/scripts/buildsystems/vcpkg.cmake")
-include("${CMAKE_CURRENT_SOURCE_DIR}/${VCPKG_CMAKE_PATH}")
+set(VCPKG_CMAKE_PATH "vcpkg/scripts/buildsystems/vcpkg.cmake")
+include("${EXTERNAL_PATH}/${VCPKG_CMAKE_PATH}")
 
 # GLFW
 find_package(glfw3 3.4 REQUIRED)
@@ -42,6 +42,11 @@ add_subdirectory(${EXTERNAL_PATH}/${VULKAN_MEMORY_ALLOCATOR_PATH})
 # glm
 set(GLM_PATH "glm")
 add_subdirectory(${EXTERNAL_PATH}/${GLM_PATH})
+
+# slang
+set(SLANG_PATH "slang")
+set(SLANG_USE_SYSTEM_VULKAN_HEADERS ON)
+add_subdirectory(${EXTERNAL_PATH}/${SLANG_PATH})
 
 # Set the source files
 set(SOURCES
@@ -72,6 +77,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         vk-bootstrap::vk-bootstrap
         GPUOpen::VulkanMemoryAllocator
         glm::glm
+        slang
 )
 
 # Enable all warnings during compile

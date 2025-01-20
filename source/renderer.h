@@ -25,6 +25,8 @@ public:
 private:
     Window _window;
 
+    // Device Related Handle
+
     vkb::Instance _instance;
     vkb::PhysicalDevice _physical_device;
     vkb::Device _device;
@@ -32,6 +34,14 @@ private:
 
     VkSurfaceKHR _surface = nullptr;
     VkQueue _queue = nullptr;
+    VkCommandPool _command_pool = nullptr;
+
+
+    // Resource Related Handle
+
+    VkPipeline _pipeline = nullptr;
+
+
 };
 
 } // Vkxel

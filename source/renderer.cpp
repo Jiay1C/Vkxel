@@ -40,13 +40,22 @@ namespace Vkxel {
         auto physical_device_result = physical_device_selector
             .prefer_gpu_device_type(vkb::PreferredDeviceType::discrete)
             .set_surface(_surface)
+            .add_required_extension(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME)
             .select();
         CHECK_NOTNULL_MSG(physical_device_result, physical_device_result.error().message());
         _physical_device = physical_device_result.value();
 
+        // Dynamic Rendering Struct
+        VkPhysicalDeviceDynamicRenderingFeatures physical_device_dynamic_rendering_features{
+            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES,
+            .dynamicRendering = VK_TRUE
+        };
+
         // Create Device
         vkb::DeviceBuilder device_builder(_physical_device);
-        auto device_result = device_builder.build();
+        auto device_result = device_builder
+            .add_pNext(&physical_device_dynamic_rendering_features)
+            .build();
         CHECK_NOTNULL_MSG(device_result, device_result.error().message());
 
         _device = device_result.value();
@@ -65,10 +74,17 @@ namespace Vkxel {
         CHECK_NOTNULL_MSG(queue_result, queue_result.error().message());
         _queue = queue_result.value();
 
+        // Create Command Pool
+        VkCommandPoolCreateInfo command_pool_create_info{
+            .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+            .queueFamilyIndex = _device.get_queue_index(vkb::QueueType::graphics).value()
+        };
 
+        vkCreateCommandPool(_device, &command_pool_create_info, nullptr, &_command_pool);
     }
 
     void Renderer::Destroy() {
+        vkDestroyCommandPool(_device, _command_pool, nullptr);
         vkb::destroy_swapchain(_swapchain);
         vkb::destroy_device(_device);
         _window.Destroy();
