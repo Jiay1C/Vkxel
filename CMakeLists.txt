@@ -43,6 +43,10 @@ add_subdirectory(${EXTERNAL_PATH}/${VK_BOOTSTRAP_PATH})
 # VulkanMemoryAllocator
 set(VULKAN_MEMORY_ALLOCATOR_PATH "VulkanMemoryAllocator")
 add_subdirectory(${EXTERNAL_PATH}/${VULKAN_MEMORY_ALLOCATOR_PATH})
+set(VMA_USAGE_FILES
+        "${EXTERNAL_PATH}/${VULKAN_MEMORY_ALLOCATOR_PATH}/src/VmaUsage.h"
+        "${EXTERNAL_PATH}/${VULKAN_MEMORY_ALLOCATOR_PATH}/src/VmaUsage.cpp"
+)
 
 # glm
 set(GLM_PATH "glm")
@@ -80,6 +84,7 @@ set(SOURCES
         source/shader.h
         source/file.cpp
         source/file.h
+        ${VMA_USAGE_FILES}
 )
 
 # Define the executable
