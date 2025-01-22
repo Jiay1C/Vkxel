@@ -88,7 +88,7 @@ namespace Vkxel {
             }
             };
         sessionDesc.compilerOptionEntries = options.data();
-        sessionDesc.compilerOptionEntryCount = options.size();
+        sessionDesc.compilerOptionEntryCount = static_cast<uint32_t>(options.size());
 
         Slang::ComPtr<slang::ISession> session;
         _slang_global_session->createSession(sessionDesc, session.writeRef());

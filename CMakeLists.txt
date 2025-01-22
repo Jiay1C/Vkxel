@@ -72,6 +72,7 @@ set_target_properties(slang PROPERTIES
 
 # Set the source files
 set(SOURCES
+        ${VMA_USAGE_FILES}
         source/main.cpp
         source/window.cpp
         source/window.h
@@ -83,7 +84,8 @@ set(SOURCES
         source/shader.h
         source/file.cpp
         source/file.h
-        ${VMA_USAGE_FILES}
+        source/model.cpp
+        source/model.h
 )
 
 # Define the executable
@@ -121,10 +123,14 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 )
 
 # Copy shader folder to the binary directory after building
+set(SOURCE_SHADER_PATH "shader")
+set(TARGET_SHADER_PATH "shader")
 add_custom_target(${PROJECT_NAME}_Shader ALL
+        COMMAND ${CMAKE_COMMAND} -E remove_directory
+        $<TARGET_FILE_DIR:${PROJECT_NAME}>/${TARGET_SHADER_PATH}
         COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_SOURCE_DIR}/shader
-        $<TARGET_FILE_DIR:${PROJECT_NAME}>/shader
+        ${CMAKE_SOURCE_DIR}/${SOURCE_SHADER_PATH}
+        $<TARGET_FILE_DIR:${PROJECT_NAME}>/${TARGET_SHADER_PATH}
         COMMENT "Copying shader folder to binary directory."
 )
 add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_Shader)

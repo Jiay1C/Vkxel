@@ -23,6 +23,9 @@ public:
     static constexpr uint32_t VulkanVersion = VK_API_VERSION_1_3;
     static constexpr std::pair<uint32_t, uint32_t> DefaultResolution = {1280, 720};
     static constexpr VkPresentModeKHR DefaultPresentMode = VK_PRESENT_MODE_FIFO_KHR;
+    static constexpr uint32_t StagingBufferSize = 104857600; // 100 MB
+    static constexpr uint32_t IndexBufferSize = 104857600; // 100 MB
+    static constexpr uint32_t VertexBufferSize = 104857600; // 100 MB
 };
 
 } // Vkxel
