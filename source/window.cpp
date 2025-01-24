@@ -8,6 +8,8 @@
 #include "check.h"
 
 namespace Vkxel {
+    uint32_t Window::s_count = 0;
+
     Window& Window::SetResolution(const uint32_t width, const uint32_t height) {
         _width = width;
         _height = height;
@@ -23,7 +25,9 @@ namespace Vkxel {
     }
 
     void Window::Create() {
-        CHECK_RESULT(GLFW_TRUE, glfwInit());
+        if (s_count++ == 0) {
+            CHECK_RESULT(GLFW_TRUE, glfwInit());
+        }
 
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
@@ -36,7 +40,9 @@ namespace Vkxel {
     void Window::Destroy() {
         vkDestroySurfaceKHR(_instance, _surface, nullptr);
         glfwDestroyWindow(_window);
-        glfwTerminate();
+        if (--s_count == 0) {
+            glfwTerminate();
+        }
     }
 
     GLFWwindow *Window::GetWindow() const {

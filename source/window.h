@@ -32,6 +32,8 @@ public:
     bool Update();
 
 private:
+    static uint32_t s_count;
+
     uint32_t _width = 0;
     uint32_t _height = 0;
     std::string _title;

@@ -381,7 +381,6 @@ namespace Vkxel {
     }
 
     void Renderer::Upload() {
-        
         std::ranges::copy(_model.Index, reinterpret_cast<decltype(_model.Index)::value_type*>(_staging_buffer_pointer));
         std::ranges::copy(_model.Vertex, reinterpret_cast<decltype(_model.Vertex)::value_type*>(_staging_buffer_pointer + sizeof(_model.Index)));
         CHECK_RESULT_VK(vmaFlushAllocation(_vma_allocator, _staging_buffer_allocation, 0, sizeof(_model.Index) + sizeof(_model.Vertex)));
