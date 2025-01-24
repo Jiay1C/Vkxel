@@ -132,22 +132,21 @@ namespace Vkxel {
 
         // Create Graphics Pipeline
 
-        VkShaderModule vertex_shader_module = ShaderLoader::Instance().LoadToModule(_device, "basic.vert");
-        VkShaderModule fragment_shader_module = ShaderLoader::Instance().LoadToModule(_device, "basic.frag");
+        VkShaderModule shader_module = ShaderLoader::Instance().LoadToModule(_device, "basic");
 
         std::array shader_stage_create_info = {
             VkPipelineShaderStageCreateInfo{
                 .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
                 .stage = VK_SHADER_STAGE_VERTEX_BIT,
-                .module = vertex_shader_module,
-                .pName = "main",
+                .module = shader_module,
+                .pName = "vertexMain",
                 .pSpecializationInfo = nullptr
             },
             VkPipelineShaderStageCreateInfo{
                 .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
                 .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
-                .module = fragment_shader_module,
-                .pName = "main",
+                .module = shader_module,
+                .pName = "fragmentMain",
                 .pSpecializationInfo = nullptr
             },
         };
@@ -298,9 +297,7 @@ namespace Vkxel {
 
         CHECK_RESULT_VK(vkCreateGraphicsPipelines(_device, nullptr, 1, &graphics_pipeline_create_info, nullptr, &_pipeline));
 
-        for (auto& shader_stage: shader_stage_create_info) {
-            vkDestroyShaderModule(_device, shader_stage.module, nullptr);
-        }
+        vkDestroyShaderModule(_device, shader_module, nullptr);
 
         // Create Buffers
         uint32_t queue_family = _device.get_queue_index(vkb::QueueType::graphics).value();

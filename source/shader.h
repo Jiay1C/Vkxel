@@ -36,6 +36,7 @@ private:
     std::string _shader_resource_folder = "./shader/";
 
     Slang::ComPtr<slang::IGlobalSession> _slang_global_session;
+    Slang::ComPtr<slang::ISession> _slang_session;
 };
 
 } // Vkxel
