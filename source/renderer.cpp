@@ -151,26 +151,39 @@ namespace Vkxel {
             },
         };
 
-
         VkVertexInputBindingDescription vertex_input_binding_description{
             .binding = 0,
-            .stride = sizeof(glm::vec3),
+            .stride = sizeof(VertexInput),
             .inputRate = VK_VERTEX_INPUT_RATE_VERTEX
         };
 
-        VkVertexInputAttributeDescription vertex_input_attribute_description{
-            .location = 0,
-            .binding = 0,
-            .format = VK_FORMAT_R32G32B32_SFLOAT,
-            .offset = 0
+        std::array vertex_input_attribute_description = {
+            VkVertexInputAttributeDescription{
+                .location = 0,
+                .binding = 0,
+                .format = VK_FORMAT_R32G32B32_SFLOAT,
+                .offset = offsetof(VertexInput, position)
+            },
+            VkVertexInputAttributeDescription{
+                .location = 1,
+                .binding = 0,
+                .format = VK_FORMAT_R32G32B32_SFLOAT,
+                .offset = offsetof(VertexInput, normal)
+            },
+            VkVertexInputAttributeDescription{
+                .location = 2,
+                .binding = 0,
+                .format = VK_FORMAT_R32G32B32_SFLOAT,
+                .offset = offsetof(VertexInput, color)
+            }
         };
 
         VkPipelineVertexInputStateCreateInfo input_state_create_info{
             .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
             .vertexBindingDescriptionCount = 1,
             .pVertexBindingDescriptions = &vertex_input_binding_description,
-            .vertexAttributeDescriptionCount = 1,
-            .pVertexAttributeDescriptions = &vertex_input_attribute_description
+            .vertexAttributeDescriptionCount = static_cast<uint32_t>(vertex_input_attribute_description.size()),
+            .pVertexAttributeDescriptions = vertex_input_attribute_description.data()
         };
 
         VkPipelineInputAssemblyStateCreateInfo input_assembly_state_create_info{

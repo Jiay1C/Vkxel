@@ -11,10 +11,16 @@
 
 namespace Vkxel {
 
+    struct VertexInput {
+        glm::vec3 position;
+        glm::vec3 normal;
+        glm::vec3 color;
+    };
+
     template<size_t IndexCount, size_t VertexCount>
     struct Model {
         std::array<uint32_t, IndexCount> Index;
-        std::array<glm::vec3, VertexCount> Vertex;
+        std::array<VertexInput, VertexCount> Vertex;
     };
 
     class ModelLibrary {
@@ -23,6 +29,8 @@ namespace Vkxel {
         ~ModelLibrary()=delete;
 
         static const Model<3,3> Triangle;
+
+        static const Model<14904, 2503> StanfordBunny;
 
     };
 

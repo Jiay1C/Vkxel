@@ -71,7 +71,7 @@ private:
     VkFence _command_buffer_fence = nullptr;
 
     // Temp Variable
-    const decltype(ModelLibrary::Triangle)& _model = ModelLibrary::Triangle;
+    const decltype(ModelLibrary::StanfordBunny)& _model = ModelLibrary::StanfordBunny;
 };
 
 } // Vkxel
