@@ -179,7 +179,6 @@ namespace Vkxel {
             .primitiveRestartEnable = VK_FALSE
         };
 
-
         VkViewport viewport{
             .x = 0.0f,
             .y = 1.0f,
@@ -226,9 +225,9 @@ namespace Vkxel {
 
         VkPipelineDepthStencilStateCreateInfo depth_stencil_state_create_info{
             .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-            .depthTestEnable = VK_FALSE,
-            .depthWriteEnable = VK_FALSE,
-            .depthCompareOp = VK_COMPARE_OP_ALWAYS,
+            .depthTestEnable = VK_TRUE,
+            .depthWriteEnable = VK_TRUE,
+            .depthCompareOp = VK_COMPARE_OP_LESS,
             .depthBoundsTestEnable = VK_FALSE,
             .stencilTestEnable = VK_FALSE,
             .front = {},
@@ -270,12 +269,12 @@ namespace Vkxel {
             .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
             .colorAttachmentCount = 1,
             .pColorAttachmentFormats = &_swapchain.image_format,
+            .depthAttachmentFormat = VK_FORMAT_D32_SFLOAT
         };
 
         VkGraphicsPipelineCreateInfo graphics_pipeline_create_info{
             .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
             .pNext = &pipeline_rendering_create_info,
-            .flags = 0,
             .stageCount = static_cast<uint32_t>(shader_stage_create_info.size()),
             .pStages = shader_stage_create_info.data(),
             .pVertexInputState = &input_state_create_info,
@@ -344,6 +343,52 @@ namespace Vkxel {
         CHECK_RESULT_VK(vmaCreateBuffer(_vma_allocator, &index_buffer_create_info, &index_vertex_buffer_allocation_create_info, &_index_buffer, &_index_buffer_allocation, nullptr));
         CHECK_RESULT_VK(vmaCreateBuffer(_vma_allocator, &vertex_buffer_create_info, &index_vertex_buffer_allocation_create_info, &_vertex_buffer, &_vertex_buffer_allocation, nullptr));
 
+        VkImageCreateInfo depth_image_create_info{
+            .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+            .imageType = VK_IMAGE_TYPE_2D,
+            .format = VK_FORMAT_D32_SFLOAT,
+            .extent = VkExtent3D{
+                .width = _swapchain.extent.width,
+                .height = _swapchain.extent.height,
+                .depth = 1
+            },
+            .mipLevels = 1,
+            .arrayLayers = 1,
+            .samples = VK_SAMPLE_COUNT_1_BIT,
+            .tiling = VK_IMAGE_TILING_OPTIMAL,
+            .usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+            .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+            .queueFamilyIndexCount = 1,
+            .pQueueFamilyIndices = &queue_family,
+            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED
+        };
+
+        VmaAllocationCreateInfo depth_image_allocation_create_info{
+            .usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
+        };
+        CHECK_RESULT_VK(vmaCreateImage(_vma_allocator, &depth_image_create_info, &depth_image_allocation_create_info, &_depth_image, &_depth_image_allocation, nullptr));
+
+        VkImageViewCreateInfo depth_image_view_create_info{
+            .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+            .image = _depth_image,
+            .viewType = VK_IMAGE_VIEW_TYPE_2D,
+            .format = VK_FORMAT_D32_SFLOAT,
+            .components = {
+                .r = VK_COMPONENT_SWIZZLE_IDENTITY,
+                .g = VK_COMPONENT_SWIZZLE_IDENTITY,
+                .b = VK_COMPONENT_SWIZZLE_IDENTITY,
+                .a = VK_COMPONENT_SWIZZLE_IDENTITY
+            },
+            .subresourceRange = {
+                .aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
+                .baseMipLevel = 0,
+                .levelCount = 1,
+                .baseArrayLayer = 0,
+                .layerCount = 1
+            }
+        };
+        CHECK_RESULT_VK(vkCreateImageView(_device, &depth_image_view_create_info, nullptr, &_depth_image_view));
+
         VkSemaphoreCreateInfo semaphore_create_info{
             .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO
         };
@@ -364,6 +409,9 @@ namespace Vkxel {
         vkDestroyFence(_device, _command_buffer_fence, nullptr);
         vkDestroySemaphore(_device, _image_ready_semaphore, nullptr);
         vkDestroySemaphore(_device, _render_complete_semaphore, nullptr);
+
+        vkDestroyImageView(_device, _depth_image_view, nullptr);
+        vmaDestroyImage(_vma_allocator, _depth_image, _depth_image_allocation);
 
         vmaDestroyBuffer(_vma_allocator, _vertex_buffer, _vertex_buffer_allocation);
         vmaDestroyBuffer(_vma_allocator, _index_buffer, _index_buffer_allocation);
@@ -438,8 +486,8 @@ namespace Vkxel {
         uint32_t image_index;
         CHECK_RESULT_VK(vkAcquireNextImageKHR(_device, _swapchain, std::numeric_limits<uint64_t>::max(), _image_ready_semaphore, nullptr, &image_index));
 
-        VkImage image = _swapchain_image.at(image_index);
-        VkImageView image_view = _swapchain_image_view.at(image_index);
+        VkImage color_attachment_image = _swapchain_image.at(image_index);
+        VkImageView color_attachment_image_view = _swapchain_image_view.at(image_index);
 
         VkCommandBufferAllocateInfo command_buffer_allocate_info{
             .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
@@ -466,7 +514,7 @@ namespace Vkxel {
             .newLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
             .srcQueueFamilyIndex = queue_family,
             .dstQueueFamilyIndex = queue_family,
-            .image = image,
+            .image = color_attachment_image,
             .subresourceRange = VkImageSubresourceRange{
                 .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
                 .baseMipLevel = 0,
@@ -482,11 +530,20 @@ namespace Vkxel {
 
         VkRenderingAttachmentInfo color_attachment_info{
             .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-            .imageView = image_view,
+            .imageView = color_attachment_image_view,
             .imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
             .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
             .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
             .clearValue = {0, 0, 0, 0}
+        };
+
+        VkRenderingAttachmentInfo depth_attachment_info{
+            .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+            .imageView = _depth_image_view,
+            .imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
+            .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            .clearValue = {.depthStencil = {.depth = 1}}
         };
 
         VkRenderingInfo rendering_info{
@@ -498,7 +555,7 @@ namespace Vkxel {
             .layerCount = 1,
             .colorAttachmentCount = 1,
             .pColorAttachments = &color_attachment_info,
-            .pDepthAttachment = nullptr,
+            .pDepthAttachment = &depth_attachment_info,
             .pStencilAttachment = nullptr
         };
 
@@ -518,7 +575,7 @@ namespace Vkxel {
             .newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
             .srcQueueFamilyIndex = queue_family,
             .dstQueueFamilyIndex = queue_family,
-            .image = image,
+            .image = color_attachment_image,
             .subresourceRange = VkImageSubresourceRange{
                 .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
                 .baseMipLevel = 0,

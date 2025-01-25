@@ -61,6 +61,10 @@ private:
     VkBuffer _index_buffer = nullptr;
     VmaAllocation _index_buffer_allocation = nullptr;
 
+    VkImage _depth_image = nullptr;
+    VkImageView _depth_image_view = nullptr;
+    VmaAllocation _depth_image_allocation = nullptr;
+
     VkSemaphore _image_ready_semaphore = nullptr;
     VkSemaphore _render_complete_semaphore = nullptr;
 

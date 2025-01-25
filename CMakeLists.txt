@@ -3,7 +3,7 @@ project(Vkxel)
 
 # Ensure the compiler is MSVC
 if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    message(FATAL_ERROR "${PROJECT_NAME} requires the MSVC toolchain.")
+    message(FATAL_ERROR "${PROJECT_NAME} requires the MSVC toolchain. Current toolchain is ${CMAKE_CXX_COMPILER_ID}")
 endif()
 
 # Set C++ Standard to 20
