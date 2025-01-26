@@ -53,7 +53,8 @@ namespace Vkxel {
         glm::vec2 mouse_position_delta = mouse_position - _last_mouse_position;
         _last_mouse_position = mouse_position;
 
-        glm::vec2 camera_rotation = _rotate_speed * delta_seconds * mouse_position_delta;
+        // No need to add deltaTime since mouse position already include that info
+        glm::vec2 camera_rotation = _rotate_speed * mouse_position_delta;
 
         if (Input::GetKey(KeyCode::MOUSE_BUTTON_RIGHT)) {
             _transform.RotateSelf({-camera_rotation.y, -camera_rotation.x, 0});

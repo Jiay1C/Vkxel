@@ -30,7 +30,7 @@ public:
     static constexpr uint32_t IndexBufferSize = 104857600; // 100 MB
     static constexpr uint32_t VertexBufferSize = 104857600; // 100 MB
     static constexpr float DefaultMoveSpeed = 1.0f;
-    static constexpr float DefaultRotateSpeed = 100.0f;
+    static constexpr float DefaultRotateSpeed = 1.0f;
 };
 
 } // Vkxel

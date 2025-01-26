@@ -1,5 +1,3 @@
-#include <chrono>
-
 #include "application.h"
 #include "controller.h"
 #include "input.h"
