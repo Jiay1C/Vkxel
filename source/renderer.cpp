@@ -518,9 +518,11 @@ namespace Vkxel {
     }
 
     void Renderer::UploadData() {
-        std::ranges::copy(_model.buffer.index, reinterpret_cast<decltype(_model.buffer.index)::value_type*>(_staging_buffer_pointer));
-        std::ranges::copy(_model.buffer.vertex, reinterpret_cast<decltype(_model.buffer.vertex)::value_type*>(_staging_buffer_pointer + sizeof(_model.buffer.index)));
-        CHECK_RESULT_VK(vmaFlushAllocation(_vma_allocator, _staging_buffer_allocation, 0, sizeof(_model.buffer.index) + sizeof(_model.buffer.vertex)));
+        uint32_t index_buffer_size = _model.index.size() * sizeof(decltype(_model.index)::value_type);
+        uint32_t vertex_buffer_size = _model.vertex.size() * sizeof(decltype(_model.vertex)::value_type);
+        std::ranges::copy(_model.index, reinterpret_cast<decltype(_model.index)::value_type*>(_staging_buffer_pointer));
+        std::ranges::copy(_model.vertex, reinterpret_cast<decltype(_model.vertex)::value_type*>(_staging_buffer_pointer + index_buffer_size));
+        CHECK_RESULT_VK(vmaFlushAllocation(_vma_allocator, _staging_buffer_allocation, 0, index_buffer_size + vertex_buffer_size));
 
         VkCommandBufferAllocateInfo command_buffer_allocate_info{
             .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
@@ -542,13 +544,13 @@ namespace Vkxel {
         VkBufferCopy index_copy_region{
             .srcOffset = 0,
             .dstOffset = 0,
-            .size = sizeof(_model.buffer.index)
+            .size = index_buffer_size
         };
 
         VkBufferCopy vertex_copy_region{
-            .srcOffset = sizeof(_model.buffer.index),
+            .srcOffset = index_buffer_size,
             .dstOffset = 0,
-            .size = sizeof(_model.buffer.vertex)
+            .size = vertex_buffer_size
         };
 
         vkCmdCopyBuffer(command_buffer, _staging_buffer, _index_buffer, 1, &index_copy_region);
@@ -577,8 +579,7 @@ namespace Vkxel {
 
         // Create Constant Buffer Per Frame
         ConstantBufferPerFrame constant_buffer_per_frame{
-            // .ModelMatrix = _model.transform.GetLocalToWorldMatrix(),
-            .ModelMatrix = glm::transpose(glm::mat4(1.0f)),
+            .ModelMatrix = glm::transpose(_model.transform.GetLocalToWorldMatrix()),
             .ViewMatrix = glm::transpose(_camera.GetViewMatrix()),
             .ProjectionMatrix = glm::transpose(_camera.GetProjectionMatrix())
         };
@@ -667,7 +668,7 @@ namespace Vkxel {
         vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 0, 1, &_descriptor_set, 0, nullptr);
         vkCmdBindIndexBuffer(command_buffer, _index_buffer, offset_zero, VK_INDEX_TYPE_UINT32);
         vkCmdBindVertexBuffers(command_buffer, 0, 1, &_vertex_buffer, &offset_zero);
-        vkCmdDrawIndexed(command_buffer, _model.indexCount, 1, 0, 0, 0);
+        vkCmdDrawIndexed(command_buffer, static_cast<uint32_t>(_model.index.size()), 1, 0, 0, 0);
         vkCmdEndRendering(command_buffer);
 
         VkImageMemoryBarrier image_memory_barrier_after{
