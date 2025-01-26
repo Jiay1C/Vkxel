@@ -87,6 +87,11 @@ set(SOURCES
         source/file.h
         source/model.cpp
         source/model.h
+        source/camera.cpp
+        source/camera.h
+        source/transform.cpp
+        source/transform.h
+        source/buffer.h
 )
 
 # Define the executable

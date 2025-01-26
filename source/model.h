@@ -7,20 +7,23 @@
 
 #include <array>
 
-#include "glm/glm.hpp"
+#include "buffer.h"
+#include "transform.h"
 
 namespace Vkxel {
 
-    struct VertexInput {
-        glm::vec3 position;
-        glm::vec3 normal;
-        glm::vec3 color;
-    };
-
-    template<size_t IndexCount, size_t VertexCount>
+    template<uint32_t IndexCount, uint32_t VertexCount>
     struct Model {
-        std::array<uint32_t, IndexCount> Index;
-        std::array<VertexInput, VertexCount> Vertex;
+        // TODO: Fix Alignment Issue
+        // Transform transform;
+
+        const uint32_t indexCount = IndexCount;
+        const uint32_t vertexCount = VertexCount;
+
+        struct {
+            std::array<uint32_t, IndexCount> index;
+            std::array<VertexInput, VertexCount> vertex;
+        }buffer;
     };
 
     class ModelLibrary {

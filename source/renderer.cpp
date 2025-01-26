@@ -16,6 +16,7 @@
 #include "check.h"
 #include "shader.h"
 #include "model.h"
+#include "buffer.h"
 
 
 namespace Vkxel {
@@ -119,11 +120,175 @@ namespace Vkxel {
         vkb::destroy_instance(_instance);
     }
 
-    void Renderer::Allocate() {
+    void Renderer::AllocateResource() {
+        // Create Buffers
+        uint32_t queue_family = _device.get_queue_index(vkb::QueueType::graphics).value();
+        VkBufferCreateInfo staging_buffer_create_info{
+            .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+            .size = Application::StagingBufferSize,
+            .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+            .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+            .queueFamilyIndexCount = 1,
+            .pQueueFamilyIndices = &queue_family
+        };
+
+        VmaAllocationCreateInfo staging_buffer_allocation_create_info{
+            .flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+            .usage = VMA_MEMORY_USAGE_AUTO,
+            .requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+        };
+
+        CHECK_RESULT_VK(vmaCreateBuffer(_vma_allocator, &staging_buffer_create_info, &staging_buffer_allocation_create_info, &_staging_buffer, &_staging_buffer_allocation, nullptr));
+        CHECK_RESULT_VK(vmaMapMemory(_vma_allocator, _staging_buffer_allocation, reinterpret_cast<void**>(&_staging_buffer_pointer)));
+
+        VmaAllocationCreateInfo buffer_allocation_create_info{
+            .usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
+        };
+
+        VkBufferCreateInfo index_buffer_create_info{
+            .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+            .size = Application::IndexBufferSize,
+            .usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+            .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+            .queueFamilyIndexCount = 1,
+            .pQueueFamilyIndices = &queue_family
+        };
+
+        VkBufferCreateInfo vertex_buffer_create_info{
+            .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+            .size = Application::VertexBufferSize,
+            .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+            .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+            .queueFamilyIndexCount = 1,
+            .pQueueFamilyIndices = &queue_family
+        };
+
+        VkBufferCreateInfo constant_buffer_per_frame_create_info{
+            .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+            .size = sizeof(ConstantBufferPerFrame),
+            .usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+            .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+            .queueFamilyIndexCount = 1,
+            .pQueueFamilyIndices = &queue_family
+        };
+
+        CHECK_RESULT_VK(vmaCreateBuffer(_vma_allocator, &index_buffer_create_info, &buffer_allocation_create_info, &_index_buffer, &_index_buffer_allocation, nullptr));
+        CHECK_RESULT_VK(vmaCreateBuffer(_vma_allocator, &vertex_buffer_create_info, &buffer_allocation_create_info, &_vertex_buffer, &_vertex_buffer_allocation, nullptr));
+        CHECK_RESULT_VK(vmaCreateBuffer(_vma_allocator, &constant_buffer_per_frame_create_info, &buffer_allocation_create_info, &_constant_buffer_per_frame, &_constant_buffer_per_frame_allocation, nullptr));
+
+        VkImageCreateInfo depth_image_create_info{
+            .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+            .imageType = VK_IMAGE_TYPE_2D,
+            .format = VK_FORMAT_D32_SFLOAT,
+            .extent = VkExtent3D{
+                .width = _swapchain.extent.width,
+                .height = _swapchain.extent.height,
+                .depth = 1
+            },
+            .mipLevels = 1,
+            .arrayLayers = 1,
+            .samples = VK_SAMPLE_COUNT_1_BIT,
+            .tiling = VK_IMAGE_TILING_OPTIMAL,
+            .usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+            .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+            .queueFamilyIndexCount = 1,
+            .pQueueFamilyIndices = &queue_family,
+            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED
+        };
+
+        VmaAllocationCreateInfo depth_image_allocation_create_info{
+            .usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
+        };
+        CHECK_RESULT_VK(vmaCreateImage(_vma_allocator, &depth_image_create_info, &depth_image_allocation_create_info, &_depth_image, &_depth_image_allocation, nullptr));
+
+        VkImageViewCreateInfo depth_image_view_create_info{
+            .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+            .image = _depth_image,
+            .viewType = VK_IMAGE_VIEW_TYPE_2D,
+            .format = VK_FORMAT_D32_SFLOAT,
+            .components = {
+                .r = VK_COMPONENT_SWIZZLE_IDENTITY,
+                .g = VK_COMPONENT_SWIZZLE_IDENTITY,
+                .b = VK_COMPONENT_SWIZZLE_IDENTITY,
+                .a = VK_COMPONENT_SWIZZLE_IDENTITY
+            },
+            .subresourceRange = {
+                .aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
+                .baseMipLevel = 0,
+                .levelCount = 1,
+                .baseArrayLayer = 0,
+                .layerCount = 1
+            }
+        };
+        CHECK_RESULT_VK(vkCreateImageView(_device, &depth_image_view_create_info, nullptr, &_depth_image_view));
+
+
+        std::array descriptor_set_layout_binding = {
+            VkDescriptorSetLayoutBinding{
+                .binding = 0,
+                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                .descriptorCount = 1,
+                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT
+            }
+        };
+
+        VkDescriptorSetLayoutCreateInfo descriptor_set_layout_create_info{
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+            .bindingCount = static_cast<uint32_t>(descriptor_set_layout_binding.size()),
+            .pBindings = descriptor_set_layout_binding.data()
+        };
+
+        CHECK_RESULT_VK(vkCreateDescriptorSetLayout(_device, &descriptor_set_layout_create_info, nullptr, &_descriptor_set_layout));
+
+        std::array descriptor_pool_size = {
+            VkDescriptorPoolSize{
+                .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                .descriptorCount = 1
+            }
+        };
+
+        VkDescriptorPoolCreateInfo descriptor_pool_create_info{
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+            .maxSets = 1,
+            .poolSizeCount = static_cast<uint32_t>(descriptor_pool_size.size()),
+            .pPoolSizes = descriptor_pool_size.data()
+        };
+
+        CHECK_RESULT_VK(vkCreateDescriptorPool(_device, &descriptor_pool_create_info, nullptr, &_descriptor_pool));
+
+        VkDescriptorSetAllocateInfo descriptor_set_allocate_info{
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+            .descriptorPool = _descriptor_pool,
+            .descriptorSetCount = 1,
+            .pSetLayouts = &_descriptor_set_layout
+        };
+
+        CHECK_RESULT_VK(vkAllocateDescriptorSets(_device, &descriptor_set_allocate_info, &_descriptor_set));
+
+        VkDescriptorBufferInfo constant_buffer_per_frame_info{
+            .buffer = _constant_buffer_per_frame,
+            .offset = 0,
+            .range = VK_WHOLE_SIZE
+        };
+        std::array descriptor_set_write_info = {
+            VkWriteDescriptorSet{
+                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                .dstSet = _descriptor_set,
+                .dstBinding = 0,
+                .dstArrayElement = 0,
+                .descriptorCount = 1,
+                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                .pBufferInfo = &constant_buffer_per_frame_info,
+            }
+        };
+
+        vkUpdateDescriptorSets(_device, static_cast<uint32_t>(descriptor_set_write_info.size()), descriptor_set_write_info.data(), 0, nullptr);
+
         // Create Pipeline Layout
         VkPipelineLayoutCreateInfo pipeline_layout_create_info{
             .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-            .setLayoutCount = 0,
+            .setLayoutCount = 1,
+            .pSetLayouts = &_descriptor_set_layout,
             .pushConstantRangeCount = 0,
             // TODO: Add Descriptor Set
         };
@@ -311,97 +476,6 @@ namespace Vkxel {
 
         vkDestroyShaderModule(_device, shader_module, nullptr);
 
-        // Create Buffers
-        uint32_t queue_family = _device.get_queue_index(vkb::QueueType::graphics).value();
-        VkBufferCreateInfo staging_buffer_create_info{
-            .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-            .size = Application::StagingBufferSize,
-            .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-            .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-            .queueFamilyIndexCount = 1,
-            .pQueueFamilyIndices = &queue_family
-        };
-
-        VmaAllocationCreateInfo staging_buffer_allocation_create_info{
-            .flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
-            .usage = VMA_MEMORY_USAGE_AUTO,
-            .requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
-        };
-
-        CHECK_RESULT_VK(vmaCreateBuffer(_vma_allocator, &staging_buffer_create_info, &staging_buffer_allocation_create_info, &_staging_buffer, &_staging_buffer_allocation, nullptr));
-        CHECK_RESULT_VK(vmaMapMemory(_vma_allocator, _staging_buffer_allocation, reinterpret_cast<void**>(&_staging_buffer_pointer)));
-
-        VmaAllocationCreateInfo index_vertex_buffer_allocation_create_info{
-            .usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
-        };
-
-        VkBufferCreateInfo index_buffer_create_info{
-            .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-            .size = Application::IndexBufferSize,
-            .usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-            .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-            .queueFamilyIndexCount = 1,
-            .pQueueFamilyIndices = &queue_family
-        };
-
-        VkBufferCreateInfo vertex_buffer_create_info{
-            .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-            .size = Application::VertexBufferSize,
-            .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-            .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-            .queueFamilyIndexCount = 1,
-            .pQueueFamilyIndices = &queue_family
-        };
-
-        CHECK_RESULT_VK(vmaCreateBuffer(_vma_allocator, &index_buffer_create_info, &index_vertex_buffer_allocation_create_info, &_index_buffer, &_index_buffer_allocation, nullptr));
-        CHECK_RESULT_VK(vmaCreateBuffer(_vma_allocator, &vertex_buffer_create_info, &index_vertex_buffer_allocation_create_info, &_vertex_buffer, &_vertex_buffer_allocation, nullptr));
-
-        VkImageCreateInfo depth_image_create_info{
-            .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-            .imageType = VK_IMAGE_TYPE_2D,
-            .format = VK_FORMAT_D32_SFLOAT,
-            .extent = VkExtent3D{
-                .width = _swapchain.extent.width,
-                .height = _swapchain.extent.height,
-                .depth = 1
-            },
-            .mipLevels = 1,
-            .arrayLayers = 1,
-            .samples = VK_SAMPLE_COUNT_1_BIT,
-            .tiling = VK_IMAGE_TILING_OPTIMAL,
-            .usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-            .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-            .queueFamilyIndexCount = 1,
-            .pQueueFamilyIndices = &queue_family,
-            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED
-        };
-
-        VmaAllocationCreateInfo depth_image_allocation_create_info{
-            .usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
-        };
-        CHECK_RESULT_VK(vmaCreateImage(_vma_allocator, &depth_image_create_info, &depth_image_allocation_create_info, &_depth_image, &_depth_image_allocation, nullptr));
-
-        VkImageViewCreateInfo depth_image_view_create_info{
-            .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-            .image = _depth_image,
-            .viewType = VK_IMAGE_VIEW_TYPE_2D,
-            .format = VK_FORMAT_D32_SFLOAT,
-            .components = {
-                .r = VK_COMPONENT_SWIZZLE_IDENTITY,
-                .g = VK_COMPONENT_SWIZZLE_IDENTITY,
-                .b = VK_COMPONENT_SWIZZLE_IDENTITY,
-                .a = VK_COMPONENT_SWIZZLE_IDENTITY
-            },
-            .subresourceRange = {
-                .aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
-                .baseMipLevel = 0,
-                .levelCount = 1,
-                .baseArrayLayer = 0,
-                .layerCount = 1
-            }
-        };
-        CHECK_RESULT_VK(vkCreateImageView(_device, &depth_image_view_create_info, nullptr, &_depth_image_view));
-
         VkSemaphoreCreateInfo semaphore_create_info{
             .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO
         };
@@ -416,16 +490,21 @@ namespace Vkxel {
         CHECK_RESULT_VK(vkCreateFence(_device, &fence_create_info, nullptr, &_command_buffer_fence));
     }
 
-    void Renderer::Release() {
+    void Renderer::ReleaseResource() {
         vkDeviceWaitIdle(_device);
 
         vkDestroyFence(_device, _command_buffer_fence, nullptr);
         vkDestroySemaphore(_device, _image_ready_semaphore, nullptr);
         vkDestroySemaphore(_device, _render_complete_semaphore, nullptr);
 
+        vkResetDescriptorPool(_device, _descriptor_pool, 0);
+        vkDestroyDescriptorSetLayout(_device, _descriptor_set_layout, nullptr);
+        vkDestroyDescriptorPool(_device, _descriptor_pool, nullptr);
+
         vkDestroyImageView(_device, _depth_image_view, nullptr);
         vmaDestroyImage(_vma_allocator, _depth_image, _depth_image_allocation);
 
+        vmaDestroyBuffer(_vma_allocator, _constant_buffer_per_frame, _constant_buffer_per_frame_allocation);
         vmaDestroyBuffer(_vma_allocator, _vertex_buffer, _vertex_buffer_allocation);
         vmaDestroyBuffer(_vma_allocator, _index_buffer, _index_buffer_allocation);
         vmaUnmapMemory(_vma_allocator, _staging_buffer_allocation);
@@ -438,10 +517,10 @@ namespace Vkxel {
         vkDestroyPipelineLayout(_device, _pipeline_layout, nullptr);
     }
 
-    void Renderer::Upload() {
-        std::ranges::copy(_model.Index, reinterpret_cast<decltype(_model.Index)::value_type*>(_staging_buffer_pointer));
-        std::ranges::copy(_model.Vertex, reinterpret_cast<decltype(_model.Vertex)::value_type*>(_staging_buffer_pointer + sizeof(_model.Index)));
-        CHECK_RESULT_VK(vmaFlushAllocation(_vma_allocator, _staging_buffer_allocation, 0, sizeof(_model.Index) + sizeof(_model.Vertex)));
+    void Renderer::UploadData() {
+        std::ranges::copy(_model.buffer.index, reinterpret_cast<decltype(_model.buffer.index)::value_type*>(_staging_buffer_pointer));
+        std::ranges::copy(_model.buffer.vertex, reinterpret_cast<decltype(_model.buffer.vertex)::value_type*>(_staging_buffer_pointer + sizeof(_model.buffer.index)));
+        CHECK_RESULT_VK(vmaFlushAllocation(_vma_allocator, _staging_buffer_allocation, 0, sizeof(_model.buffer.index) + sizeof(_model.buffer.vertex)));
 
         VkCommandBufferAllocateInfo command_buffer_allocate_info{
             .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
@@ -463,13 +542,13 @@ namespace Vkxel {
         VkBufferCopy index_copy_region{
             .srcOffset = 0,
             .dstOffset = 0,
-            .size = sizeof(_model.Index)
+            .size = sizeof(_model.buffer.index)
         };
 
         VkBufferCopy vertex_copy_region{
-            .srcOffset = sizeof(_model.Index),
+            .srcOffset = sizeof(_model.buffer.index),
             .dstOffset = 0,
-            .size = sizeof(_model.Vertex)
+            .size = sizeof(_model.buffer.vertex)
         };
 
         vkCmdCopyBuffer(command_buffer, _staging_buffer, _index_buffer, 1, &index_copy_region);
@@ -496,6 +575,14 @@ namespace Vkxel {
 
         uint32_t queue_family = _device.get_queue_index(vkb::QueueType::graphics).value();
 
+        // Create Constant Buffer Per Frame
+        ConstantBufferPerFrame constant_buffer_per_frame{
+            // .ModelMatrix = _model.transform.GetLocalToWorldMatrix(),
+            .ModelMatrix = glm::transpose(glm::mat4(1.0f)),
+            .ViewMatrix = glm::transpose(_camera.GetViewMatrix()),
+            .ProjectionMatrix = glm::transpose(_camera.GetProjectionMatrix())
+        };
+
         uint32_t image_index;
         CHECK_RESULT_VK(vkAcquireNextImageKHR(_device, _swapchain, std::numeric_limits<uint64_t>::max(), _image_ready_semaphore, nullptr, &image_index));
 
@@ -518,6 +605,8 @@ namespace Vkxel {
         };
 
         CHECK_RESULT_VK(vkBeginCommandBuffer(command_buffer, &command_buffer_begin_info));
+
+        vkCmdUpdateBuffer(command_buffer, _constant_buffer_per_frame, 0, sizeof(ConstantBufferPerFrame), &constant_buffer_per_frame);
 
         VkImageMemoryBarrier image_memory_barrier_before{
             .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
@@ -575,9 +664,10 @@ namespace Vkxel {
         VkDeviceSize offset_zero = 0;
         vkCmdBeginRendering(command_buffer, &rendering_info);
         vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
+        vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 0, 1, &_descriptor_set, 0, nullptr);
         vkCmdBindIndexBuffer(command_buffer, _index_buffer, offset_zero, VK_INDEX_TYPE_UINT32);
         vkCmdBindVertexBuffers(command_buffer, 0, 1, &_vertex_buffer, &offset_zero);
-        vkCmdDrawIndexed(command_buffer, static_cast<uint32_t>(_model.Index.size()), 1, 0, 0, 0);
+        vkCmdDrawIndexed(command_buffer, _model.indexCount, 1, 0, 0, 0);
         vkCmdEndRendering(command_buffer);
 
         VkImageMemoryBarrier image_memory_barrier_after{
@@ -638,5 +728,12 @@ namespace Vkxel {
         return _window.Update();
     }
 
+    Camera &Renderer::GetCamera() {
+        return _camera;
+    }
+
+    Window &Renderer::GetWindow() {
+        return _window;
+    }
 
 } // Vkxel

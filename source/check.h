@@ -10,33 +10,33 @@
 
 #include "vulkan/vk_enum_string_helper.h"
 
-#define CHECK_NOTNULL(f)																				               \
-{																										               \
-    if (!f)																				                               \
-    {																									               \
+#define CHECK_NOTNULL(f)                                                                                               \
+{                                                                                                                      \
+    if (!f)                                                                                                            \
+    {                                                                                                                  \
         std::cerr << "Error : nullptr or false in " << __FILE__ << " at line " << __LINE__ << std::endl;               \
-        abort();																		                               \
-    }																									               \
+        abort();                                                                                                       \
+    }                                                                                                                  \
 }
 
-#define CHECK_RESULT(success,f)																				           \
-{																										               \
-    auto res = (f);																					                   \
-    if (res != success)																				                   \
-    {																									               \
+#define CHECK_RESULT(success,f)                                                                                        \
+{                                                                                                                      \
+    auto res = (f);                                                                                                    \
+    if (res != success)                                                                                                \
+    {                                                                                                                  \
         std::cerr << "Error : " << res << " in " << __FILE__ << " at line " << __LINE__ << std::endl;                  \
-        abort();																		                               \
-    }																									               \
+        abort();                                                                                                       \
+    }                                                                                                                  \
 }
 
-#define CHECK_RESULT_VK(f)																				               \
-{																										               \
-    VkResult res = (f);																					               \
-    if (res != VK_SUCCESS)																				               \
-    {																									               \
+#define CHECK_RESULT_VK(f)                                                                                             \
+{                                                                                                                      \
+    VkResult res = (f);                                                                                                \
+    if (res != VK_SUCCESS)                                                                                             \
+    {                                                                                                                  \
         std::cerr << "Error : " << string_VkResult(res) << " in " << __FILE__ << " at line " << __LINE__ << std::endl; \
-        abort();																		                               \
-    }																									               \
+        abort();                                                                                                       \
+    }                                                                                                                  \
 }
 
 #define CHECK_NOTNULL_MSG(f, msg)                                                                               \
