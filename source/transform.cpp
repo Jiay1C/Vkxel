@@ -23,15 +23,21 @@ namespace Vkxel {
     }
 
     // Rotate in world space
-    void Transform::RotateWorld(const glm::vec3& eulers) {
-        glm::quat worldRotation = glm::quat(eulers);
-        rotation = worldRotation * rotation;
+    void Transform::RotateWorld(const glm::vec3& eulerAngel) {
+        rotation = glm::quat(eulerAngel) * rotation;
+    }
+
+    void Transform::RotateWorld(const glm::quat &quaternion) {
+        rotation = quaternion * rotation;
     }
 
     // Rotate relative to the object's local space
-    void Transform::RotateSelf(const glm::vec3& eulers) {
-        glm::quat localRotation = glm::quat(eulers);
-        rotation *= localRotation;
+    void Transform::RotateSelf(const glm::vec3& eulerAngel) {
+        rotation *= glm::quat(eulerAngel);
+    }
+
+    void Transform::RotateSelf(const glm::quat &quaternion) {
+        rotation *= quaternion;
     }
 
     void Transform::LookAt(const glm::vec3 &point, const glm::vec3 &up) {

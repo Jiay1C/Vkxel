@@ -94,6 +94,10 @@ set(SOURCES
         source/buffer.h
         source/input.cpp
         source/input.h
+        source/controller.cpp
+        source/controller.h
+        source/vtime.cpp
+        source/vtime.h
 )
 
 # Define the executable

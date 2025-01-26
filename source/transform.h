@@ -18,8 +18,10 @@ public:
 
     void TranslateWorld(const glm::vec3& translation);
     void TranslateSelf(const glm::vec3& translation);
-    void RotateWorld(const glm::vec3& eulers);
-    void RotateSelf(const glm::vec3& eulers);
+    void RotateWorld(const glm::quat& quaternion);
+    void RotateWorld(const glm::vec3& eulerAngel);
+    void RotateSelf(const glm::quat& quaternion);
+    void RotateSelf(const glm::vec3& eulerAngel);
     void LookAt(const glm::vec3& point, const glm::vec3& up = {0, 1, 0});
 
     glm::vec3 GetForwardVector() const;
