@@ -29,6 +29,8 @@ public:
     static constexpr uint32_t StagingBufferSize = 104857600; // 100 MB
     static constexpr uint32_t IndexBufferSize = 104857600; // 100 MB
     static constexpr uint32_t VertexBufferSize = 104857600; // 100 MB
+    static constexpr float DefaultMoveSpeed = 1.0f;
+    static constexpr float DefaultViewSpeed = 0.1f;
 };
 
 } // Vkxel
