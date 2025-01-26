@@ -5,6 +5,7 @@
 #include "vulkan/vulkan.h"
 
 #include "window.h"
+#include "input.h"
 #include "check.h"
 
 namespace Vkxel {
@@ -35,6 +36,8 @@ namespace Vkxel {
         CHECK_NOTNULL(_window);
 
         CHECK_RESULT_VK(glfwCreateWindowSurface(_instance, _window, nullptr, &_surface));
+
+        Input::glfwBindWindow(_window);
     }
 
     void Window::Destroy() {
@@ -63,7 +66,6 @@ namespace Vkxel {
     }
 
     bool Window::Update() {
-        glfwPollEvents();
         return glfwWindowShouldClose(_window);
     }
 

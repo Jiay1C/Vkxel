@@ -92,6 +92,8 @@ set(SOURCES
         source/transform.cpp
         source/transform.h
         source/buffer.h
+        source/input.cpp
+        source/input.h
 )
 
 # Define the executable

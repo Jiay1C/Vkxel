@@ -13,7 +13,9 @@ namespace Vkxel {
     }
 
     glm::mat4 Camera::GetProjectionMatrix() const {
-        return glm::perspective(projectionInfo.fieldOfViewY, projectionInfo.aspect, projectionInfo.nearClipPlane, projectionInfo.farClipPlane);
+        glm::mat4 projectionMatrix = glm::perspectiveRH_ZO(projectionInfo.fieldOfViewY, projectionInfo.aspect, projectionInfo.nearClipPlane, projectionInfo.farClipPlane);
+        projectionMatrix[1][1] = -projectionMatrix[1][1];
+        return projectionMatrix;
     }
 
 

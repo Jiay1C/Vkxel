@@ -12,12 +12,9 @@ namespace Vkxel {
 
 class Transform {
 public:
-    glm::vec3 GetPosition() const;
-    void SetPosition(const glm::vec3& position);
-    glm::vec3 GetRotation() const;
-    void SetRotation(const glm::vec3& rotation);
-    glm::vec3 GetScale() const;
-    void SetScale(const glm::vec3& scale);
+    glm::vec3 position = glm::vec3{0, 0, 0};
+    glm::quat rotation = glm::vec3{0, 0, 0};
+    glm::vec3 scale = glm::vec3{1, 1, 1};
 
     void TranslateWorld(const glm::vec3& translation);
     void TranslateSelf(const glm::vec3& translation);
@@ -31,11 +28,6 @@ public:
 
     glm::mat4 GetLocalToWorldMatrix() const;
     glm::mat4 GetWorldToLocalMatrix() const;
-
-private:
-    glm::vec3 _position = glm::vec3{0, 0, 0};
-    glm::quat _rotation = glm::vec3{0, 0, 0};
-    glm::vec3 _scale = glm::vec3{1, 1, 1};
 };
 
 } // Vkxel
