@@ -69,5 +69,10 @@ namespace Vkxel {
         return glfwWindowShouldClose(_window);
     }
 
+    void Window::RequestClose() const {
+        glfwSetWindowShouldClose(_window, true);
+    }
+
+
 
 } // Vkxel

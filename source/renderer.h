@@ -17,7 +17,7 @@ namespace Vkxel {
 
 class Renderer {
 public:
-    explicit Renderer(Camera& camera);
+    explicit Renderer(Window& window, Camera& camera);
 
     void Init();
     void Destroy();
@@ -32,7 +32,7 @@ public:
     Camera& GetCamera();
 
 private:
-    Window _window;
+    Window& _window;
     Camera& _camera;
 
     // Device Related Handle

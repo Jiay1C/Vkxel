@@ -8,6 +8,8 @@ using namespace Vkxel;
 
 int main() {
 
+    Window window;
+
     Camera camera = {
         .transform = {
             .position = glm::vec3{0, 0, 1},
@@ -25,24 +27,22 @@ int main() {
         .SetMoveSpeed(Application::DefaultMoveSpeed)
         .SetRotateSpeed(Application::DefaultRotateSpeed);
 
-    Renderer renderer(camera);
+    Renderer renderer(window, camera);
 
     renderer.Init();
     renderer.AllocateResource();
     renderer.UploadData();
-
-    Window& window = renderer.GetWindow();
 
     while (!window.ShouldClose()) {
         Input::Update();
         Time::Update();
         camera_controller.Update();
 
-        if (Input::GetKey(KeyCode::KEY_ESCAPE)) {
-            break;
-        }
-
         renderer.Render();
+
+        if (Input::GetKey(KeyCode::KEY_ESCAPE)) {
+            window.RequestClose();
+        }
     }
     renderer.ReleaseResource();
     renderer.Destroy();

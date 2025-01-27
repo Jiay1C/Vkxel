@@ -30,6 +30,7 @@ public:
     uint32_t GetHeight() const;
 
     bool ShouldClose() const;
+    void RequestClose() const;
 
 private:
     static uint32_t s_count;

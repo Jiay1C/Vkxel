@@ -20,7 +20,7 @@
 
 
 namespace Vkxel {
-     Renderer::Renderer(Camera& camera) : _camera(camera) {  }
+     Renderer::Renderer(Window& window, Camera& camera) : _window(window), _camera(camera) { }
 
     void Renderer::Init() {
 
