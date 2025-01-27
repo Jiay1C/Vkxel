@@ -40,9 +40,9 @@ namespace Vkxel {
         rotation *= quaternion;
     }
 
-    void Transform::LookAt(const glm::vec3 &point, const glm::vec3 &up) {
+    void Transform::LookAt(const glm::vec3 &point, const glm::vec3 &upDirection) {
         glm::vec3 direction = normalize((point - position));
-        rotation = glm::quatLookAt(direction, up);
+        rotation = glm::quatLookAt(direction, upDirection);
     }
 
 
@@ -73,6 +73,13 @@ namespace Vkxel {
     glm::mat4 Transform::GetWorldToLocalMatrix() const {
         return glm::inverse(GetLocalToWorldMatrix());
     }
+
+    constexpr glm::vec3 Transform::forward = {0, 0, -1};
+    constexpr glm::vec3 Transform::back = {0, 0, 1};
+    constexpr glm::vec3 Transform::up = {0, 1, 0};
+    constexpr glm::vec3 Transform::down = {0, -1, 0};
+    constexpr glm::vec3 Transform::right = {1, 0, 0};
+    constexpr glm::vec3 Transform::left = {-1, 0, 0};
 
 
 } // Vkxel

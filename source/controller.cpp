@@ -23,31 +23,33 @@ namespace Vkxel {
     void Controller::Update() {
         float delta_seconds = Time::DeltaSeconds();
 
-        float camera_translation = _move_speed * delta_seconds;
+        glm::vec3 translation = {};
 
         if (Input::GetKey(KeyCode::KEY_W)) {
-            _transform.TranslateSelf(glm::vec3{0, 0, -1} * camera_translation);
+            translation += Transform::forward;
         }
 
         if (Input::GetKey(KeyCode::KEY_S)) {
-            _transform.TranslateSelf(glm::vec3{0, 0, 1} * camera_translation);
+            translation += Transform::back;
         }
 
         if (Input::GetKey(KeyCode::KEY_D)) {
-            _transform.TranslateSelf(glm::vec3{1, 0, 0} * camera_translation);
+            translation += Transform::right;
         }
 
         if (Input::GetKey(KeyCode::KEY_A)) {
-            _transform.TranslateSelf(glm::vec3{-1, 0, 0} * camera_translation);
-        }
-
-        if (Input::GetKey(KeyCode::KEY_Q)) {
-            _transform.TranslateSelf(glm::vec3{0, -1, 0} * camera_translation);
+            translation += Transform::left;
         }
 
         if (Input::GetKey(KeyCode::KEY_E)) {
-            _transform.TranslateSelf(glm::vec3{0, 1, 0} * camera_translation);
+            translation += Transform::up;
         }
+
+        if (Input::GetKey(KeyCode::KEY_Q)) {
+            translation += Transform::down;
+        }
+
+        _transform.TranslateSelf(translation * _move_speed * delta_seconds);
 
         glm::vec2 mouse_position = Input::GetMousePosition();
         glm::vec2 mouse_position_delta = mouse_position - _last_mouse_position;

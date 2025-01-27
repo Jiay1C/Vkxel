@@ -30,6 +30,13 @@ public:
 
     glm::mat4 GetLocalToWorldMatrix() const;
     glm::mat4 GetWorldToLocalMatrix() const;
+
+    const static glm::vec3 forward;
+    const static glm::vec3 back;
+    const static glm::vec3 up;
+    const static glm::vec3 down;
+    const static glm::vec3 right;
+    const static glm::vec3 left;
 };
 
 } // Vkxel

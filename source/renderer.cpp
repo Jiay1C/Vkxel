@@ -127,7 +127,7 @@ namespace Vkxel {
         uint32_t queue_family = _device.get_queue_index(vkb::QueueType::graphics).value();
         VkBufferCreateInfo staging_buffer_create_info{
             .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-            .size = Application::StagingBufferSize,
+            .size = Application::DefaultStagingBufferSize,
             .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
             .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
             .queueFamilyIndexCount = 1,
@@ -149,7 +149,7 @@ namespace Vkxel {
 
         VkBufferCreateInfo index_buffer_create_info{
             .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-            .size = Application::IndexBufferSize,
+            .size = Application::DefaultIndexBufferSize,
             .usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
             .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
             .queueFamilyIndexCount = 1,
@@ -158,7 +158,7 @@ namespace Vkxel {
 
         VkBufferCreateInfo vertex_buffer_create_info{
             .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-            .size = Application::VertexBufferSize,
+            .size = Application::DefaultVertexBufferSize,
             .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
             .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
             .queueFamilyIndexCount = 1,
@@ -243,15 +243,22 @@ namespace Vkxel {
         CHECK_RESULT_VK(vkCreateDescriptorSetLayout(_device, &descriptor_set_layout_create_info, nullptr, &_descriptor_set_layout));
 
         std::array descriptor_pool_size = {
-            VkDescriptorPoolSize{
-                .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                .descriptorCount = 1
-            }
+            VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_SAMPLER, Application::DefaultDescriptorCount },
+            VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, Application::DefaultDescriptorCount },
+            VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, Application::DefaultDescriptorCount },
+            VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, Application::DefaultDescriptorCount },
+            VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, Application::DefaultDescriptorCount },
+            VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, Application::DefaultDescriptorCount },
+            VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Application::DefaultDescriptorCount },
+            VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, Application::DefaultDescriptorCount },
+            VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, Application::DefaultDescriptorCount },
+            VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, Application::DefaultDescriptorCount },
+            VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, Application::DefaultDescriptorCount }
         };
 
         VkDescriptorPoolCreateInfo descriptor_pool_create_info{
             .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-            .maxSets = 1,
+            .maxSets = Application::DefaultDescriptorSetCount,
             .poolSizeCount = static_cast<uint32_t>(descriptor_pool_size.size()),
             .pPoolSizes = descriptor_pool_size.data()
         };
@@ -414,7 +421,6 @@ namespace Vkxel {
             .back = {},
             .minDepthBounds = 0.0f,
             .maxDepthBounds = 1.0f
-            // TODO: Add Depth Test
         };
 
         VkPipelineColorBlendAttachmentState color_blend_attachment_state{
