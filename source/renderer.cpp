@@ -20,6 +20,8 @@
 
 
 namespace Vkxel {
+     Renderer::Renderer(Camera& camera) : _camera(camera) {  }
+
     void Renderer::Init() {
 
         // Create Instance
@@ -573,7 +575,7 @@ namespace Vkxel {
     }
 
 
-    bool Renderer::Render() {
+    void Renderer::Render() {
 
         uint32_t queue_family = _device.get_queue_index(vkb::QueueType::graphics).value();
 
@@ -725,8 +727,6 @@ namespace Vkxel {
         CHECK_RESULT_VK(vkResetFences(_device, 1, &_command_buffer_fence));
 
         vkFreeCommandBuffers(_device, _command_pool, 1, &command_buffer);
-
-        return _window.Update();
     }
 
     Camera &Renderer::GetCamera() {

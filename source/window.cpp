@@ -65,7 +65,7 @@ namespace Vkxel {
         return _height;
     }
 
-    bool Window::Update() {
+    bool Window::ShouldClose() const {
         return glfwWindowShouldClose(_window);
     }
 

@@ -29,7 +29,7 @@ public:
     uint32_t GetWidth() const;
     uint32_t GetHeight() const;
 
-    bool Update();
+    bool ShouldClose() const;
 
 private:
     static uint32_t s_count;
