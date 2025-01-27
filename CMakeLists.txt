@@ -43,8 +43,8 @@ add_subdirectory(${EXTERNAL_PATH}/${VK_BOOTSTRAP_PATH})
 set(VULKAN_MEMORY_ALLOCATOR_PATH "VulkanMemoryAllocator")
 add_subdirectory(${EXTERNAL_PATH}/${VULKAN_MEMORY_ALLOCATOR_PATH})
 set(VMA_USAGE_FILES
-        "${EXTERNAL_PATH}/${VULKAN_MEMORY_ALLOCATOR_PATH}/src/VmaUsage.h"
-        "${EXTERNAL_PATH}/${VULKAN_MEMORY_ALLOCATOR_PATH}/src/VmaUsage.cpp"
+        ${EXTERNAL_PATH}/${VULKAN_MEMORY_ALLOCATOR_PATH}/src/VmaUsage.h
+        ${EXTERNAL_PATH}/${VULKAN_MEMORY_ALLOCATOR_PATH}/src/VmaUsage.cpp
 )
 
 # glm
@@ -71,9 +71,26 @@ set_target_properties(slang PROPERTIES
         LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${PROJECT_NAME}/${LIBRARY_OUTPUT_PATH}
 )
 
+# imgui
+set(IMGUI_PATH "imgui")
+set(IMGUI_INCLUDE_DIR
+        ${EXTERNAL_PATH}/${IMGUI_PATH}
+        ${EXTERNAL_PATH}/${IMGUI_PATH}/backends
+)
+set(IMGUI_SOURCE_FILES
+        ${EXTERNAL_PATH}/${IMGUI_PATH}/imgui.cpp
+        ${EXTERNAL_PATH}/${IMGUI_PATH}/imgui_demo.cpp
+        ${EXTERNAL_PATH}/${IMGUI_PATH}/imgui_draw.cpp
+        ${EXTERNAL_PATH}/${IMGUI_PATH}/imgui_tables.cpp
+        ${EXTERNAL_PATH}/${IMGUI_PATH}/imgui_widgets.cpp
+        ${EXTERNAL_PATH}/${IMGUI_PATH}/backends/imgui_impl_vulkan.cpp
+        ${EXTERNAL_PATH}/${IMGUI_PATH}/backends/imgui_impl_glfw.cpp
+)
+
 # Set the source files
 set(SOURCES
         ${VMA_USAGE_FILES}
+        ${IMGUI_SOURCE_FILES}
         source/main.cpp
         source/window.cpp
         source/window.h
@@ -98,6 +115,8 @@ set(SOURCES
         source/controller.h
         source/vtime.cpp
         source/vtime.h
+        source/gui.cpp
+        source/gui.h
 )
 
 # Define the executable
@@ -106,6 +125,7 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 # Include directories
 include_directories(
         ${Vulkan_INCLUDE_DIR}
+        ${IMGUI_INCLUDE_DIR}
         ${CMAKE_SOURCE_DIR}/include
 )
 

@@ -518,8 +518,8 @@ namespace Vkxel {
     }
 
     void Renderer::UploadData() {
-        uint32_t index_buffer_size = _model.index.size() * sizeof(decltype(_model.index)::value_type);
-        uint32_t vertex_buffer_size = _model.vertex.size() * sizeof(decltype(_model.vertex)::value_type);
+        uint32_t index_buffer_size = static_cast<uint32_t>(_model.index.size() * sizeof(decltype(_model.index)::value_type));
+        uint32_t vertex_buffer_size = static_cast<uint32_t>(_model.vertex.size() * sizeof(decltype(_model.vertex)::value_type));
         std::ranges::copy(_model.index, reinterpret_cast<decltype(_model.index)::value_type*>(_staging_buffer_pointer));
         std::ranges::copy(_model.vertex, reinterpret_cast<decltype(_model.vertex)::value_type*>(_staging_buffer_pointer + index_buffer_size));
         CHECK_RESULT_VK(vmaFlushAllocation(_vma_allocator, _staging_buffer_allocation, 0, index_buffer_size + vertex_buffer_size));
