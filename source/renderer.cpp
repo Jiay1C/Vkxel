@@ -20,7 +20,7 @@
 
 
 namespace Vkxel {
-     Renderer::Renderer(Window& window, Camera& camera) : _window(window), _camera(camera) { }
+     Renderer::Renderer(Window& window, Camera& camera, GUI& gui) : _window(window), _camera(camera), _gui(gui) { }
 
     void Renderer::Init() {
 
@@ -40,12 +40,7 @@ namespace Vkxel {
         _instance = instance_result.value();
 
         // Create Window
-        _window.SetResolution(Application::DefaultResolution.first, Application::DefaultResolution.second)
-               .SetTitle(Application::Name)
-               .SetInstance(_instance)
-               .Create();
-
-        _surface = _window.GetSurface();
+        _surface = _window.CreateSurface(_instance);
 
         // Select Physical Device
         VkPhysicalDeviceVulkan13Features physical_device_vulkan13_features{
@@ -99,6 +94,31 @@ namespace Vkxel {
 
         CHECK_RESULT_VK(vkCreateCommandPool(_device, &command_pool_create_info, nullptr, &_command_pool));
 
+        // Create Descriptor Pool
+        std::array descriptor_pool_size = {
+            VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_SAMPLER, Application::DefaultDescriptorCount },
+            VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, Application::DefaultDescriptorCount },
+            VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, Application::DefaultDescriptorCount },
+            VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, Application::DefaultDescriptorCount },
+            VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, Application::DefaultDescriptorCount },
+            VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, Application::DefaultDescriptorCount },
+            VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Application::DefaultDescriptorCount },
+            VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, Application::DefaultDescriptorCount },
+            VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, Application::DefaultDescriptorCount },
+            VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, Application::DefaultDescriptorCount },
+            VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, Application::DefaultDescriptorCount }
+        };
+
+        VkDescriptorPoolCreateInfo descriptor_pool_create_info{
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+            .flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+            .maxSets = Application::DefaultDescriptorSetCount,
+            .poolSizeCount = static_cast<uint32_t>(descriptor_pool_size.size()),
+            .pPoolSizes = descriptor_pool_size.data()
+        };
+
+        CHECK_RESULT_VK(vkCreateDescriptorPool(_device, &descriptor_pool_create_info, nullptr, &_descriptor_pool));
+
         // Create VMA Allocator
         VmaAllocatorCreateInfo vma_allocator_create_info{
             .physicalDevice = _physical_device,
@@ -107,18 +127,24 @@ namespace Vkxel {
         };
 
         CHECK_RESULT_VK(vmaCreateAllocator(&vma_allocator_create_info, &_vma_allocator));
+
+        _gui.Create(*this);
     }
 
     void Renderer::Destroy() {
+        vkDeviceWaitIdle(_device);
+
+        _gui.Destroy();
+
         for (VkImageView image_view: _swapchain_image_view) {
             vkDestroyImageView(_device, image_view, nullptr);
         }
 
-        vkDeviceWaitIdle(_device);
+        vkDestroyDescriptorPool(_device, _descriptor_pool, nullptr);
         vkDestroyCommandPool(_device, _command_pool, nullptr);
         vkb::destroy_swapchain(_swapchain);
         vkb::destroy_device(_device);
-        _window.Destroy();
+        _window.DestroySurface();
         vkb::destroy_instance(_instance);
     }
 
@@ -242,28 +268,7 @@ namespace Vkxel {
 
         CHECK_RESULT_VK(vkCreateDescriptorSetLayout(_device, &descriptor_set_layout_create_info, nullptr, &_descriptor_set_layout));
 
-        std::array descriptor_pool_size = {
-            VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_SAMPLER, Application::DefaultDescriptorCount },
-            VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, Application::DefaultDescriptorCount },
-            VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, Application::DefaultDescriptorCount },
-            VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, Application::DefaultDescriptorCount },
-            VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, Application::DefaultDescriptorCount },
-            VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, Application::DefaultDescriptorCount },
-            VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Application::DefaultDescriptorCount },
-            VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, Application::DefaultDescriptorCount },
-            VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, Application::DefaultDescriptorCount },
-            VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, Application::DefaultDescriptorCount },
-            VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, Application::DefaultDescriptorCount }
-        };
 
-        VkDescriptorPoolCreateInfo descriptor_pool_create_info{
-            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-            .maxSets = Application::DefaultDescriptorSetCount,
-            .poolSizeCount = static_cast<uint32_t>(descriptor_pool_size.size()),
-            .pPoolSizes = descriptor_pool_size.data()
-        };
-
-        CHECK_RESULT_VK(vkCreateDescriptorPool(_device, &descriptor_pool_create_info, nullptr, &_descriptor_pool));
 
         VkDescriptorSetAllocateInfo descriptor_set_allocate_info{
             .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
@@ -505,9 +510,8 @@ namespace Vkxel {
         vkDestroySemaphore(_device, _image_ready_semaphore, nullptr);
         vkDestroySemaphore(_device, _render_complete_semaphore, nullptr);
 
-        vkResetDescriptorPool(_device, _descriptor_pool, 0);
+        vkFreeDescriptorSets(_device, _descriptor_pool, 1, &_descriptor_set);
         vkDestroyDescriptorSetLayout(_device, _descriptor_set_layout, nullptr);
-        vkDestroyDescriptorPool(_device, _descriptor_pool, nullptr);
 
         vkDestroyImageView(_device, _depth_image_view, nullptr);
         vmaDestroyImage(_vma_allocator, _depth_image, _depth_image_allocation);
@@ -679,6 +683,55 @@ namespace Vkxel {
         vkCmdDrawIndexed(command_buffer, static_cast<uint32_t>(_model.index.size()), 1, 0, 0, 0);
         vkCmdEndRendering(command_buffer);
 
+        VkImageMemoryBarrier image_memory_barrier_ui{
+         .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+         .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+         .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+         .oldLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
+         .newLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
+         .srcQueueFamilyIndex = queue_family,
+         .dstQueueFamilyIndex = queue_family,
+         .image = color_attachment_image,
+         .subresourceRange = VkImageSubresourceRange{
+             .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+             .baseMipLevel = 0,
+             .levelCount = 1,
+             .baseArrayLayer = 0,
+             .layerCount = 1
+         }
+        };
+
+        vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0,
+         0, nullptr,
+         0, nullptr,
+         1, &image_memory_barrier_ui);
+
+        VkRenderingAttachmentInfo color_attachment_info_ui{
+            .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+            .imageView = color_attachment_image_view,
+            .imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
+            .loadOp = VK_ATTACHMENT_LOAD_OP_LOAD,
+            .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+            .clearValue = {0, 0, 0, 0}
+        };
+
+        VkRenderingInfo rendering_info_ui{
+             .sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
+             .renderArea = VkRect2D{
+                 .offset = {0, 0},
+                 .extent = _swapchain.extent
+             },
+            .layerCount = 1,
+            .colorAttachmentCount = 1,
+            .pColorAttachments = &color_attachment_info_ui,
+            .pDepthAttachment = nullptr,
+            .pStencilAttachment = nullptr
+        };
+
+        vkCmdBeginRendering(command_buffer, &rendering_info_ui);
+        _gui.Render(command_buffer);
+        vkCmdEndRendering(command_buffer);
+
         VkImageMemoryBarrier image_memory_barrier_after{
             .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
             .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
@@ -696,6 +749,7 @@ namespace Vkxel {
                 .layerCount = 1
             }
         };
+
         vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0,
             0, nullptr,
             0, nullptr,
@@ -735,11 +789,11 @@ namespace Vkxel {
         vkFreeCommandBuffers(_device, _command_pool, 1, &command_buffer);
     }
 
-    Camera &Renderer::GetCamera() {
+    Camera &Renderer::GetCamera() const {
         return _camera;
     }
 
-    Window &Renderer::GetWindow() {
+    Window &Renderer::GetWindow() const {
         return _window;
     }
 

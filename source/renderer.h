@@ -12,12 +12,15 @@
 #include "window.h"
 #include "model.h"
 #include "camera.h"
+#include "gui.h"
 
 namespace Vkxel {
 
 class Renderer {
 public:
-    explicit Renderer(Window& window, Camera& camera);
+    friend class GUI;
+
+    explicit Renderer(Window& window, Camera& camera, GUI& gui);
 
     void Init();
     void Destroy();
@@ -28,12 +31,13 @@ public:
 
     void Render();
 
-    Window& GetWindow();
-    Camera& GetCamera();
+    Window& GetWindow() const;
+    Camera& GetCamera() const;
 
 private:
     Window& _window;
     Camera& _camera;
+    GUI& _gui;
 
     // Device Related Handle
 

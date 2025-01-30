@@ -18,10 +18,12 @@ class Window {
 public:
     Window& SetResolution(uint32_t width, uint32_t height);
     Window& SetTitle(std::string_view title);
-    Window& SetInstance(VkInstance instance);
 
     void Create();
     void Destroy();
+
+    VkSurfaceKHR CreateSurface(VkInstance instance);
+    void DestroySurface();
 
     GLFWwindow* GetWindow() const;
     VkSurfaceKHR GetSurface() const;

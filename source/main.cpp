@@ -8,7 +8,10 @@ using namespace Vkxel;
 
 int main() {
 
-    Window window;
+    Window window = Window()
+        .SetResolution(Application::DefaultResolution.first, Application::DefaultResolution.second)
+        .SetTitle(Application::Name);
+    window.Create();
 
     Camera camera = {
         .transform = {
@@ -27,7 +30,9 @@ int main() {
         .SetMoveSpeed(Application::DefaultMoveSpeed)
         .SetRotateSpeed(Application::DefaultRotateSpeed);
 
-    Renderer renderer(window, camera);
+    GUI gui;
+
+    Renderer renderer(window, camera, gui);
 
     renderer.Init();
     renderer.AllocateResource();
@@ -46,6 +51,8 @@ int main() {
     }
     renderer.ReleaseResource();
     renderer.Destroy();
+
+    window.Destroy();
 
     return 0;
 }

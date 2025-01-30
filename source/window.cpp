@@ -20,10 +20,6 @@ namespace Vkxel {
         _title = title;
         return *this;
     }
-    Window& Window::SetInstance(const VkInstance instance) {
-        _instance = instance;
-        return *this;
-    }
 
     void Window::Create() {
         if (s_count++ == 0) {
@@ -35,18 +31,27 @@ namespace Vkxel {
         _window = glfwCreateWindow(_width, _height, _title.data(), nullptr, nullptr);
         CHECK_NOTNULL(_window);
 
-        CHECK_RESULT_VK(glfwCreateWindowSurface(_instance, _window, nullptr, &_surface));
-
         Input::glfwBindWindow(_window);
     }
 
     void Window::Destroy() {
-        vkDestroySurfaceKHR(_instance, _surface, nullptr);
         glfwDestroyWindow(_window);
         if (--s_count == 0) {
             glfwTerminate();
         }
     }
+
+    VkSurfaceKHR Window::CreateSurface(const VkInstance instance) {
+        _instance = instance;
+        CHECK_RESULT_VK(glfwCreateWindowSurface(_instance, _window, nullptr, &_surface));
+        return _surface;
+    }
+
+    void Window::DestroySurface() {
+        vkDestroySurfaceKHR(_instance, _surface, nullptr);
+        _surface = nullptr;
+    }
+
 
     GLFWwindow *Window::GetWindow() const {
         return _window;
