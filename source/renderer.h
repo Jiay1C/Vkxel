@@ -55,6 +55,8 @@ private:
     VkQueue _queue = nullptr;
     VkCommandPool _command_pool = nullptr;
 
+    uint32_t _queue_family_index = 0;
+
 
     // Resource Related Handle
 

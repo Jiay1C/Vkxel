@@ -85,11 +85,12 @@ namespace Vkxel {
         auto queue_result = _device.get_queue(vkb::QueueType::graphics);
         CHECK_NOTNULL_MSG(queue_result, queue_result.error().message());
         _queue = queue_result.value();
+        _queue_family_index = _device.get_queue_index(vkb::QueueType::graphics).value();
 
         // Create Command Pool
         VkCommandPoolCreateInfo command_pool_create_info{
             .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-            .queueFamilyIndex = _device.get_queue_index(vkb::QueueType::graphics).value()
+            .queueFamilyIndex = _queue_family_index
         };
 
         CHECK_RESULT_VK(vkCreateCommandPool(_device, &command_pool_create_info, nullptr, &_command_pool));
@@ -128,13 +129,26 @@ namespace Vkxel {
 
         CHECK_RESULT_VK(vmaCreateAllocator(&vma_allocator_create_info, &_vma_allocator));
 
-        _gui.Create(*this);
+        // Create GUI
+        GUIInitInfo gui_init_info{
+            .Instance = _instance,
+            .PhysicalDevice = _physical_device,
+            .Device = _device,
+            .QueueFamily = _queue_family_index,
+            .Queue = _queue,
+            .DescriptorPool = _descriptor_pool,
+            .MinImageCount = _swapchain.requested_min_image_count,
+            .ImageCount = _swapchain.image_count,
+            .ColorAttachmentFormat = _swapchain.image_format
+        };
+
+        _gui.InitVK(&gui_init_info);
     }
 
     void Renderer::Destroy() {
         vkDeviceWaitIdle(_device);
 
-        _gui.Destroy();
+        _gui.DestroyVK();
 
         for (VkImageView image_view: _swapchain_image_view) {
             vkDestroyImageView(_device, image_view, nullptr);
@@ -150,14 +164,13 @@ namespace Vkxel {
 
     void Renderer::AllocateResource() {
         // Create Buffers
-        uint32_t queue_family = _device.get_queue_index(vkb::QueueType::graphics).value();
         VkBufferCreateInfo staging_buffer_create_info{
             .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
             .size = Application::DefaultStagingBufferSize,
             .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
             .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
             .queueFamilyIndexCount = 1,
-            .pQueueFamilyIndices = &queue_family
+            .pQueueFamilyIndices = &_queue_family_index
         };
 
         VmaAllocationCreateInfo staging_buffer_allocation_create_info{
@@ -179,7 +192,7 @@ namespace Vkxel {
             .usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
             .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
             .queueFamilyIndexCount = 1,
-            .pQueueFamilyIndices = &queue_family
+            .pQueueFamilyIndices = &_queue_family_index
         };
 
         VkBufferCreateInfo vertex_buffer_create_info{
@@ -188,7 +201,7 @@ namespace Vkxel {
             .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
             .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
             .queueFamilyIndexCount = 1,
-            .pQueueFamilyIndices = &queue_family
+            .pQueueFamilyIndices = &_queue_family_index
         };
 
         VkBufferCreateInfo constant_buffer_per_frame_create_info{
@@ -197,7 +210,7 @@ namespace Vkxel {
             .usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
             .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
             .queueFamilyIndexCount = 1,
-            .pQueueFamilyIndices = &queue_family
+            .pQueueFamilyIndices = &_queue_family_index
         };
 
         CHECK_RESULT_VK(vmaCreateBuffer(_vma_allocator, &index_buffer_create_info, &buffer_allocation_create_info, &_index_buffer, &_index_buffer_allocation, nullptr));
@@ -220,7 +233,7 @@ namespace Vkxel {
             .usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
             .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
             .queueFamilyIndexCount = 1,
-            .pQueueFamilyIndices = &queue_family,
+            .pQueueFamilyIndices = &_queue_family_index,
             .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED
         };
 
@@ -587,8 +600,6 @@ namespace Vkxel {
 
     void Renderer::Render() {
 
-        uint32_t queue_family = _device.get_queue_index(vkb::QueueType::graphics).value();
-
         // Create Constant Buffer Per Frame
         ConstantBufferPerFrame constant_buffer_per_frame{
             .ModelMatrix = glm::transpose(_model.transform.GetLocalToWorldMatrix()),
@@ -627,8 +638,8 @@ namespace Vkxel {
             .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
             .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
             .newLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
-            .srcQueueFamilyIndex = queue_family,
-            .dstQueueFamilyIndex = queue_family,
+            .srcQueueFamilyIndex = _queue_family_index,
+            .dstQueueFamilyIndex = _queue_family_index,
             .image = color_attachment_image,
             .subresourceRange = VkImageSubresourceRange{
                 .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
@@ -675,7 +686,7 @@ namespace Vkxel {
         };
 
         VkDeviceSize offset_zero = 0;
-        vkCmdBeginRendering(command_buffer, &rendering_info);
+        vkCmdBeginRendering(command_buffer, &rendering_info); // Camera Pass
         vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
         vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 0, 1, &_descriptor_set, 0, nullptr);
         vkCmdBindIndexBuffer(command_buffer, _index_buffer, offset_zero, VK_INDEX_TYPE_UINT32);
@@ -689,8 +700,8 @@ namespace Vkxel {
          .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
          .oldLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
          .newLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
-         .srcQueueFamilyIndex = queue_family,
-         .dstQueueFamilyIndex = queue_family,
+         .srcQueueFamilyIndex = _queue_family_index,
+         .dstQueueFamilyIndex = _queue_family_index,
          .image = color_attachment_image,
          .subresourceRange = VkImageSubresourceRange{
              .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
@@ -728,7 +739,7 @@ namespace Vkxel {
             .pStencilAttachment = nullptr
         };
 
-        vkCmdBeginRendering(command_buffer, &rendering_info_ui);
+        vkCmdBeginRendering(command_buffer, &rendering_info_ui); // UI Pass
         _gui.Render(command_buffer);
         vkCmdEndRendering(command_buffer);
 
@@ -738,8 +749,8 @@ namespace Vkxel {
             .dstAccessMask = 0,
             .oldLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
             .newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-            .srcQueueFamilyIndex = queue_family,
-            .dstQueueFamilyIndex = queue_family,
+            .srcQueueFamilyIndex = _queue_family_index,
+            .dstQueueFamilyIndex = _queue_family_index,
             .image = color_attachment_image,
             .subresourceRange = VkImageSubresourceRange{
                 .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,

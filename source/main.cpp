@@ -30,7 +30,7 @@ int main() {
         .SetMoveSpeed(Application::DefaultMoveSpeed)
         .SetRotateSpeed(Application::DefaultRotateSpeed);
 
-    GUI gui;
+    GUI gui(window);
 
     Renderer renderer(window, camera, gui);
 
@@ -42,6 +42,7 @@ int main() {
         Input::Update();
         Time::Update();
         camera_controller.Update();
+        gui.Update();
 
         renderer.Render();
 

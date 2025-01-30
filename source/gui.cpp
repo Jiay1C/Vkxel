@@ -2,36 +2,43 @@
 // Created by jiayi on 1/26/2025.
 //
 
-#include "renderer.h"
-#include "window.h"
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_vulkan.h"
+
 #include "gui.h"
+#include "window.h"
+#include "input.h"
 
 namespace Vkxel {
-    void GUI::Create(const Renderer& renderer) {
+
+    void GUI::OnGUI() {
+        ImGui::ShowDemoWindow();
+    }
+
+    void GUI::InitVK(const GUIInitInfo* pInfo) {
         IMGUI_CHECKVERSION();
         _context = ImGui::CreateContext();
         ImGui::SetCurrentContext(_context);
         ImGui::StyleColorsDark();
 
-        ImGui_ImplGlfw_InitForVulkan(renderer.GetWindow().GetWindow(), true);
+        ImGui_ImplGlfw_InitForVulkan(_window.GetWindow(), true);
 
         VkPipelineRenderingCreateInfo ui_rendering_create_info = {
             .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
             .colorAttachmentCount = 1,
-            .pColorAttachmentFormats = &(renderer._swapchain.image_format),
+            .pColorAttachmentFormats = &(pInfo->ColorAttachmentFormat),
         };
 
         ImGui_ImplVulkan_InitInfo imgui_init_info = {
-            .Instance = renderer._instance,
-            .PhysicalDevice = renderer._physical_device,
-            .Device = renderer._device,
-            .QueueFamily = renderer._device.get_queue_index(vkb::QueueType::graphics).value(),
-            .Queue = renderer._queue,
-            .DescriptorPool = renderer._descriptor_pool,
-            .MinImageCount = renderer._swapchain.requested_min_image_count,
-            .ImageCount = renderer._swapchain.image_count,
-            .MSAASamples = VK_SAMPLE_COUNT_1_BIT,
-            .DescriptorPoolSize = 0,
+            .Instance = pInfo->Instance,
+            .PhysicalDevice = pInfo->PhysicalDevice,
+            .Device = pInfo->Device,
+            .QueueFamily = pInfo->QueueFamily,
+            .Queue = pInfo->Queue,
+            .DescriptorPool = pInfo->DescriptorPool,
+            .MinImageCount = pInfo->MinImageCount,
+            .ImageCount = pInfo->ImageCount,
             .UseDynamicRendering = true,
             .PipelineRenderingCreateInfo = ui_rendering_create_info
         };
@@ -40,26 +47,33 @@ namespace Vkxel {
     }
 
 
-    void GUI::Render(VkCommandBuffer command_buffer) {
+    void GUI::Render(VkCommandBuffer commandBuffer) {
         ImGui::SetCurrentContext(_context);
+
         ImGui_ImplVulkan_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-        ImGui::ShowDemoWindow();
+
+        OnGUI();
+
         ImGui::Render();
         ImDrawData* draw_data = ImGui::GetDrawData();
-        ImGui_ImplVulkan_RenderDrawData(draw_data, command_buffer);
+        ImGui_ImplVulkan_RenderDrawData(draw_data, commandBuffer);
     }
 
+    void GUI::Update() {
+        if (Input::GetLastInputWindow() == _window.GetWindow()) {
+            const ImGuiIO & io = ImGui::GetIO();
+            Input::EnableKeyboardInput(!io.WantCaptureKeyboard);
+            Input::EnableMouseInput(!io.WantCaptureMouse);
+        }
+    }
 
-
-    void GUI::Destroy() {
+    void GUI::DestroyVK() {
         ImGui::SetCurrentContext(_context);
         ImGui_ImplVulkan_Shutdown();
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext(_context);
     }
-
-
 
 } // Vkxel

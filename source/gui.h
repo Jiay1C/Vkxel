@@ -7,23 +7,38 @@
 
 #include <cstdint>
 
+#include "vulkan/vulkan.h"
 #include "imgui.h"
-#include "imgui_impl_glfw.h"
-#include "imgui_impl_vulkan.h"
 
-#include "renderer.h"
+#include "window.h"
 
 namespace Vkxel {
-    class Renderer;
+    struct GUIInitInfo {
+        VkInstance                      Instance;
+        VkPhysicalDevice                PhysicalDevice;
+        VkDevice                        Device;
+        uint32_t                        QueueFamily;
+        VkQueue                         Queue;
+        VkDescriptorPool                DescriptorPool;
+        uint32_t                        MinImageCount;
+        uint32_t                        ImageCount;
+        VkFormat                        ColorAttachmentFormat;
+    };
+
     class GUI {
     public:
-        void Create(const Renderer& renderer);
-        void Render(VkCommandBuffer command_buffer);
-        void Destroy();
+        explicit GUI(Window& window) : _window(window) {}
+
+        void InitVK(const GUIInitInfo* pInfo);
+        void Render(VkCommandBuffer commandBuffer);
+        void Update();
+        void DestroyVK();
 
     private:
-        ImGuiContext* _context = nullptr;
+        void OnGUI();
 
+        Window& _window;
+        ImGuiContext* _context = nullptr;
     };
 
 } // Vkxel

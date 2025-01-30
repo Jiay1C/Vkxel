@@ -118,13 +118,21 @@ namespace Vkxel {
     class Input {
     public:
         friend class Window;
+
         Input()=delete;
         ~Input()=delete;
+
         static bool GetKey(KeyCode key);
         static bool GetKeyDown(KeyCode key);
         static bool GetKeyUp(KeyCode key);
+
+        static GLFWwindow* GetLastInputWindow();
+
         static glm::vec2 GetMousePosition();
         static glm::vec2 GetMouseScrollDelta();
+
+        static void EnableMouseInput(bool enable);
+        static void EnableKeyboardInput(bool enable);
 
         static void Update();
 
@@ -137,6 +145,9 @@ namespace Vkxel {
 
         const static std::unordered_map<int, KeyCode> _glfwKeyCodeMap;
 
+        static GLFWwindow* _last_input_window;
+        static bool _enable_mouse_input;
+        static bool _enable_keyboard_input;
         static std::unordered_set<KeyCode> _keySet;
         static std::unordered_set<KeyCode> _keyDownSet;
         static std::unordered_set<KeyCode> _keyUpSet;

@@ -39,11 +39,25 @@ namespace Vkxel {
         return _mouseScrollDelta;
     }
 
+    GLFWwindow *Input::GetLastInputWindow() {
+        return _last_input_window;
+    }
+
+
     void Input::Update() {
         _keyDownSet.clear();
         _keyUpSet.clear();
         glfwPollEvents();
     }
+
+    void Input::EnableKeyboardInput(const bool enable) {
+        _enable_keyboard_input = enable;
+    }
+
+    void Input::EnableMouseInput(const bool enable) {
+        _enable_mouse_input = enable;
+    }
+
 
     void Input::glfwBindWindow(GLFWwindow *glfwWindow) {
         glfwSetKeyCallback(glfwWindow, glfwKeyCallback);
@@ -52,7 +66,9 @@ namespace Vkxel {
         glfwSetScrollCallback(glfwWindow, glfwScrollCallback);
     }
 
-    void Input::glfwKeyCallback([[maybe_unused]] GLFWwindow *glfwWindow, int glfwKey, [[maybe_unused]] int glfwScanCode, int glfwAction, [[maybe_unused]] int glfwMods) {
+    void Input::glfwKeyCallback(GLFWwindow *glfwWindow, int glfwKey, [[maybe_unused]] int glfwScanCode, int glfwAction, [[maybe_unused]] int glfwMods) {
+        _last_input_window = glfwWindow;
+
         if (!_glfwKeyCodeMap.contains(glfwKey)) {
             return;
         }
@@ -63,13 +79,17 @@ namespace Vkxel {
             _keyUpSet.emplace(keyCode);
             _keySet.erase(keyCode);
         }
-        else if (glfwAction == GLFW_PRESS) {
+        else if (glfwAction == GLFW_PRESS && _enable_keyboard_input) {
             _keyDownSet.emplace(keyCode);
             _keySet.emplace(keyCode);
         }
+
+
     }
 
-    void Input::glfwMouseButtonCallback([[maybe_unused]] GLFWwindow *glfwWindow, int glfwButton, int glfwAction, [[maybe_unused]] int glfwMods) {
+    void Input::glfwMouseButtonCallback(GLFWwindow *glfwWindow, int glfwButton, int glfwAction, [[maybe_unused]] int glfwMods) {
+        _last_input_window = glfwWindow;
+
         if (!_glfwKeyCodeMap.contains(glfwButton)) {
             return;
         }
@@ -80,21 +100,28 @@ namespace Vkxel {
             _keyUpSet.emplace(keyCode);
             _keySet.erase(keyCode);
         }
-        else if (glfwAction == GLFW_PRESS) {
+        else if (glfwAction == GLFW_PRESS && _enable_mouse_input) {
             _keyDownSet.emplace(keyCode);
             _keySet.emplace(keyCode);
         }
+
     }
 
     void Input::glfwCursorPosCallback(GLFWwindow *glfwWindow, double glfwXPos, double glfwYPos) {
+        _last_input_window = glfwWindow;
+
         int width, height;
         glfwGetWindowSize(glfwWindow, &width, &height);
         _mousePosition = {glfwXPos / height, glfwYPos / height};
     }
 
 
-    void Input::glfwScrollCallback([[maybe_unused]] GLFWwindow *glfwWindow, double glfwXOffset, double glfwYOffset) {
-        _mouseScrollDelta = {glfwXOffset, glfwYOffset};
+    void Input::glfwScrollCallback(GLFWwindow *glfwWindow, double glfwXOffset, double glfwYOffset) {
+        _last_input_window = glfwWindow;
+
+        if (_enable_keyboard_input) {
+            _mouseScrollDelta = {glfwXOffset, glfwYOffset};
+        }
     }
 
     const std::unordered_map<int, KeyCode> Input::_glfwKeyCodeMap = {
@@ -197,7 +224,9 @@ namespace Vkxel {
         {GLFW_KEY_MENU,           KeyCode::KEY_MENU}
     };
 
-
+    GLFWwindow* Input::_last_input_window = nullptr;
+    bool Input::_enable_keyboard_input = true;
+    bool Input::_enable_mouse_input = true;
     std::unordered_set<KeyCode> Input::_keySet;
     std::unordered_set<KeyCode> Input::_keyDownSet;
     std::unordered_set<KeyCode> Input::_keyUpSet;
