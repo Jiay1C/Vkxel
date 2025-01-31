@@ -130,7 +130,7 @@ namespace Vkxel {
         CHECK_RESULT_VK(vmaCreateAllocator(&vma_allocator_create_info, &_vma_allocator));
 
         // Create GUI
-        GUIInitInfo gui_init_info{
+        GuiInitInfo gui_init_info{
             .Instance = _instance,
             .PhysicalDevice = _physical_device,
             .Device = _device,

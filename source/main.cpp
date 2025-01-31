@@ -1,3 +1,7 @@
+#include <format>
+
+#include "glm/glm.hpp"
+
 #include "application.h"
 #include "controller.h"
 #include "input.h"
@@ -7,6 +11,8 @@
 using namespace Vkxel;
 
 int main() {
+
+    uint32_t frame_count = 0;
 
     Window window = Window()
         .SetResolution(Application::DefaultResolution.first, Application::DefaultResolution.second)
@@ -31,6 +37,15 @@ int main() {
         .SetRotateSpeed(Application::DefaultRotateSpeed);
 
     GUI gui(window);
+    gui.AddStaticItem("Vkxel", [&]() {
+        ImGui::Text(std::format("Frame {0} ({1} ms)", frame_count, Time::RealDeltaSeconds() * 1000).data());
+        if (ImGui::CollapsingHeader("Camera")) {
+            const auto& position = camera.transform.position;
+            const auto& rotation = glm::eulerAngles(camera.transform.rotation);
+            ImGui::Text(std::format("Position: ({0}, {1}, {2}) ", position.x, position.y, position.z).data());
+            ImGui::Text(std::format("Rotation: ({0}, {1}, {2}) ", rotation.x, rotation.y, rotation.z).data());
+        }
+    });
 
     Renderer renderer(window, camera, gui);
 
@@ -49,6 +64,8 @@ int main() {
         if (Input::GetKey(KeyCode::KEY_ESCAPE)) {
             window.RequestClose();
         }
+
+        ++frame_count;
     }
     renderer.ReleaseResource();
     renderer.Destroy();
