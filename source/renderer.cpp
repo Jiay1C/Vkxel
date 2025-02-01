@@ -40,6 +40,8 @@ namespace Vkxel {
 
         // Create Window
         _surface = _window.CreateSurface(_instance);
+        _window.AddCallback(WindowEvent::Minimize, [&]() { _pause = true; });
+        _window.AddCallback(WindowEvent::Restore, [&]() { _pause = false; });
 
         // Select Physical Device
         VkPhysicalDeviceVulkan13Features physical_device_vulkan13_features{.synchronization2 = VK_TRUE,
@@ -533,6 +535,10 @@ namespace Vkxel {
 
 
     void Renderer::Render() {
+
+        if (_pause) {
+            return;
+        }
 
         // Create Constant Buffer Per Frame
         ConstantBufferPerFrame constant_buffer_per_frame{

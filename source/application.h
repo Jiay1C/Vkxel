@@ -22,7 +22,8 @@ namespace Vkxel {
         static constexpr std::string_view Name = "Vkxel";
         static constexpr std::uint32_t Version = 0;
         static constexpr uint32_t VulkanVersion = VK_API_VERSION_1_3;
-        static constexpr std::pair<uint32_t, uint32_t> DefaultResolution = {1280, 720};
+        static constexpr uint32_t BackgroundModeMaxFps = 10;
+        static constexpr std::pair<uint32_t, uint32_t> DefaultWindowSize = {1280, 720};
         static constexpr float DefaultFov = glm::radians(60.0f);
         static constexpr std::pair<float, float> DefaultClipPlane = {0.01f, 1000.0f};
         static constexpr VkPresentModeKHR DefaultPresentMode = VK_PRESENT_MODE_FIFO_KHR;

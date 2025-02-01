@@ -11,13 +11,19 @@
 namespace Vkxel {
     uint32_t Window::s_count = 0;
 
-    Window &Window::SetResolution(const uint32_t width, const uint32_t height) {
+    Window &Window::SetSize(const uint32_t width, const uint32_t height) {
         _width = width;
         _height = height;
         return *this;
     }
+
     Window &Window::SetTitle(const std::string_view title) {
         _title = title;
+        return *this;
+    }
+
+    Window &Window::AddCallback(const WindowEvent event, const WindowEventCallback &callback) {
+        _callbacks[event].push_back(callback);
         return *this;
     }
 
@@ -31,7 +37,14 @@ namespace Vkxel {
         _window = glfwCreateWindow(_width, _height, _title.data(), nullptr, nullptr);
         CHECK_NOTNULL(_window);
 
+        int framebuffer_width, framebuffer_height;
+        glfwGetFramebufferSize(_window, &framebuffer_width, &framebuffer_height);
+        _framebuffer_width = framebuffer_width;
+        _framebuffer_height = framebuffer_height;
+
         Input::glfwBindWindow(_window);
+
+        TriggerCallback(WindowEvent::Create);
     }
 
     void Window::Destroy() {
@@ -39,6 +52,8 @@ namespace Vkxel {
         if (--s_count == 0) {
             glfwTerminate();
         }
+
+        TriggerCallback(WindowEvent::Destroy);
     }
 
     VkSurfaceKHR Window::CreateSurface(const VkInstance instance) {
@@ -62,9 +77,45 @@ namespace Vkxel {
 
     uint32_t Window::GetHeight() const { return _height; }
 
+    uint32_t Window::GetFrameBufferWidth() const { return _framebuffer_width; }
+
+    uint32_t Window::GetFrameBufferHeight() const { return _framebuffer_height; }
+
+
     bool Window::ShouldClose() const { return glfwWindowShouldClose(_window); }
 
     void Window::RequestClose() const { glfwSetWindowShouldClose(_window, true); }
+
+    void Window::Update() {
+        int new_framebuffer_width, new_framebuffer_height, new_width, new_height;
+        glfwGetFramebufferSize(_window, &new_framebuffer_width, &new_framebuffer_height);
+        glfwGetWindowSize(_window, &new_width, &new_height);
+
+        bool minimized = (_framebuffer_width == 0 || _framebuffer_height == 0);
+        bool new_minimized = (new_framebuffer_width == 0 || new_framebuffer_height == 0);
+
+        if (minimized && !new_minimized) {
+            TriggerCallback(WindowEvent::Restore);
+        } else if (!minimized && new_minimized) {
+            TriggerCallback(WindowEvent::Minimize);
+        } else if (_width != new_width || _height != new_height || _framebuffer_width != new_framebuffer_width ||
+                   _framebuffer_height != new_framebuffer_height) {
+            TriggerCallback(WindowEvent::Resize);
+        }
+
+        _framebuffer_width = new_framebuffer_width;
+        _framebuffer_height = new_framebuffer_height;
+        _width = new_width;
+        _height = new_height;
+    }
+
+    void Window::TriggerCallback(const WindowEvent event) {
+        if (_callbacks.contains(event)) {
+            for (auto &callback: _callbacks.at(event)) {
+                callback();
+            }
+        }
+    }
 
 
 } // namespace Vkxel

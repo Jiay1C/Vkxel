@@ -39,6 +39,8 @@ namespace Vkxel {
         Camera &_camera;
         GUI &_gui;
 
+        bool _pause = false;
+
         // Device Related Handle
 
         vkb::Instance _instance;

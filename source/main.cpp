@@ -1,4 +1,6 @@
+#include <chrono>
 #include <format>
+#include <thread>
 
 #include "glm/glm.hpp"
 
@@ -13,17 +15,20 @@ using namespace Vkxel;
 int main() {
 
     uint32_t frame_count = 0;
+    bool background_mode = false;
 
-    Window window = Window().SetResolution(Application::DefaultResolution.first, Application::DefaultResolution.second)
-                            .SetTitle(Application::Name);
+    Window window = Window().SetSize(Application::DefaultWindowSize.first, Application::DefaultWindowSize.second)
+                            .SetTitle(Application::Name)
+                            .AddCallback(WindowEvent::Minimize, [&]() { background_mode = true; })
+                            .AddCallback(WindowEvent::Restore, [&]() { background_mode = false; });
     window.Create();
 
     Camera camera = {.transform = {.position = glm::vec3{0, 0, 1}, .rotation = glm::vec3{0, 0, 0}},
                      .projectionInfo = {.nearClipPlane = Application::DefaultClipPlane.first,
                                         .farClipPlane = Application::DefaultClipPlane.second,
                                         .fieldOfViewY = Application::DefaultFov,
-                                        .aspect = static_cast<float>(Application::DefaultResolution.first) /
-                                                  Application::DefaultResolution.second}};
+                                        .aspect = static_cast<float>(Application::DefaultWindowSize.first) /
+                                                  Application::DefaultWindowSize.second}};
 
     Controller camera_controller = Controller(camera.transform)
                                            .SetMoveSpeed(Application::DefaultMoveSpeed)
@@ -49,6 +54,7 @@ int main() {
     while (!window.ShouldClose()) {
         Input::Update();
         Time::Update();
+        window.Update();
         camera_controller.Update();
         gui.Update();
 
@@ -59,6 +65,11 @@ int main() {
         }
 
         ++frame_count;
+
+        if (background_mode) {
+            constexpr float background_mode_sleep_seconds = 1.0f / Application::BackgroundModeMaxFps;
+            std::this_thread::sleep_for(std::chrono::duration<float>(background_mode_sleep_seconds));
+        }
     }
     renderer.ReleaseResource();
     renderer.Destroy();
