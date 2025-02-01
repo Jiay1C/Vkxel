@@ -10,35 +10,35 @@
 
 namespace Vkxel {
 
-class Transform {
-public:
-    glm::vec3 position = glm::vec3{0, 0, 0};
-    glm::quat rotation = glm::vec3{0, 0, 0};
-    glm::vec3 scale = glm::vec3{1, 1, 1};
+    class Transform {
+    public:
+        glm::vec3 position = glm::vec3{0, 0, 0};
+        glm::quat rotation = glm::vec3{0, 0, 0};
+        glm::vec3 scale = glm::vec3{1, 1, 1};
 
-    void TranslateWorld(const glm::vec3& translation);
-    void TranslateSelf(const glm::vec3& translation);
-    void RotateWorld(const glm::quat& quaternion);
-    void RotateWorld(const glm::vec3& eulerAngel);
-    void RotateSelf(const glm::quat& quaternion);
-    void RotateSelf(const glm::vec3& eulerAngel);
-    void LookAt(const glm::vec3& point, const glm::vec3& up = {0, 1, 0});
+        void TranslateWorld(const glm::vec3 &translation);
+        void TranslateSelf(const glm::vec3 &translation);
+        void RotateWorld(const glm::quat &quaternion);
+        void RotateWorld(const glm::vec3 &eulerAngel);
+        void RotateSelf(const glm::quat &quaternion);
+        void RotateSelf(const glm::vec3 &eulerAngel);
+        void LookAt(const glm::vec3 &point, const glm::vec3 &up = {0, 1, 0});
 
-    glm::vec3 GetForwardVector() const;
-    glm::vec3 GetRightVector() const;
-    glm::vec3 GetUpVector() const;
+        glm::vec3 GetForwardVector() const;
+        glm::vec3 GetRightVector() const;
+        glm::vec3 GetUpVector() const;
 
-    glm::mat4 GetLocalToWorldMatrix() const;
-    glm::mat4 GetWorldToLocalMatrix() const;
+        glm::mat4 GetLocalToWorldMatrix() const;
+        glm::mat4 GetWorldToLocalMatrix() const;
 
-    const static glm::vec3 forward;
-    const static glm::vec3 back;
-    const static glm::vec3 up;
-    const static glm::vec3 down;
-    const static glm::vec3 right;
-    const static glm::vec3 left;
-};
+        const static glm::vec3 forward;
+        const static glm::vec3 back;
+        const static glm::vec3 up;
+        const static glm::vec3 down;
+        const static glm::vec3 right;
+        const static glm::vec3 left;
+    };
 
-} // Vkxel
+} // namespace Vkxel
 
-#endif //VKXEL_TRANSFORM_H
+#endif // VKXEL_TRANSFORM_H

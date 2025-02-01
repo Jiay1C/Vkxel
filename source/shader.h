@@ -7,38 +7,38 @@
 
 #include <cstdint>
 #include <string>
-#include <vector>
 #include <string_view>
+#include <vector>
 
-#include "vulkan/vulkan.h"
-#include "slang.h"
 #include "slang-com-ptr.h"
+#include "slang.h"
+#include "vulkan/vulkan.h"
 
 namespace Vkxel {
 
-class ShaderLoader {
-public:
-    static ShaderLoader& Instance();
+    class ShaderLoader {
+    public:
+        static ShaderLoader &Instance();
 
-    std::vector<uint8_t> LoadToBinary(std::string_view shader, bool force_compile = false);
-    VkShaderModule LoadToModule(VkDevice device, std::string_view shader, bool force_compile = false);
-    void ClearSpirvCache();
-    void SetResourceFolder(std::string_view resource_folder);
+        std::vector<uint8_t> LoadToBinary(std::string_view shader, bool force_compile = false);
+        VkShaderModule LoadToModule(VkDevice device, std::string_view shader, bool force_compile = false);
+        void ClearSpirvCache();
+        void SetResourceFolder(std::string_view resource_folder);
 
-private:
-    ShaderLoader();
+    private:
+        ShaderLoader();
 
-    std::vector<uint8_t> LoadSlang(std::string_view shader_file);
-    std::vector<uint8_t> LoadSpirv(std::string_view shader_file);
+        std::vector<uint8_t> LoadSlang(std::string_view shader_file);
+        std::vector<uint8_t> LoadSpirv(std::string_view shader_file);
 
-    const std::string _spirv_extension = ".spirv";
-    const std::string _slang_extension = ".slang";
-    std::string _shader_resource_folder = "./shader/";
+        const std::string _spirv_extension = ".spirv";
+        const std::string _slang_extension = ".slang";
+        std::string _shader_resource_folder = "./shader/";
 
-    Slang::ComPtr<slang::IGlobalSession> _slang_global_session;
-    Slang::ComPtr<slang::ISession> _slang_session;
-};
+        Slang::ComPtr<slang::IGlobalSession> _slang_global_session;
+        Slang::ComPtr<slang::ISession> _slang_session;
+    };
 
-} // Vkxel
+} // namespace Vkxel
 
-#endif //VKXEL_SHADER_H
+#endif // VKXEL_SHADER_H

@@ -4,19 +4,19 @@
 
 #include "vulkan/vulkan.h"
 
-#include "window.h"
-#include "input.h"
 #include "check.h"
+#include "input.h"
+#include "window.h"
 
 namespace Vkxel {
     uint32_t Window::s_count = 0;
 
-    Window& Window::SetResolution(const uint32_t width, const uint32_t height) {
+    Window &Window::SetResolution(const uint32_t width, const uint32_t height) {
         _width = width;
         _height = height;
         return *this;
     }
-    Window& Window::SetTitle(const std::string_view title) {
+    Window &Window::SetTitle(const std::string_view title) {
         _title = title;
         return *this;
     }
@@ -53,31 +53,18 @@ namespace Vkxel {
     }
 
 
-    GLFWwindow *Window::GetWindow() const {
-        return _window;
-    }
+    GLFWwindow *Window::GetWindow() const { return _window; }
 
 
-    VkSurfaceKHR Window::GetSurface() const {
-        return _surface;
-    }
+    VkSurfaceKHR Window::GetSurface() const { return _surface; }
 
-    uint32_t Window::GetWidth() const {
-        return _width;
-    }
+    uint32_t Window::GetWidth() const { return _width; }
 
-    uint32_t Window::GetHeight() const {
-        return _height;
-    }
+    uint32_t Window::GetHeight() const { return _height; }
 
-    bool Window::ShouldClose() const {
-        return glfwWindowShouldClose(_window);
-    }
+    bool Window::ShouldClose() const { return glfwWindowShouldClose(_window); }
 
-    void Window::RequestClose() const {
-        glfwSetWindowShouldClose(_window, true);
-    }
+    void Window::RequestClose() const { glfwSetWindowShouldClose(_window, true); }
 
 
-
-} // Vkxel
+} // namespace Vkxel

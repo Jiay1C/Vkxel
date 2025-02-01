@@ -14,36 +14,29 @@ int main() {
 
     uint32_t frame_count = 0;
 
-    Window window = Window()
-        .SetResolution(Application::DefaultResolution.first, Application::DefaultResolution.second)
-        .SetTitle(Application::Name);
+    Window window = Window().SetResolution(Application::DefaultResolution.first, Application::DefaultResolution.second)
+                            .SetTitle(Application::Name);
     window.Create();
 
-    Camera camera = {
-        .transform = {
-            .position = glm::vec3{0, 0, 1},
-            .rotation = glm::vec3{0, 0, 0}
-        },
-        .projectionInfo = {
-            .nearClipPlane = Application::DefaultClipPlane.first,
-            .farClipPlane = Application::DefaultClipPlane.second,
-            .fieldOfViewY = Application::DefaultFov,
-            .aspect = static_cast<float>(Application::DefaultResolution.first) / Application::DefaultResolution.second
-        }
-    };
+    Camera camera = {.transform = {.position = glm::vec3{0, 0, 1}, .rotation = glm::vec3{0, 0, 0}},
+                     .projectionInfo = {.nearClipPlane = Application::DefaultClipPlane.first,
+                                        .farClipPlane = Application::DefaultClipPlane.second,
+                                        .fieldOfViewY = Application::DefaultFov,
+                                        .aspect = static_cast<float>(Application::DefaultResolution.first) /
+                                                  Application::DefaultResolution.second}};
 
     Controller camera_controller = Controller(camera.transform)
-        .SetMoveSpeed(Application::DefaultMoveSpeed)
-        .SetRotateSpeed(Application::DefaultRotateSpeed);
+                                           .SetMoveSpeed(Application::DefaultMoveSpeed)
+                                           .SetRotateSpeed(Application::DefaultRotateSpeed);
 
     GUI gui(window);
     gui.AddStaticItem("Vkxel", [&]() {
         ImGui::Text(std::format("Frame {0} ({1} ms)", frame_count, Time::RealDeltaSeconds() * 1000).data());
         if (ImGui::CollapsingHeader("Camera")) {
-            const auto& position = camera.transform.position;
-            const auto& rotation = glm::eulerAngles(camera.transform.rotation);
-            ImGui::Text(std::format("Position: ({0}, {1}, {2}) ", position.x, position.y, position.z).data());
-            ImGui::Text(std::format("Rotation: ({0}, {1}, {2}) ", rotation.x, rotation.y, rotation.z).data());
+            auto position = camera.transform.position;
+            auto rotation = glm::degrees(glm::eulerAngles(camera.transform.rotation));
+            ImGui::InputFloat3("Position", reinterpret_cast<float *>(&position));
+            ImGui::InputFloat3("Rotation", reinterpret_cast<float *>(&rotation));
         }
     });
 

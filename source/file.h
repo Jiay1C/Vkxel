@@ -5,27 +5,27 @@
 #ifndef VKXEL_FILE_H
 #define VKXEL_FILE_H
 
+#include <cstdint>
 #include <string>
 #include <string_view>
 #include <vector>
-#include <cstdint>
 
 namespace Vkxel {
 
-class File {
-public:
-    File()=delete;
-    ~File()=delete;
+    class File {
+    public:
+        File() = delete;
+        ~File() = delete;
 
-    static bool Exist(std::string_view filePath);
+        static bool Exist(std::string_view filePath);
 
-    static std::string ReadTextFile(std::string_view filePath);
-    static std::vector<uint8_t> ReadBinaryFile(std::string_view filePath);
+        static std::string ReadTextFile(std::string_view filePath);
+        static std::vector<uint8_t> ReadBinaryFile(std::string_view filePath);
 
-    static void WriteTextFile(std::string_view filePath, std::string_view fileContent);
-    static void WriteBinaryFile(std::string_view filePath, const std::vector<uint8_t>& fileContent);
-};
+        static void WriteTextFile(std::string_view filePath, std::string_view fileContent);
+        static void WriteBinaryFile(std::string_view filePath, const std::vector<uint8_t> &fileContent);
+    };
 
-} // Vkxel
+} // namespace Vkxel
 
-#endif //VKXEL_FILE_H
+#endif // VKXEL_FILE_H

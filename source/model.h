@@ -19,15 +19,14 @@ namespace Vkxel {
 
     class ModelLibrary {
     public:
-        ModelLibrary()=delete;
-        ~ModelLibrary()=delete;
+        ModelLibrary() = delete;
+        ~ModelLibrary() = delete;
 
         static const Model Triangle;
 
         static const Model StanfordBunny;
-
     };
 
-} // Vkxel
+} // namespace Vkxel
 
-#endif //VKXEL_MODEL_H
+#endif // VKXEL_MODEL_H

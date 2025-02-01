@@ -8,16 +8,16 @@
 #include "vtime.h"
 
 namespace Vkxel {
-     Controller::Controller(Transform &transform) : _transform(transform) {  }
+    Controller::Controller(Transform &transform) : _transform(transform) {}
 
-    Controller& Controller::SetMoveSpeed(const float speed) {
+    Controller &Controller::SetMoveSpeed(const float speed) {
         _move_speed = speed;
-         return *this;
+        return *this;
     }
 
-    Controller& Controller::SetRotateSpeed(const float speed) {
+    Controller &Controller::SetRotateSpeed(const float speed) {
         _rotate_speed = speed;
-         return *this;
+        return *this;
     }
 
     void Controller::Update() {
@@ -63,4 +63,4 @@ namespace Vkxel {
         }
     }
 
-} // Vkxel
+} // namespace Vkxel

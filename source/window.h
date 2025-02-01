@@ -9,43 +9,43 @@
 #include <string>
 #include <string_view>
 
-#include "Vulkan/vulkan.h"
 #include "GLFW/glfw3.h"
+#include "Vulkan/vulkan.h"
 
 namespace Vkxel {
 
-class Window {
-public:
-    Window& SetResolution(uint32_t width, uint32_t height);
-    Window& SetTitle(std::string_view title);
+    class Window {
+    public:
+        Window &SetResolution(uint32_t width, uint32_t height);
+        Window &SetTitle(std::string_view title);
 
-    void Create();
-    void Destroy();
+        void Create();
+        void Destroy();
 
-    VkSurfaceKHR CreateSurface(VkInstance instance);
-    void DestroySurface();
+        VkSurfaceKHR CreateSurface(VkInstance instance);
+        void DestroySurface();
 
-    GLFWwindow* GetWindow() const;
-    VkSurfaceKHR GetSurface() const;
+        GLFWwindow *GetWindow() const;
+        VkSurfaceKHR GetSurface() const;
 
-    uint32_t GetWidth() const;
-    uint32_t GetHeight() const;
+        uint32_t GetWidth() const;
+        uint32_t GetHeight() const;
 
-    bool ShouldClose() const;
-    void RequestClose() const;
+        bool ShouldClose() const;
+        void RequestClose() const;
 
-private:
-    static uint32_t s_count;
+    private:
+        static uint32_t s_count;
 
-    uint32_t _width = 0;
-    uint32_t _height = 0;
-    std::string _title;
+        uint32_t _width = 0;
+        uint32_t _height = 0;
+        std::string _title;
 
-    VkInstance _instance = nullptr;
-    VkSurfaceKHR _surface = nullptr;
-    GLFWwindow* _window = nullptr;
-};
+        VkInstance _instance = nullptr;
+        VkSurfaceKHR _surface = nullptr;
+        GLFWwindow *_window = nullptr;
+    };
 
-} // Vkxel
+} // namespace Vkxel
 
-#endif //VKXEL_WINDOW_H
+#endif // VKXEL_WINDOW_H

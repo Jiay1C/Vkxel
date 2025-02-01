@@ -13,32 +13,20 @@
 namespace Vkxel {
 
     // Translate in world space
-    void Transform::TranslateWorld(const glm::vec3& translation) {
-        position += translation;
-    }
+    void Transform::TranslateWorld(const glm::vec3 &translation) { position += translation; }
 
     // Translate relative to the object's local space
-    void Transform::TranslateSelf(const glm::vec3& translation) {
-        position += rotation * translation;
-    }
+    void Transform::TranslateSelf(const glm::vec3 &translation) { position += rotation * translation; }
 
     // Rotate in world space
-    void Transform::RotateWorld(const glm::vec3& eulerAngel) {
-        rotation = glm::quat(eulerAngel) * rotation;
-    }
+    void Transform::RotateWorld(const glm::vec3 &eulerAngel) { rotation = glm::quat(eulerAngel) * rotation; }
 
-    void Transform::RotateWorld(const glm::quat &quaternion) {
-        rotation = quaternion * rotation;
-    }
+    void Transform::RotateWorld(const glm::quat &quaternion) { rotation = quaternion * rotation; }
 
     // Rotate relative to the object's local space
-    void Transform::RotateSelf(const glm::vec3& eulerAngel) {
-        rotation *= glm::quat(eulerAngel);
-    }
+    void Transform::RotateSelf(const glm::vec3 &eulerAngel) { rotation *= glm::quat(eulerAngel); }
 
-    void Transform::RotateSelf(const glm::quat &quaternion) {
-        rotation *= quaternion;
-    }
+    void Transform::RotateSelf(const glm::quat &quaternion) { rotation *= quaternion; }
 
     void Transform::LookAt(const glm::vec3 &point, const glm::vec3 &upDirection) {
         glm::vec3 direction = normalize((point - position));
@@ -47,19 +35,13 @@ namespace Vkxel {
 
 
     // Get the forward vector of the transform
-    glm::vec3 Transform::GetForwardVector() const {
-        return rotation * glm::vec3(0.0f, 0.0f, -1.0f);
-    }
+    glm::vec3 Transform::GetForwardVector() const { return rotation * glm::vec3(0.0f, 0.0f, -1.0f); }
 
     // Get the right vector of the transform
-    glm::vec3 Transform::GetRightVector() const {
-        return rotation * glm::vec3(1.0f, 0.0f, 0.0f);
-    }
+    glm::vec3 Transform::GetRightVector() const { return rotation * glm::vec3(1.0f, 0.0f, 0.0f); }
 
     // Get the up vector of the transform
-    glm::vec3 Transform::GetUpVector() const {
-        return rotation * glm::vec3(0.0f, 1.0f, 0.0f);
-    }
+    glm::vec3 Transform::GetUpVector() const { return rotation * glm::vec3(0.0f, 1.0f, 0.0f); }
 
     // Get the local-to-world transformation matrix
     glm::mat4 Transform::GetLocalToWorldMatrix() const {
@@ -70,9 +52,7 @@ namespace Vkxel {
     }
 
     // Get the world-to-local transformation matrix
-    glm::mat4 Transform::GetWorldToLocalMatrix() const {
-        return glm::inverse(GetLocalToWorldMatrix());
-    }
+    glm::mat4 Transform::GetWorldToLocalMatrix() const { return glm::inverse(GetLocalToWorldMatrix()); }
 
     constexpr glm::vec3 Transform::forward = {0, 0, -1};
     constexpr glm::vec3 Transform::back = {0, 0, 1};
@@ -82,4 +62,4 @@ namespace Vkxel {
     constexpr glm::vec3 Transform::left = {-1, 0, 0};
 
 
-} // Vkxel
+} // namespace Vkxel

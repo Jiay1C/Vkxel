@@ -21,6 +21,6 @@ namespace Vkxel {
         glm::vec3 color;
     };
 
-} // Vkxel
+} // namespace Vkxel
 
-#endif //VKXEL_BUFFER_H
+#endif // VKXEL_BUFFER_H

@@ -5,8 +5,8 @@
 #ifndef VKXEL_INPUT_H
 #define VKXEL_INPUT_H
 
-#include <unordered_set>
 #include <unordered_map>
+#include <unordered_set>
 
 #include "GLFW/glfw3.h"
 #include "glm/glm.hpp"
@@ -119,14 +119,14 @@ namespace Vkxel {
     public:
         friend class Window;
 
-        Input()=delete;
-        ~Input()=delete;
+        Input() = delete;
+        ~Input() = delete;
 
         static bool GetKey(KeyCode key);
         static bool GetKeyDown(KeyCode key);
         static bool GetKeyUp(KeyCode key);
 
-        static GLFWwindow* GetLastInputWindow();
+        static GLFWwindow *GetLastInputWindow();
 
         static glm::vec2 GetMousePosition();
         static glm::vec2 GetMouseScrollDelta();
@@ -138,14 +138,15 @@ namespace Vkxel {
 
     private:
         static void glfwBindWindow(GLFWwindow *glfwWindow);
-        static void glfwKeyCallback(GLFWwindow *glfwWindow, int glfwKey, int glfwScanCode, int glfwAction, int glfwMods);
-        static void glfwMouseButtonCallback(GLFWwindow* glfwWindow, int glfwButton, int glfwAction, int glfwMods);
-        static void glfwScrollCallback(GLFWwindow* glfwWindow, double glfwXOffset, double glfwYOffset);
-        static void glfwCursorPosCallback(GLFWwindow* glfwWindow, double glfwXPos, double glfwYPos);
+        static void glfwKeyCallback(GLFWwindow *glfwWindow, int glfwKey, int glfwScanCode, int glfwAction,
+                                    int glfwMods);
+        static void glfwMouseButtonCallback(GLFWwindow *glfwWindow, int glfwButton, int glfwAction, int glfwMods);
+        static void glfwScrollCallback(GLFWwindow *glfwWindow, double glfwXOffset, double glfwYOffset);
+        static void glfwCursorPosCallback(GLFWwindow *glfwWindow, double glfwXPos, double glfwYPos);
 
         const static std::unordered_map<int, KeyCode> _glfwKeyCodeMap;
 
-        static GLFWwindow* _last_input_window;
+        static GLFWwindow *_last_input_window;
         static bool _enable_mouse_input;
         static bool _enable_keyboard_input;
         static std::unordered_set<KeyCode> _keySet;
@@ -155,6 +156,6 @@ namespace Vkxel {
         static glm::vec2 _mouseScrollDelta;
     };
 
-} // Vkxel
+} // namespace Vkxel
 
-#endif //VKXEL_INPUT_H
+#endif // VKXEL_INPUT_H

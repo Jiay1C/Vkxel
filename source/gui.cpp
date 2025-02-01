@@ -7,19 +7,19 @@
 #include "imgui_impl_vulkan.h"
 
 #include "gui.h"
-#include "window.h"
 #include "input.h"
+#include "window.h"
 
 namespace Vkxel {
 
     void GUI::OnGUI() {
         ImGui::ShowDemoWindow();
 
-        for (auto& [gui_window, gui_item]: _gui_window) {
+        for (auto &[gui_window, gui_item]: _gui_window) {
             ImGui::Begin(gui_window.data());
 
             // Static Items
-            for (auto& item: gui_item.StaticItem) {
+            for (auto &item: gui_item.StaticItem) {
                 item();
             }
 
@@ -33,7 +33,7 @@ namespace Vkxel {
         }
     }
 
-    void GUI::InitVK(const GuiInitInfo* pInfo) {
+    void GUI::InitVK(const GuiInitInfo *pInfo) {
         IMGUI_CHECKVERSION();
 
         _context = ImGui::CreateContext();
@@ -43,22 +43,20 @@ namespace Vkxel {
 
         ImGui_ImplGlfw_InitForVulkan(_window.GetWindow(), true);
 
-        ImGui_ImplVulkan_InitInfo imgui_init_info = {
-            .Instance = pInfo->Instance,
-            .PhysicalDevice = pInfo->PhysicalDevice,
-            .Device = pInfo->Device,
-            .QueueFamily = pInfo->QueueFamily,
-            .Queue = pInfo->Queue,
-            .DescriptorPool = pInfo->DescriptorPool,
-            .MinImageCount = pInfo->MinImageCount,
-            .ImageCount = pInfo->ImageCount,
-            .UseDynamicRendering = true,
-            .PipelineRenderingCreateInfo = VkPipelineRenderingCreateInfo{
-                .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
-                .colorAttachmentCount = 1,
-                .pColorAttachmentFormats = &(pInfo->ColorAttachmentFormat),
-            }
-        };
+        ImGui_ImplVulkan_InitInfo imgui_init_info = {.Instance = pInfo->Instance,
+                                                     .PhysicalDevice = pInfo->PhysicalDevice,
+                                                     .Device = pInfo->Device,
+                                                     .QueueFamily = pInfo->QueueFamily,
+                                                     .Queue = pInfo->Queue,
+                                                     .DescriptorPool = pInfo->DescriptorPool,
+                                                     .MinImageCount = pInfo->MinImageCount,
+                                                     .ImageCount = pInfo->ImageCount,
+                                                     .UseDynamicRendering = true,
+                                                     .PipelineRenderingCreateInfo = VkPipelineRenderingCreateInfo{
+                                                             .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+                                                             .colorAttachmentCount = 1,
+                                                             .pColorAttachmentFormats = &(pInfo->ColorAttachmentFormat),
+                                                     }};
 
         ImGui_ImplVulkan_Init(&imgui_init_info);
 
@@ -76,7 +74,7 @@ namespace Vkxel {
         OnGUI();
 
         ImGui::Render();
-        ImDrawData* draw_data = ImGui::GetDrawData();
+        ImDrawData *draw_data = ImGui::GetDrawData();
         ImGui_ImplVulkan_RenderDrawData(draw_data, commandBuffer);
 
         RestoreContext();
@@ -85,7 +83,7 @@ namespace Vkxel {
     void GUI::Update() {
         if (Input::GetLastInputWindow() == _window.GetWindow()) {
             ImGui::SetCurrentContext(_context);
-            const ImGuiIO & io = ImGui::GetIO();
+            const ImGuiIO &io = ImGui::GetIO();
             Input::EnableKeyboardInput(!io.WantCaptureKeyboard);
             Input::EnableMouseInput(!io.WantCaptureMouse);
         }
@@ -112,10 +110,7 @@ namespace Vkxel {
         ImGui::SetCurrentContext(_context);
     }
 
-    void GUI::RestoreContext() {
-        ImGui::SetCurrentContext(_last_context);
-    }
+    void GUI::RestoreContext() { ImGui::SetCurrentContext(_last_context); }
 
 
-
-} // Vkxel
+} // namespace Vkxel

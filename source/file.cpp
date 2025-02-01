@@ -2,14 +2,14 @@
 // Created by jiayi on 1/20/2025.
 //
 
+#include <cstdint>
 #include <fstream>
 #include <string>
 #include <string_view>
 #include <vector>
-#include <cstdint>
 
-#include "file.h"
 #include "check.h"
+#include "file.h"
 
 namespace Vkxel {
     bool File::Exist(std::string_view filePath) {
@@ -43,7 +43,7 @@ namespace Vkxel {
         file.seekg(0, std::ios_base::beg);
 
         std::vector<uint8_t> buffer(fileSize);
-        file.read(reinterpret_cast<char*>(buffer.data()), fileSize);
+        file.read(reinterpret_cast<char *>(buffer.data()), fileSize);
         file.close();
 
         return buffer;
@@ -57,11 +57,11 @@ namespace Vkxel {
         file.close();
     }
 
-    void File::WriteBinaryFile(std::string_view filePath, const std::vector<uint8_t>& fileContent) {
+    void File::WriteBinaryFile(std::string_view filePath, const std::vector<uint8_t> &fileContent) {
         std::ofstream file(filePath.data(), std::ios::out | std::ios::trunc | std::ios::binary);
         CHECK_NOTNULL_MSG(file.good(), "Unable To Write Binary File " << filePath);
 
-        file.write(reinterpret_cast<const char*>(fileContent.data()), fileContent.size());
+        file.write(reinterpret_cast<const char *>(fileContent.data()), fileContent.size());
         file.close();
     }
-} // Vkxel
+} // namespace Vkxel

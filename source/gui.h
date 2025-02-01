@@ -6,14 +6,14 @@
 #define VKXEL_GUI_H
 
 #include <cstdint>
-#include <vector>
-#include <queue>
-#include <unordered_map>
 #include <functional>
+#include <queue>
 #include <string>
+#include <unordered_map>
+#include <vector>
 
-#include "vulkan/vulkan.h"
 #include "imgui.h"
+#include "vulkan/vulkan.h"
 
 #include "window.h"
 
@@ -22,28 +22,28 @@ namespace Vkxel {
     using GuiItem = std::function<void(void)>;
 
     struct GuiInitInfo {
-        VkInstance                      Instance;
-        VkPhysicalDevice                PhysicalDevice;
-        VkDevice                        Device;
-        uint32_t                        QueueFamily;
-        VkQueue                         Queue;
-        VkDescriptorPool                DescriptorPool;
-        uint32_t                        MinImageCount;
-        uint32_t                        ImageCount;
-        VkFormat                        ColorAttachmentFormat;
+        VkInstance Instance;
+        VkPhysicalDevice PhysicalDevice;
+        VkDevice Device;
+        uint32_t QueueFamily;
+        VkQueue Queue;
+        VkDescriptorPool DescriptorPool;
+        uint32_t MinImageCount;
+        uint32_t ImageCount;
+        VkFormat ColorAttachmentFormat;
     };
 
     class GUI {
     public:
-        explicit GUI(Window& window) : _window(window) {}
+        explicit GUI(Window &window) : _window(window) {}
 
-        void InitVK(const GuiInitInfo* pInfo);
+        void InitVK(const GuiInitInfo *pInfo);
         void Render(VkCommandBuffer commandBuffer);
         void Update();
         void DestroyVK();
 
-        void AddStaticItem(const std::string& guiWindow, const GuiItem& item);
-        void AddDynamicItem(const std::string& guiWindow, const GuiItem& item);
+        void AddStaticItem(const std::string &guiWindow, const GuiItem &item);
+        void AddDynamicItem(const std::string &guiWindow, const GuiItem &item);
 
     private:
         void OnGUI();
@@ -57,12 +57,12 @@ namespace Vkxel {
 
         std::unordered_map<std::string, GuiWindow> _gui_window;
 
-        Window& _window;
+        Window &_window;
 
-        ImGuiContext* _context = nullptr;
-        ImGuiContext* _last_context = nullptr;
+        ImGuiContext *_context = nullptr;
+        ImGuiContext *_last_context = nullptr;
     };
 
-} // Vkxel
+} // namespace Vkxel
 
-#endif //VKXEL_GUI_H
+#endif // VKXEL_GUI_H

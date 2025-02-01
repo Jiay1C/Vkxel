@@ -3,19 +3,19 @@
 //
 
 #include <array>
-#include <vector>
+#include <filesystem>
 #include <string>
 #include <string_view>
-#include <filesystem>
 #include <utility>
+#include <vector>
 
-#include "slang.h"
-#include "slang-com-ptr.h"
 #include "slang-com-helper.h"
+#include "slang-com-ptr.h"
+#include "slang.h"
 
-#include "shader.h"
 #include "check.h"
 #include "file.h"
+#include "shader.h"
 
 namespace Vkxel {
     ShaderLoader &ShaderLoader::Instance() {
@@ -36,15 +36,10 @@ namespace Vkxel {
         sessionDesc.targetCount = 1;
 
         std::array options = {
-            slang::CompilerOptionEntry{
-                slang::CompilerOptionName::VulkanUseEntryPointName,
-                {slang::CompilerOptionValueKind::Int, 1, 0, nullptr, nullptr}
-            },
-            slang::CompilerOptionEntry{
-                slang::CompilerOptionName::GenerateWholeProgram,
-                {slang::CompilerOptionValueKind::Int, 1, 0, nullptr, nullptr}
-            }
-        };
+                slang::CompilerOptionEntry{slang::CompilerOptionName::VulkanUseEntryPointName,
+                                           {slang::CompilerOptionValueKind::Int, 1, 0, nullptr, nullptr}},
+                slang::CompilerOptionEntry{slang::CompilerOptionName::GenerateWholeProgram,
+                                           {slang::CompilerOptionValueKind::Int, 1, 0, nullptr, nullptr}}};
         sessionDesc.compilerOptionEntries = options.data();
         sessionDesc.compilerOptionEntryCount = static_cast<uint32_t>(options.size());
 
@@ -72,10 +67,9 @@ namespace Vkxel {
     VkShaderModule ShaderLoader::LoadToModule(VkDevice device, std::string_view shader, bool force_compile) {
         std::vector<uint8_t> shader_code = LoadToBinary(shader, force_compile);
         VkShaderModuleCreateInfo shader_module_create_info{
-            .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-            .codeSize = shader_code.size(),
-            .pCode = reinterpret_cast<const uint32_t *>(shader_code.data())
-        };
+                .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+                .codeSize = shader_code.size(),
+                .pCode = reinterpret_cast<const uint32_t *>(shader_code.data())};
         VkShaderModule shader_module;
         CHECK_RESULT_VK(vkCreateShaderModule(device, &shader_module_create_info, nullptr, &shader_module));
         return shader_module;
@@ -83,7 +77,7 @@ namespace Vkxel {
 
 
     void ShaderLoader::ClearSpirvCache() {
-        for (const auto& entry : std::filesystem::directory_iterator(_shader_resource_folder)) {
+        for (const auto &entry: std::filesystem::directory_iterator(_shader_resource_folder)) {
             if (entry.is_regular_file() && entry.path().extension() == _spirv_extension) {
                 std::filesystem::remove(entry.path());
             }
@@ -101,7 +95,8 @@ namespace Vkxel {
         {
             Slang::ComPtr<slang::IBlob> diagnosticBlob;
             module = _slang_session->loadModule(shader_file.data(), diagnosticBlob.writeRef());
-            CHECK_NOTNULL_MSG(!diagnosticBlob.get(), static_cast<const char*>(diagnosticBlob.get()->getBufferPointer()));
+            CHECK_NOTNULL_MSG(!diagnosticBlob.get(),
+                              static_cast<const char *>(diagnosticBlob.get()->getBufferPointer()));
             CHECK_NOTNULL(module);
         }
 
@@ -109,24 +104,23 @@ namespace Vkxel {
         {
             Slang::ComPtr<slang::IBlob> diagnosticBlob;
             module->link(linkedProgram.writeRef(), diagnosticBlob.writeRef());
-            CHECK_NOTNULL_MSG(!diagnosticBlob.get(), static_cast<const char*>(diagnosticBlob.get()->getBufferPointer()));
+            CHECK_NOTNULL_MSG(!diagnosticBlob.get(),
+                              static_cast<const char *>(diagnosticBlob.get()->getBufferPointer()));
             CHECK_NOTNULL(linkedProgram);
         }
 
         Slang::ComPtr<slang::IBlob> code;
         {
             Slang::ComPtr<slang::IBlob> diagnosticsBlob;
-            SlangResult result = linkedProgram->getTargetCode(
-                0,
-                code.writeRef(),
-                diagnosticsBlob.writeRef());
-            CHECK_NOTNULL_MSG(!diagnosticsBlob.get(), static_cast<const char*>(diagnosticsBlob.get()->getBufferPointer()));
+            SlangResult result = linkedProgram->getTargetCode(0, code.writeRef(), diagnosticsBlob.writeRef());
+            CHECK_NOTNULL_MSG(!diagnosticsBlob.get(),
+                              static_cast<const char *>(diagnosticsBlob.get()->getBufferPointer()));
             CHECK_NOTNULL(!result);
         }
 
         CHECK_NOTNULL(code->getBufferSize());
         std::vector<uint8_t> spirv(code->getBufferSize());
-        std::copy_n(static_cast<const uint8_t*>(code->getBufferPointer()), code->getBufferSize(), spirv.data());
+        std::copy_n(static_cast<const uint8_t *>(code->getBufferPointer()), code->getBufferSize(), spirv.data());
         return spirv;
     }
 
@@ -134,4 +128,4 @@ namespace Vkxel {
         return File::ReadBinaryFile(shader_file);
     }
 
-} // Vkxel
+} // namespace Vkxel
