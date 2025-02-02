@@ -2,8 +2,8 @@
 // Created by jiayi on 1/25/2025.
 //
 
-#ifndef VKXEL_BUFFER_H
-#define VKXEL_BUFFER_H
+#ifndef VKXEL_TYPE_H
+#define VKXEL_TYPE_H
 
 #include "glm/glm.hpp"
 
@@ -23,4 +23,4 @@ namespace Vkxel {
 
 } // namespace Vkxel
 
-#endif // VKXEL_BUFFER_H
+#endif // VKXEL_TYPE_H

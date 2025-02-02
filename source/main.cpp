@@ -38,6 +38,9 @@ int main() {
     GUI gui(window);
     gui.AddStaticItem("Vkxel", [&]() {
         ImGui::Text(std::format("Frame {0} ({1} ms)", frame_count, Time::RealDeltaSeconds() * 1000).data());
+        ImGui::Text(std::format("Size ({0}, {1})", window.GetWidth(), window.GetHeight()).data());
+        ImGui::Text(std::format("Resolution ({0}, {1})", window.GetFrameBufferWidth(), window.GetFrameBufferHeight())
+                            .data());
         if (ImGui::CollapsingHeader("Camera")) {
             auto position = camera.transform.position;
             auto rotation = glm::degrees(glm::eulerAngles(camera.transform.rotation));

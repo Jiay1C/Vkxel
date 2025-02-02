@@ -12,6 +12,8 @@
 #include "camera.h"
 #include "gui.h"
 #include "model.h"
+#include "vkutil/buffer.h"
+#include "vkutil/image.h"
 #include "window.h"
 
 namespace Vkxel {
@@ -71,22 +73,27 @@ namespace Vkxel {
         VkPipelineLayout _pipeline_layout = nullptr;
         VkPipeline _pipeline = nullptr;
 
-        VkBuffer _staging_buffer = nullptr;
-        VmaAllocation _staging_buffer_allocation = nullptr;
+        VkUtil::Buffer _staging_buffer = {};
         std::byte *_staging_buffer_pointer = nullptr;
 
-        VkBuffer _vertex_buffer = nullptr;
-        VmaAllocation _vertex_buffer_allocation = nullptr;
+        VkUtil::Buffer _index_buffer = {};
+        VkUtil::Buffer _vertex_buffer = {};
+        VkUtil::Buffer _constant_buffer_per_frame = {};
 
-        VkBuffer _index_buffer = nullptr;
-        VmaAllocation _index_buffer_allocation = nullptr;
+        // VkBuffer _staging_buffer = nullptr;
+        // VmaAllocation _staging_buffer_allocation = nullptr;
+        // std::byte *_staging_buffer_pointer = nullptr;
+        //
+        // VkBuffer _vertex_buffer = nullptr;
+        // VmaAllocation _vertex_buffer_allocation = nullptr;
+        //
+        // VkBuffer _index_buffer = nullptr;
+        // VmaAllocation _index_buffer_allocation = nullptr;
+        //
+        // VkBuffer _constant_buffer_per_frame = nullptr;
+        // VmaAllocation _constant_buffer_per_frame_allocation = nullptr;
 
-        VkBuffer _constant_buffer_per_frame = nullptr;
-        VmaAllocation _constant_buffer_per_frame_allocation = nullptr;
-
-        VkImage _depth_image = nullptr;
-        VkImageView _depth_image_view = nullptr;
-        VmaAllocation _depth_image_allocation = nullptr;
+        VkUtil::Image _depth_image = {};
 
         VkSemaphore _image_ready_semaphore = nullptr;
         VkSemaphore _render_complete_semaphore = nullptr;

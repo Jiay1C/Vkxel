@@ -4,8 +4,8 @@
 
 #include <array>
 
-#include "buffer.h"
 #include "model.h"
+#include "type.h"
 
 
 namespace Vkxel {

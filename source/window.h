@@ -6,15 +6,14 @@
 #define VKXEL_WINDOW_H
 
 #include <cstdint>
-#include <functional>
 #include <string>
 #include <string_view>
 #include <unordered_map>
-#include <vector>
 
 #include "GLFW/glfw3.h"
-#include "Vulkan/vulkan.h"
-#include "delegate.h"
+#include "vulkan/vulkan.h"
+
+#include "delegate.hpp"
 
 namespace Vkxel {
 

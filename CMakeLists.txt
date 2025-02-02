@@ -4,7 +4,7 @@ project(Vkxel)
 # Ensure the compiler is MSVC
 if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     message(FATAL_ERROR "${PROJECT_NAME} requires the MSVC toolchain. Current toolchain is ${CMAKE_CXX_COMPILER_ID}")
-endif()
+endif ()
 
 # Set C++ Standard to 20
 set(CMAKE_CXX_STANDARD LANGUAGES CXX)
@@ -87,37 +87,43 @@ set(IMGUI_SOURCE_FILES
         ${EXTERNAL_PATH}/${IMGUI_PATH}/backends/imgui_impl_glfw.cpp
 )
 
+set(SOURCE_PATH "source")
+
 # Set the source files
 set(SOURCES
         ${VMA_USAGE_FILES}
         ${IMGUI_SOURCE_FILES}
-        source/main.cpp
-        source/window.cpp
-        source/window.h
-        source/check.h
-        source/renderer.cpp
-        source/renderer.h
-        source/application.h
-        source/shader.cpp
-        source/shader.h
-        source/file.cpp
-        source/file.h
-        source/model.cpp
-        source/model.h
-        source/camera.cpp
-        source/camera.h
-        source/transform.cpp
-        source/transform.h
-        source/buffer.h
-        source/input.cpp
-        source/input.h
-        source/controller.cpp
-        source/controller.h
-        source/vtime.cpp
-        source/vtime.h
-        source/gui.cpp
-        source/gui.h
-        source/delegate.h
+        ${SOURCE_PATH}/main.cpp
+        ${SOURCE_PATH}/window.cpp
+        ${SOURCE_PATH}/window.h
+        ${SOURCE_PATH}/check.h
+        ${SOURCE_PATH}/renderer.cpp
+        ${SOURCE_PATH}/renderer.h
+        ${SOURCE_PATH}/application.h
+        ${SOURCE_PATH}/shader.cpp
+        ${SOURCE_PATH}/shader.h
+        ${SOURCE_PATH}/file.cpp
+        ${SOURCE_PATH}/file.h
+        ${SOURCE_PATH}/model.cpp
+        ${SOURCE_PATH}/model.h
+        ${SOURCE_PATH}/camera.cpp
+        ${SOURCE_PATH}/camera.h
+        ${SOURCE_PATH}/transform.cpp
+        ${SOURCE_PATH}/transform.h
+        ${SOURCE_PATH}/type.h
+        ${SOURCE_PATH}/input.cpp
+        ${SOURCE_PATH}/input.h
+        ${SOURCE_PATH}/controller.cpp
+        ${SOURCE_PATH}/controller.h
+        ${SOURCE_PATH}/vtime.cpp
+        ${SOURCE_PATH}/vtime.h
+        ${SOURCE_PATH}/gui.cpp
+        ${SOURCE_PATH}/gui.h
+        ${SOURCE_PATH}/delegate.hpp
+        ${SOURCE_PATH}/vkutil/image.cpp
+        ${SOURCE_PATH}/vkutil/image.h
+        ${SOURCE_PATH}/vkutil/buffer.cpp
+        ${SOURCE_PATH}/vkutil/buffer.h
 )
 
 # Define the executable
@@ -127,7 +133,7 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 include_directories(
         ${Vulkan_INCLUDE_DIR}
         ${IMGUI_INCLUDE_DIR}
-        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/${SOURCE_PATH}
 )
 
 # Link libraries
