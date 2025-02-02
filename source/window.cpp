@@ -33,7 +33,6 @@ namespace Vkxel {
         }
 
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
         _window = glfwCreateWindow(_width, _height, _title.data(), nullptr, nullptr);
         CHECK_NOTNULL(_window);
 
@@ -77,6 +76,8 @@ namespace Vkxel {
 
     uint32_t Window::GetHeight() const { return _height; }
 
+    float Window::GetAspect() const { return static_cast<float>(_width) / static_cast<float>(_height); }
+
     uint32_t Window::GetFrameBufferWidth() const { return _framebuffer_width; }
 
     uint32_t Window::GetFrameBufferHeight() const { return _framebuffer_height; }
@@ -87,26 +88,32 @@ namespace Vkxel {
     void Window::RequestClose() const { glfwSetWindowShouldClose(_window, true); }
 
     void Window::Update() {
-        int new_framebuffer_width, new_framebuffer_height, new_width, new_height;
-        glfwGetFramebufferSize(_window, &new_framebuffer_width, &new_framebuffer_height);
-        glfwGetWindowSize(_window, &new_width, &new_height);
+        uint32_t previous_framebuffer_width = _framebuffer_width;
+        uint32_t previous_framebuffer_height = _framebuffer_height;
+        uint32_t previous_width = _width;
+        uint32_t previous_height = _height;
 
+        int framebuffer_width, framebuffer_height, width, height;
+        glfwGetFramebufferSize(_window, &framebuffer_width, &framebuffer_height);
+        glfwGetWindowSize(_window, &width, &height);
+        _framebuffer_width = static_cast<uint32_t>(framebuffer_width);
+        _framebuffer_height = static_cast<uint32_t>(framebuffer_height);
+        _width = static_cast<uint32_t>(width);
+        _height = static_cast<uint32_t>(height);
+
+
+        bool previous_minimized = (previous_framebuffer_width == 0 || previous_framebuffer_height == 0);
         bool minimized = (_framebuffer_width == 0 || _framebuffer_height == 0);
-        bool new_minimized = (new_framebuffer_width == 0 || new_framebuffer_height == 0);
 
-        if (minimized && !new_minimized) {
+        if (previous_minimized && !minimized) {
             TriggerCallback(WindowEvent::Restore);
-        } else if (!minimized && new_minimized) {
+        } else if (!previous_minimized && minimized) {
             TriggerCallback(WindowEvent::Minimize);
-        } else if (_width != new_width || _height != new_height || _framebuffer_width != new_framebuffer_width ||
-                   _framebuffer_height != new_framebuffer_height) {
+        } else if (_width != previous_width || _height != previous_height ||
+                   _framebuffer_width != previous_framebuffer_width ||
+                   _framebuffer_height != previous_framebuffer_height) {
             TriggerCallback(WindowEvent::Resize);
         }
-
-        _framebuffer_width = new_framebuffer_width;
-        _framebuffer_height = new_framebuffer_height;
-        _width = new_width;
-        _height = new_height;
     }
 
     void Window::TriggerCallback(const WindowEvent event) {

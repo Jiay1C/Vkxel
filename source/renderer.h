@@ -31,6 +31,8 @@ namespace Vkxel {
 
         void Render();
 
+        void Resize();
+
         Window &GetWindow() const;
         Camera &GetCamera() const;
 

@@ -27,8 +27,9 @@ int main() {
                      .projectionInfo = {.nearClipPlane = Application::DefaultClipPlane.first,
                                         .farClipPlane = Application::DefaultClipPlane.second,
                                         .fieldOfViewY = Application::DefaultFov,
-                                        .aspect = static_cast<float>(Application::DefaultWindowSize.first) /
-                                                  Application::DefaultWindowSize.second}};
+                                        .aspect = window.GetAspect()}};
+
+    window.AddCallback(WindowEvent::Resize, [&]() { camera.projectionInfo.aspect = window.GetAspect(); });
 
     Controller camera_controller = Controller(camera.transform)
                                            .SetMoveSpeed(Application::DefaultMoveSpeed)

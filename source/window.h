@@ -46,6 +46,7 @@ namespace Vkxel {
 
         uint32_t GetWidth() const;
         uint32_t GetHeight() const;
+        float GetAspect() const;
 
         uint32_t GetFrameBufferWidth() const;
         uint32_t GetFrameBufferHeight() const;

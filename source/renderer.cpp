@@ -42,6 +42,7 @@ namespace Vkxel {
         _surface = _window.CreateSurface(_instance);
         _window.AddCallback(WindowEvent::Minimize, [&]() { _pause = true; });
         _window.AddCallback(WindowEvent::Restore, [&]() { _pause = false; });
+        _window.AddCallback(WindowEvent::Resize, [&]() { Resize(); });
 
         // Select Physical Device
         VkPhysicalDeviceVulkan13Features physical_device_vulkan13_features{.synchronization2 = VK_TRUE,
@@ -340,19 +341,11 @@ namespace Vkxel {
                 .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
                 .primitiveRestartEnable = VK_FALSE};
 
-        VkViewport viewport{.x = 0.0f,
-                            .y = 1.0f,
-                            .width = static_cast<float>(_swapchain.extent.width),
-                            .height = static_cast<float>(_swapchain.extent.height),
-                            .minDepth = 0.0f,
-                            .maxDepth = 1.0f};
-        VkRect2D scissor{.offset = VkOffset2D{0, 0}, .extent = _swapchain.extent};
         VkPipelineViewportStateCreateInfo viewport_state_create_info{
                 .sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
                 .viewportCount = 1,
-                .pViewports = &viewport,
                 .scissorCount = 1,
-                .pScissors = &scissor};
+        };
 
         VkPipelineRasterizationStateCreateInfo rasterization_state_create_info{
                 .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
@@ -408,10 +401,12 @@ namespace Vkxel {
                 .blendConstants = {0.0f, 0.0f, 0.0f, 0.0f}};
 
 
+        std::array dynamic_state = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+
         VkPipelineDynamicStateCreateInfo dynamic_state_create_info{
                 .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
-                .dynamicStateCount = 0,
-                .pDynamicStates = nullptr};
+                .dynamicStateCount = static_cast<uint32_t>(dynamic_state.size()),
+                .pDynamicStates = dynamic_state.data()};
 
         VkPipelineRenderingCreateInfo pipeline_rendering_create_info{
                 .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
@@ -566,6 +561,17 @@ namespace Vkxel {
                                                            .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT};
 
         CHECK_RESULT_VK(vkBeginCommandBuffer(command_buffer, &command_buffer_begin_info));
+
+        VkViewport viewport{.x = 0.0f,
+                            .y = 1.0f,
+                            .width = static_cast<float>(_swapchain.extent.width),
+                            .height = static_cast<float>(_swapchain.extent.height),
+                            .minDepth = 0.0f,
+                            .maxDepth = 1.0f};
+        VkRect2D scissor{.offset = VkOffset2D{0, 0}, .extent = _swapchain.extent};
+
+        vkCmdSetViewport(command_buffer, 0, 1, &viewport);
+        vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 
         vkCmdUpdateBuffer(command_buffer, _constant_buffer_per_frame, 0, sizeof(ConstantBufferPerFrame),
                           &constant_buffer_per_frame);
@@ -723,6 +729,70 @@ namespace Vkxel {
 
         vkFreeCommandBuffers(_device, _command_pool, 1, &command_buffer);
     }
+
+    void Renderer::Resize() {
+        vkDeviceWaitIdle(_device);
+
+        for (VkImageView image_view: _swapchain_image_view) {
+            vkDestroyImageView(_device, image_view, nullptr);
+        }
+
+        vkb::SwapchainBuilder swapchain_builder(_device);
+        auto swapchain_result = swapchain_builder.set_old_swapchain(_swapchain)
+                                        .set_desired_present_mode(Application::DefaultPresentMode)
+                                        .build();
+        CHECK_NOTNULL_MSG(swapchain_result, swapchain_result.error().message());
+        vkb::destroy_swapchain(_swapchain);
+        _swapchain = swapchain_result.value();
+
+        auto swapchain_image_result = _swapchain.get_images();
+        CHECK_NOTNULL_MSG(swapchain_image_result, swapchain_image_result.error().message());
+        _swapchain_image = std::move(swapchain_image_result.value());
+        auto swapchain_image_view_result = _swapchain.get_image_views();
+        CHECK_NOTNULL_MSG(swapchain_image_view_result, swapchain_image_view_result.error().message());
+        _swapchain_image_view = std::move(swapchain_image_view_result.value());
+
+
+        vkDestroyImageView(_device, _depth_image_view, nullptr);
+        vmaDestroyImage(_vma_allocator, _depth_image, _depth_image_allocation);
+
+        VkImageCreateInfo depth_image_create_info{
+                .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+                .imageType = VK_IMAGE_TYPE_2D,
+                .format = VK_FORMAT_D32_SFLOAT,
+                .extent = VkExtent3D{.width = _swapchain.extent.width, .height = _swapchain.extent.height, .depth = 1},
+                .mipLevels = 1,
+                .arrayLayers = 1,
+                .samples = VK_SAMPLE_COUNT_1_BIT,
+                .tiling = VK_IMAGE_TILING_OPTIMAL,
+                .usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+                .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+                .queueFamilyIndexCount = 1,
+                .pQueueFamilyIndices = &_queue_family_index,
+                .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED};
+
+        VmaAllocationCreateInfo depth_image_allocation_create_info{
+                .usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
+        };
+        CHECK_RESULT_VK(vmaCreateImage(_vma_allocator, &depth_image_create_info, &depth_image_allocation_create_info,
+                                       &_depth_image, &_depth_image_allocation, nullptr));
+
+        VkImageViewCreateInfo depth_image_view_create_info{.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+                                                           .image = _depth_image,
+                                                           .viewType = VK_IMAGE_VIEW_TYPE_2D,
+                                                           .format = VK_FORMAT_D32_SFLOAT,
+                                                           .components = {.r = VK_COMPONENT_SWIZZLE_IDENTITY,
+                                                                          .g = VK_COMPONENT_SWIZZLE_IDENTITY,
+                                                                          .b = VK_COMPONENT_SWIZZLE_IDENTITY,
+                                                                          .a = VK_COMPONENT_SWIZZLE_IDENTITY},
+                                                           .subresourceRange = {.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
+                                                                                .baseMipLevel = 0,
+                                                                                .levelCount = 1,
+                                                                                .baseArrayLayer = 0,
+                                                                                .layerCount = 1}};
+        CHECK_RESULT_VK(vkCreateImageView(_device, &depth_image_view_create_info, nullptr, &_depth_image_view));
+    }
+
 
     Camera &Renderer::GetCamera() const { return _camera; }
 
