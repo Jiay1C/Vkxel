@@ -14,6 +14,7 @@
 
 #include "GLFW/glfw3.h"
 #include "Vulkan/vulkan.h"
+#include "delegate.h"
 
 namespace Vkxel {
 
@@ -25,13 +26,14 @@ namespace Vkxel {
         Destroy,
     };
 
-    using WindowEventCallback = std::function<void(void)>;
 
     class Window {
     public:
+        using WindowEventDelegate = Delegate<>;
+
         Window &SetSize(uint32_t width, uint32_t height);
         Window &SetTitle(std::string_view title);
-        Window &AddCallback(WindowEvent event, const WindowEventCallback &callback);
+        Window &AddCallback(WindowEvent event, const WindowEventDelegate::Callback &callback);
 
         void Create();
         void Destroy();
@@ -70,7 +72,7 @@ namespace Vkxel {
         VkSurfaceKHR _surface = nullptr;
         GLFWwindow *_window = nullptr;
 
-        std::unordered_map<WindowEvent, std::vector<WindowEventCallback>> _callbacks;
+        std::unordered_map<WindowEvent, WindowEventDelegate> _callbacks;
     };
 
 } // namespace Vkxel

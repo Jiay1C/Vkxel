@@ -117,6 +117,7 @@ set(SOURCES
         source/vtime.h
         source/gui.cpp
         source/gui.h
+        source/delegate.h
 )
 
 # Define the executable

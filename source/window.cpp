@@ -22,8 +22,8 @@ namespace Vkxel {
         return *this;
     }
 
-    Window &Window::AddCallback(const WindowEvent event, const WindowEventCallback &callback) {
-        _callbacks[event].push_back(callback);
+    Window &Window::AddCallback(const WindowEvent event, const WindowEventDelegate::Callback &callback) {
+        _callbacks[event] += callback;
         return *this;
     }
 
@@ -111,11 +111,8 @@ namespace Vkxel {
 
     void Window::TriggerCallback(const WindowEvent event) {
         if (_callbacks.contains(event)) {
-            for (auto &callback: _callbacks.at(event)) {
-                callback();
-            }
+            _callbacks.at(event)();
         }
     }
-
 
 } // namespace Vkxel
