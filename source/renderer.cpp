@@ -70,6 +70,7 @@ namespace Vkxel {
         // Create Swapchain
         vkb::SwapchainBuilder swapchain_builder(_device);
         auto swapchain_result = swapchain_builder.set_old_swapchain(_swapchain)
+                                        .set_image_usage_flags(VK_IMAGE_USAGE_TRANSFER_DST_BIT)
                                         .set_desired_present_mode(Application::DefaultPresentMode)
                                         .build();
         CHECK_NOTNULL_MSG(swapchain_result, swapchain_result.error().message());
@@ -78,9 +79,6 @@ namespace Vkxel {
         auto swapchain_image_result = _swapchain.get_images();
         CHECK_NOTNULL_MSG(swapchain_image_result, swapchain_image_result.error().message());
         _swapchain_image = std::move(swapchain_image_result.value());
-        auto swapchain_image_view_result = _swapchain.get_image_views();
-        CHECK_NOTNULL_MSG(swapchain_image_view_result, swapchain_image_view_result.error().message());
-        _swapchain_image_view = std::move(swapchain_image_view_result.value());
 
         // Get Queue
         auto queue_result = _device.get_queue(vkb::QueueType::graphics);
@@ -135,7 +133,7 @@ namespace Vkxel {
                                   .DescriptorPool = _descriptor_pool,
                                   .MinImageCount = _swapchain.requested_min_image_count,
                                   .ImageCount = _swapchain.image_count,
-                                  .ColorAttachmentFormat = _swapchain.image_format};
+                                  .ColorAttachmentFormat = Application::DefaultFramebufferFormat};
 
         _gui.InitVK(&gui_init_info);
     }
@@ -144,10 +142,6 @@ namespace Vkxel {
         vkDeviceWaitIdle(_device);
 
         _gui.DestroyVK();
-
-        for (VkImageView image_view: _swapchain_image_view) {
-            vkDestroyImageView(_device, image_view, nullptr);
-        }
 
         vkDestroyDescriptorPool(_device, _descriptor_pool, nullptr);
         vkDestroyCommandPool(_device, _command_pool, nullptr);
@@ -202,9 +196,30 @@ namespace Vkxel {
                                .SetUsage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
                                .SetPQueueFamilyIndices(&_queue_family_index)
                                .SetMemoryUsage(VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE)
+                               .SetViewSubresourceRange({.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
+                                                         .baseMipLevel = 0,
+                                                         .levelCount = 1,
+                                                         .baseArrayLayer = 0,
+                                                         .layerCount = 1})
                                .CreateImageView()
                                .Build();
         _depth_image.Create();
+
+        _color_image = VkUtil::ImageBuilder(_device, _vma_allocator)
+                               .SetImageType(VK_IMAGE_TYPE_2D)
+                               .SetFormat(Application::DefaultFramebufferFormat)
+                               .SetExtent({_swapchain.extent.width, _swapchain.extent.height, 1})
+                               .SetUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
+                               .SetPQueueFamilyIndices(&_queue_family_index)
+                               .SetMemoryUsage(VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE)
+                               .SetViewSubresourceRange({.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                                                         .baseMipLevel = 0,
+                                                         .levelCount = 1,
+                                                         .baseArrayLayer = 0,
+                                                         .layerCount = 1})
+                               .CreateImageView()
+                               .Build();
+        _color_image.Create();
 
         std::array descriptor_set_layout_binding = {
                 VkDescriptorSetLayoutBinding{.binding = 0,
@@ -368,8 +383,8 @@ namespace Vkxel {
         VkPipelineRenderingCreateInfo pipeline_rendering_create_info{
                 .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
                 .colorAttachmentCount = 1,
-                .pColorAttachmentFormats = &_swapchain.image_format,
-                .depthAttachmentFormat = VK_FORMAT_D32_SFLOAT};
+                .pColorAttachmentFormats = &_color_image.imageCreateInfo.format,
+                .depthAttachmentFormat = _depth_image.imageCreateInfo.format};
 
         VkGraphicsPipelineCreateInfo graphics_pipeline_create_info{
                 .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
@@ -420,6 +435,7 @@ namespace Vkxel {
         vkDestroyDescriptorSetLayout(_device, _descriptor_set_layout, nullptr);
 
         _depth_image.Destroy();
+        _color_image.Destroy();
 
         _constant_buffer_per_frame.Destroy();
         _vertex_buffer.Destroy();
@@ -500,8 +516,7 @@ namespace Vkxel {
         CHECK_RESULT_VK(vkAcquireNextImageKHR(_device, _swapchain, std::numeric_limits<uint64_t>::max(),
                                               _image_ready_semaphore, nullptr, &image_index));
 
-        VkImage color_attachment_image = _swapchain_image.at(image_index);
-        VkImageView color_attachment_image_view = _swapchain_image_view.at(image_index);
+        VkImage present_image = _swapchain_image.at(image_index);
 
         VkCommandBufferAllocateInfo command_buffer_allocate_info{.sType =
                                                                          VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
@@ -528,35 +543,19 @@ namespace Vkxel {
         vkCmdSetViewport(command_buffer, 0, 1, &viewport);
         vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 
+
+        // Update Constant Buffer
         vkCmdUpdateBuffer(command_buffer, _constant_buffer_per_frame.buffer, 0, sizeof(ConstantBufferPerFrame),
                           &constant_buffer_per_frame);
 
-        VkImageMemoryBarrier2 color_attachment_barrier_color_pass{
-                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-                .srcStageMask = VK_PIPELINE_STAGE_2_NONE,
-                .srcAccessMask = VK_ACCESS_2_NONE,
-                .dstStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-                .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-                .newLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
-                .srcQueueFamilyIndex = _queue_family_index,
-                .dstQueueFamilyIndex = _queue_family_index,
-                .image = color_attachment_image,
-                .subresourceRange = VkImageSubresourceRange{.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                                                            .baseMipLevel = 0,
-                                                            .levelCount = 1,
-                                                            .baseArrayLayer = 0,
-                                                            .layerCount = 1}};
+        _color_image.CmdBarrier(command_buffer, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT, VK_ACCESS_2_NONE,
+                                VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
-        VkDependencyInfo dependency_info_color_pass{.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-                                                    .dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT,
-                                                    .imageMemoryBarrierCount = 1,
-                                                    .pImageMemoryBarriers = &color_attachment_barrier_color_pass};
 
-        vkCmdPipelineBarrier2(command_buffer, &dependency_info_color_pass);
-
+        // Color Pass
         VkRenderingAttachmentInfo color_attachment_info{.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-                                                        .imageView = color_attachment_image_view,
+                                                        .imageView = _color_image.imageView,
                                                         .imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
                                                         .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
                                                         .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
@@ -587,32 +586,12 @@ namespace Vkxel {
         vkCmdDrawIndexed(command_buffer, static_cast<uint32_t>(_model.index.size()), 1, 0, 0, 0);
         vkCmdEndRendering(command_buffer);
 
-        VkImageMemoryBarrier2 image_memory_barrier_ui_pass{
-                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-                .srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-                .dstStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-                .oldLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
-                .newLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
-                .srcQueueFamilyIndex = _queue_family_index,
-                .dstQueueFamilyIndex = _queue_family_index,
-                .image = color_attachment_image,
-                .subresourceRange = VkImageSubresourceRange{.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                                                            .baseMipLevel = 0,
-                                                            .levelCount = 1,
-                                                            .baseArrayLayer = 0,
-                                                            .layerCount = 1}};
-
-        VkDependencyInfo dependency_info_ui_pass{.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-                                                 .dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT,
-                                                 .imageMemoryBarrierCount = 1,
-                                                 .pImageMemoryBarriers = &image_memory_barrier_ui_pass};
-
-        vkCmdPipelineBarrier2(command_buffer, &dependency_info_ui_pass);
+        _color_image.CmdBarrier(command_buffer, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT);
 
         VkRenderingAttachmentInfo color_attachment_info_ui{.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-                                                           .imageView = color_attachment_image_view,
+                                                           .imageView = _color_image.imageView,
                                                            .imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
                                                            .loadOp = VK_ATTACHMENT_LOAD_OP_LOAD,
                                                            .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
@@ -630,29 +609,80 @@ namespace Vkxel {
         _gui.Render(command_buffer);
         vkCmdEndRendering(command_buffer);
 
-        VkImageMemoryBarrier2 image_memory_barrier_present{
+        _color_image.CmdBarrier(command_buffer, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_BLIT_BIT,
+                                VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+
+        VkImageMemoryBarrier2 present_image_memory_barrier{
                 .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
                 .srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
                 .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-                .dstStageMask = VK_PIPELINE_STAGE_2_NONE,
-                .dstAccessMask = VK_ACCESS_2_NONE,
-                .oldLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
-                .newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                .dstStageMask = VK_PIPELINE_STAGE_2_BLIT_BIT,
+                .dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+                .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+                .newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                 .srcQueueFamilyIndex = _queue_family_index,
                 .dstQueueFamilyIndex = _queue_family_index,
-                .image = color_attachment_image,
+                .image = present_image,
                 .subresourceRange = VkImageSubresourceRange{.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
                                                             .baseMipLevel = 0,
                                                             .levelCount = 1,
                                                             .baseArrayLayer = 0,
                                                             .layerCount = 1}};
 
+        VkDependencyInfo dependency_info{.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+                                         .dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT,
+                                         .imageMemoryBarrierCount = 1,
+                                         .pImageMemoryBarriers = &present_image_memory_barrier};
+
+        vkCmdPipelineBarrier2(command_buffer, &dependency_info);
+
+        // Perform Blit Operation
+        VkImageBlit2 blit_region{
+                .sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2,
+
+                .srcSubresource = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                                   .mipLevel = 0,
+                                   .baseArrayLayer = 0,
+                                   .layerCount = 1},
+                .srcOffsets = {{0, 0, 0},
+                               {static_cast<int32_t>(_swapchain.extent.width),
+                                static_cast<int32_t>(_swapchain.extent.height), 1}},
+
+                .dstSubresource = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                                   .mipLevel = 0,
+                                   .baseArrayLayer = 0,
+                                   .layerCount = 1},
+                .dstOffsets = {{0, 0, 0},
+                               {static_cast<int32_t>(_swapchain.extent.width),
+                                static_cast<int32_t>(_swapchain.extent.height), 1}},
+        };
+
+        VkBlitImageInfo2 blit_info{.sType = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2,
+                                   .srcImage = _color_image.image,
+                                   .srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                                   .dstImage = present_image,
+                                   .dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                   .regionCount = 1,
+                                   .pRegions = &blit_region,
+                                   .filter = VK_FILTER_LINEAR};
+
+        vkCmdBlitImage2(command_buffer, &blit_info);
+
+        present_image_memory_barrier.srcStageMask = VK_PIPELINE_STAGE_2_BLIT_BIT;
+        present_image_memory_barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        present_image_memory_barrier.dstStageMask = VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT;
+        present_image_memory_barrier.dstAccessMask = VK_ACCESS_NONE_KHR;
+        present_image_memory_barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        present_image_memory_barrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
         VkDependencyInfo dependency_info_present{.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
                                                  .dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT,
                                                  .imageMemoryBarrierCount = 1,
-                                                 .pImageMemoryBarriers = &image_memory_barrier_present};
+                                                 .pImageMemoryBarriers = &present_image_memory_barrier};
 
         vkCmdPipelineBarrier2(command_buffer, &dependency_info_present);
+
 
         CHECK_RESULT_VK(vkEndCommandBuffer(command_buffer));
 
@@ -688,10 +718,6 @@ namespace Vkxel {
     void Renderer::Resize() {
         vkDeviceWaitIdle(_device);
 
-        for (VkImageView image_view: _swapchain_image_view) {
-            vkDestroyImageView(_device, image_view, nullptr);
-        }
-
         vkb::SwapchainBuilder swapchain_builder(_device);
         auto swapchain_result = swapchain_builder.set_old_swapchain(_swapchain)
                                         .set_desired_present_mode(Application::DefaultPresentMode)
@@ -703,9 +729,6 @@ namespace Vkxel {
         auto swapchain_image_result = _swapchain.get_images();
         CHECK_NOTNULL_MSG(swapchain_image_result, swapchain_image_result.error().message());
         _swapchain_image = std::move(swapchain_image_result.value());
-        auto swapchain_image_view_result = _swapchain.get_image_views();
-        CHECK_NOTNULL_MSG(swapchain_image_view_result, swapchain_image_view_result.error().message());
-        _swapchain_image_view = std::move(swapchain_image_view_result.value());
 
 
         _depth_image.Destroy();
@@ -713,6 +736,12 @@ namespace Vkxel {
                                .SetExtent({_swapchain.extent.width, _swapchain.extent.height, 1})
                                .Build();
         _depth_image.Create();
+
+        _color_image.Destroy();
+        _color_image = VkUtil::ImageBuilder(_color_image)
+                               .SetExtent({_swapchain.extent.width, _swapchain.extent.height, 1})
+                               .Build();
+        _color_image.Create();
     }
 
 

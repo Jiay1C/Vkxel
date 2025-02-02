@@ -22,6 +22,14 @@ namespace Vkxel::VkUtil {
 
         void Create();
         void Destroy();
+
+        std::byte *Map();
+        void Unmap();
+        void Flush(VkDeviceSize offset = 0, VkDeviceSize size = VK_WHOLE_SIZE);
+
+        void CmdBarrier(VkCommandBuffer commandBuffer, VkPipelineStageFlags2 srcStageMask, VkAccessFlags2 srcAccessMask,
+                        VkPipelineStageFlags2 dstStageMask, VkAccessFlags2 dstAccessMask,
+                        VkImageLayout newLayout = VK_IMAGE_LAYOUT_UNDEFINED);
     };
 
     class ImageBuilder {
@@ -112,7 +120,7 @@ namespace Vkxel::VkUtil {
                                                                .g = VK_COMPONENT_SWIZZLE_IDENTITY,
                                                                .b = VK_COMPONENT_SWIZZLE_IDENTITY,
                                                                .a = VK_COMPONENT_SWIZZLE_IDENTITY},
-                                                .subresourceRange = {.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
+                                                .subresourceRange = {.aspectMask = VK_IMAGE_ASPECT_NONE,
                                                                      .baseMipLevel = 0,
                                                                      .levelCount = 1,
                                                                      .baseArrayLayer = 0,

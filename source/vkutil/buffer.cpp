@@ -39,6 +39,29 @@ namespace Vkxel::VkUtil {
         CHECK_RESULT_VK(vmaFlushAllocation(allocator, allocation, offset, size));
     }
 
+    void Buffer::CmdBarrier(VkCommandBuffer commandBuffer, VkPipelineStageFlags2 srcStageMask,
+                            VkAccessFlags2 srcAccessMask, VkPipelineStageFlags2 dstStageMask,
+                            VkAccessFlags2 dstAccessMask, VkDeviceSize offset, VkDeviceSize size) {
+        VkBufferMemoryBarrier2 buffer_memory_barrier{
+                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+                .srcStageMask = srcStageMask,
+                .srcAccessMask = srcAccessMask,
+                .dstStageMask = dstStageMask,
+                .dstAccessMask = dstAccessMask,
+                .srcQueueFamilyIndex = bufferCreateInfo.pQueueFamilyIndices[0], // TODO: Support Queue Family Transfer
+                .dstQueueFamilyIndex = bufferCreateInfo.pQueueFamilyIndices[0],
+                .buffer = buffer,
+                .offset = offset,
+                .size = size};
+
+        VkDependencyInfo dependency_info{.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+                                         .dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT,
+                                         .bufferMemoryBarrierCount = 1,
+                                         .pBufferMemoryBarriers = &buffer_memory_barrier};
+
+        vkCmdPipelineBarrier2(commandBuffer, &dependency_info);
+    }
+
 
     Buffer BufferBuilder::Build() const {
         Buffer buffer = {.device = _device,

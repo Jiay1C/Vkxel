@@ -28,6 +28,47 @@ namespace Vkxel::VkUtil {
         vmaDestroyImage(allocator, image, allocation);
     }
 
+    std::byte *Image::Map() {
+        std::byte *memory;
+        CHECK_RESULT_VK(vmaMapMemory(allocator, allocation, reinterpret_cast<void **>(&memory)));
+        return memory;
+    }
+
+    void Image::Unmap() { vmaUnmapMemory(allocator, allocation); }
+
+    void Image::Flush(const VkDeviceSize offset, const VkDeviceSize size) {
+        CHECK_RESULT_VK(vmaFlushAllocation(allocator, allocation, offset, size));
+    }
+
+    void Image::CmdBarrier(VkCommandBuffer commandBuffer, VkPipelineStageFlags2 srcStageMask,
+                           VkAccessFlags2 srcAccessMask, VkPipelineStageFlags2 dstStageMask,
+                           VkAccessFlags2 dstAccessMask, VkImageLayout newLayout) {
+        CHECK_NOTNULL_MSG(imageView, "Currently CmdBarrier Only Support Image With ImageView");
+
+        VkImageMemoryBarrier2 image_memory_barrier{
+                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+                .srcStageMask = srcStageMask,
+                .srcAccessMask = srcAccessMask,
+                .dstStageMask = dstStageMask,
+                .dstAccessMask = dstAccessMask,
+                .oldLayout = imageCreateInfo.initialLayout,
+                .newLayout = newLayout == VK_IMAGE_LAYOUT_UNDEFINED ? imageCreateInfo.initialLayout : newLayout,
+                .srcQueueFamilyIndex = imageCreateInfo.pQueueFamilyIndices[0], // TODO: Support Queue Family Transfer
+                .dstQueueFamilyIndex = imageCreateInfo.pQueueFamilyIndices[0],
+                .image = image,
+                .subresourceRange = imageViewCreateInfo.subresourceRange};
+
+        VkDependencyInfo dependency_info{.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+                                         .dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT,
+                                         .imageMemoryBarrierCount = 1,
+                                         .pImageMemoryBarriers = &image_memory_barrier};
+
+        vkCmdPipelineBarrier2(commandBuffer, &dependency_info);
+
+        imageCreateInfo.initialLayout = newLayout; // TODO: More Precise Layout Update
+    }
+
+
     Image ImageBuilder::Build() const {
         Image image = {.device = _device,
                        .allocator = _allocator,

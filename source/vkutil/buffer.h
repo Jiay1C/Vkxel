@@ -28,6 +28,10 @@ namespace Vkxel::VkUtil {
         std::byte *Map();
         void Unmap();
         void Flush(VkDeviceSize offset = 0, VkDeviceSize size = VK_WHOLE_SIZE);
+
+        void CmdBarrier(VkCommandBuffer commandBuffer, VkPipelineStageFlags2 srcStageMask, VkAccessFlags2 srcAccessMask,
+                        VkPipelineStageFlags2 dstStageMask, VkAccessFlags2 dstAccessMask, VkDeviceSize offset = 0,
+                        VkDeviceSize size = VK_WHOLE_SIZE);
     };
 
     class BufferBuilder {

@@ -27,6 +27,7 @@ namespace Vkxel {
         static constexpr float DefaultFov = glm::radians(60.0f);
         static constexpr std::pair<float, float> DefaultClipPlane = {0.01f, 1000.0f};
         static constexpr VkPresentModeKHR DefaultPresentMode = VK_PRESENT_MODE_FIFO_KHR;
+        static constexpr VkFormat DefaultFramebufferFormat = VK_FORMAT_R16G16B16A16_SFLOAT;
         static constexpr uint32_t DefaultStagingBufferSize = 104857600; // 100 MB
         static constexpr uint32_t DefaultIndexBufferSize = 104857600; // 100 MB
         static constexpr uint32_t DefaultVertexBufferSize = 104857600; // 100 MB

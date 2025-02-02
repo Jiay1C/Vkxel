@@ -53,7 +53,6 @@ namespace Vkxel {
         vkb::Swapchain _swapchain;
 
         std::vector<VkImage> _swapchain_image;
-        std::vector<VkImageView> _swapchain_image_view;
 
         VmaAllocator _vma_allocator = nullptr;
 
@@ -80,19 +79,7 @@ namespace Vkxel {
         VkUtil::Buffer _vertex_buffer = {};
         VkUtil::Buffer _constant_buffer_per_frame = {};
 
-        // VkBuffer _staging_buffer = nullptr;
-        // VmaAllocation _staging_buffer_allocation = nullptr;
-        // std::byte *_staging_buffer_pointer = nullptr;
-        //
-        // VkBuffer _vertex_buffer = nullptr;
-        // VmaAllocation _vertex_buffer_allocation = nullptr;
-        //
-        // VkBuffer _index_buffer = nullptr;
-        // VmaAllocation _index_buffer_allocation = nullptr;
-        //
-        // VkBuffer _constant_buffer_per_frame = nullptr;
-        // VmaAllocation _constant_buffer_per_frame_allocation = nullptr;
-
+        VkUtil::Image _color_image = {};
         VkUtil::Image _depth_image = {};
 
         VkSemaphore _image_ready_semaphore = nullptr;
