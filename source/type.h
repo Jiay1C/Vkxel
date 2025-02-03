@@ -13,6 +13,7 @@ namespace Vkxel {
         glm::mat4 ModelMatrix;
         glm::mat4 ViewMatrix;
         glm::mat4 ProjectionMatrix;
+        glm::vec4 CameraPosition;
     };
 
     struct VertexInput {

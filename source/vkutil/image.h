@@ -59,7 +59,7 @@ namespace Vkxel::VkUtil {
         ImageBuilder &SetSharingMode(VkSharingMode sharingMode);
         ImageBuilder &SetQueueFamilyIndexCount(uint32_t queueFamilyIndexCount);
         ImageBuilder &SetPQueueFamilyIndices(const uint32_t *pQueueFamilyIndices);
-        ImageBuilder &SetInitialLayout(VkImageLayout initialLayout);
+        ImageBuilder &SetLayout(VkImageLayout layout);
 
         ImageBuilder &SetAllocationFlags(VmaAllocationCreateFlags flags);
         ImageBuilder &SetMemoryUsage(VmaMemoryUsage usage);

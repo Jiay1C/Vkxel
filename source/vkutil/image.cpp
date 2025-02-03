@@ -154,8 +154,8 @@ namespace Vkxel::VkUtil {
         return *this;
     }
 
-    ImageBuilder &ImageBuilder::SetInitialLayout(VkImageLayout initialLayout) {
-        _create_info.initialLayout = initialLayout;
+    ImageBuilder &ImageBuilder::SetLayout(VkImageLayout layout) {
+        _create_info.initialLayout = layout;
         return *this;
     }
 

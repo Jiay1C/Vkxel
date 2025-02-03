@@ -510,7 +510,8 @@ namespace Vkxel {
         ConstantBufferPerFrame constant_buffer_per_frame{
                 .ModelMatrix = glm::transpose(_model.transform.GetLocalToWorldMatrix()),
                 .ViewMatrix = glm::transpose(_camera.GetViewMatrix()),
-                .ProjectionMatrix = glm::transpose(_camera.GetProjectionMatrix())};
+                .ProjectionMatrix = glm::transpose(_camera.GetProjectionMatrix()),
+                .CameraPosition = glm::vec4(_camera.transform.position, 1.0)};
 
         uint32_t image_index;
         CHECK_RESULT_VK(vkAcquireNextImageKHR(_device, _swapchain, std::numeric_limits<uint64_t>::max(),
@@ -720,6 +721,7 @@ namespace Vkxel {
 
         vkb::SwapchainBuilder swapchain_builder(_device);
         auto swapchain_result = swapchain_builder.set_old_swapchain(_swapchain)
+                                        .set_image_usage_flags(VK_IMAGE_USAGE_TRANSFER_DST_BIT)
                                         .set_desired_present_mode(Application::DefaultPresentMode)
                                         .build();
         CHECK_NOTNULL_MSG(swapchain_result, swapchain_result.error().message());
@@ -733,12 +735,14 @@ namespace Vkxel {
 
         _depth_image.Destroy();
         _depth_image = VkUtil::ImageBuilder(_depth_image)
+                               .SetLayout(VK_IMAGE_LAYOUT_UNDEFINED)
                                .SetExtent({_swapchain.extent.width, _swapchain.extent.height, 1})
                                .Build();
         _depth_image.Create();
 
         _color_image.Destroy();
         _color_image = VkUtil::ImageBuilder(_color_image)
+                               .SetLayout(VK_IMAGE_LAYOUT_UNDEFINED)
                                .SetExtent({_swapchain.extent.width, _swapchain.extent.height, 1})
                                .Build();
         _color_image.Create();

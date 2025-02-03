@@ -50,8 +50,8 @@ namespace Vkxel {
         vkb::Instance _instance;
         vkb::PhysicalDevice _physical_device;
         vkb::Device _device;
-        vkb::Swapchain _swapchain;
 
+        vkb::Swapchain _swapchain;
         std::vector<VkImage> _swapchain_image;
 
         VmaAllocator _vma_allocator = nullptr;
