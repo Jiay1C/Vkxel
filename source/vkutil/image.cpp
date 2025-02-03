@@ -53,8 +53,8 @@ namespace Vkxel::VkUtil {
                 .dstAccessMask = dstAccessMask,
                 .oldLayout = imageCreateInfo.initialLayout,
                 .newLayout = newLayout == VK_IMAGE_LAYOUT_UNDEFINED ? imageCreateInfo.initialLayout : newLayout,
-                .srcQueueFamilyIndex = imageCreateInfo.pQueueFamilyIndices[0], // TODO: Support Queue Family Transfer
-                .dstQueueFamilyIndex = imageCreateInfo.pQueueFamilyIndices[0],
+                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED, // TODO: Support Queue Family Transfer
+                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                 .image = image,
                 .subresourceRange = imageViewCreateInfo.subresourceRange};
 

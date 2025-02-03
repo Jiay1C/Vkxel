@@ -43,13 +43,13 @@ namespace Vkxel::VkUtil {
                             VkAccessFlags2 srcAccessMask, VkPipelineStageFlags2 dstStageMask,
                             VkAccessFlags2 dstAccessMask, VkDeviceSize offset, VkDeviceSize size) {
         VkBufferMemoryBarrier2 buffer_memory_barrier{
-                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+                .sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2,
                 .srcStageMask = srcStageMask,
                 .srcAccessMask = srcAccessMask,
                 .dstStageMask = dstStageMask,
                 .dstAccessMask = dstAccessMask,
-                .srcQueueFamilyIndex = bufferCreateInfo.pQueueFamilyIndices[0], // TODO: Support Queue Family Transfer
-                .dstQueueFamilyIndex = bufferCreateInfo.pQueueFamilyIndices[0],
+                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED, // TODO: Support Queue Family Transfer
+                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                 .buffer = buffer,
                 .offset = offset,
                 .size = size};
