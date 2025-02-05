@@ -87,43 +87,70 @@ set(IMGUI_SOURCE_FILES
         ${EXTERNAL_PATH}/${IMGUI_PATH}/backends/imgui_impl_glfw.cpp
 )
 
-set(SOURCE_PATH "source")
+
+function(VKXEL_DEFINE_SOURCES OUT_LIST BASE_PATH)
+    set(FILES "${ARGN}")
+    list(TRANSFORM FILES PREPEND ${BASE_PATH}/)
+    set(${OUT_LIST} "${FILES}" PARENT_SCOPE)
+endfunction()
+
+
+VKXEL_DEFINE_SOURCES(ENGINE_SOURCES "engine"
+        window.cpp
+        window.h
+        check.h
+        renderer.cpp
+        renderer.h
+        application.h
+        shader.cpp
+        shader.h
+        file.cpp
+        file.h
+        type.h
+        input.cpp
+        input.h
+        vtime.cpp
+        vtime.h
+        gui.cpp
+        gui.h
+        delegate.hpp
+)
+
+VKXEL_DEFINE_SOURCES(WORLD_SOURCES "world"
+        model.cpp
+        model.h
+        camera.cpp
+        camera.h
+        transform.cpp
+        transform.h
+        controller.cpp
+        controller.h
+)
+
+VKXEL_DEFINE_SOURCES(VKUTIL_SOURCES "vkutil"
+        image.cpp
+        image.h
+        buffer.cpp
+        buffer.h
+)
+
+VKXEL_DEFINE_SOURCES(ENTRY_SOURCES "entry"
+        main.cpp
+)
+
+set(VKXEL_SOURCE_PATH "source")
+VKXEL_DEFINE_SOURCES(VKXEL_SOURCES ${VKXEL_SOURCE_PATH}
+        ${ENGINE_SOURCES}
+        ${WORLD_SOURCES}
+        ${VKUTIL_SOURCES}
+        ${ENTRY_SOURCES}
+)
 
 # Set the source files
 set(SOURCES
         ${VMA_USAGE_FILES}
         ${IMGUI_SOURCE_FILES}
-        ${SOURCE_PATH}/main.cpp
-        ${SOURCE_PATH}/window.cpp
-        ${SOURCE_PATH}/window.h
-        ${SOURCE_PATH}/check.h
-        ${SOURCE_PATH}/renderer.cpp
-        ${SOURCE_PATH}/renderer.h
-        ${SOURCE_PATH}/application.h
-        ${SOURCE_PATH}/shader.cpp
-        ${SOURCE_PATH}/shader.h
-        ${SOURCE_PATH}/file.cpp
-        ${SOURCE_PATH}/file.h
-        ${SOURCE_PATH}/model.cpp
-        ${SOURCE_PATH}/model.h
-        ${SOURCE_PATH}/camera.cpp
-        ${SOURCE_PATH}/camera.h
-        ${SOURCE_PATH}/transform.cpp
-        ${SOURCE_PATH}/transform.h
-        ${SOURCE_PATH}/type.h
-        ${SOURCE_PATH}/input.cpp
-        ${SOURCE_PATH}/input.h
-        ${SOURCE_PATH}/controller.cpp
-        ${SOURCE_PATH}/controller.h
-        ${SOURCE_PATH}/vtime.cpp
-        ${SOURCE_PATH}/vtime.h
-        ${SOURCE_PATH}/gui.cpp
-        ${SOURCE_PATH}/gui.h
-        ${SOURCE_PATH}/delegate.hpp
-        ${SOURCE_PATH}/vkutil/image.cpp
-        ${SOURCE_PATH}/vkutil/image.h
-        ${SOURCE_PATH}/vkutil/buffer.cpp
-        ${SOURCE_PATH}/vkutil/buffer.h
+        ${VKXEL_SOURCES}
 )
 
 # Define the executable
@@ -133,7 +160,7 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 include_directories(
         ${Vulkan_INCLUDE_DIR}
         ${IMGUI_INCLUDE_DIR}
-        ${CMAKE_SOURCE_DIR}/${SOURCE_PATH}
+        ${CMAKE_SOURCE_DIR}/${VKXEL_SOURCE_PATH}
 )
 
 # Link libraries

@@ -7,8 +7,8 @@
 
 #include <vector>
 
+#include "engine/type.h"
 #include "transform.h"
-#include "type.h"
 
 namespace Vkxel {
     struct Model {

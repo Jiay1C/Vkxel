@@ -9,12 +9,12 @@
 #include "vk_mem_alloc.h"
 #include "vulkan/vulkan.h"
 
-#include "camera.h"
 #include "gui.h"
-#include "model.h"
 #include "vkutil/buffer.h"
 #include "vkutil/image.h"
 #include "window.h"
+#include "world/camera.h"
+#include "world/model.h"
 
 namespace Vkxel {
 
