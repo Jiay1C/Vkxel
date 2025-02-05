@@ -13,12 +13,12 @@
 
 #include "application.h"
 #include "check.h"
-#include "model.h"
 #include "renderer.h"
 #include "shader.h"
 #include "type.h"
 #include "vkutil/buffer.h"
 #include "vkutil/image.h"
+#include "world/model.h"
 
 
 namespace Vkxel {

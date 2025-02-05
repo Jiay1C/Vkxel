@@ -4,8 +4,8 @@
 
 #include "controller.h"
 
-#include "input.h"
-#include "vtime.h"
+#include "engine/input.h"
+#include "engine/vtime.h"
 
 namespace Vkxel {
     Controller::Controller(Transform &transform) : _transform(transform) {}

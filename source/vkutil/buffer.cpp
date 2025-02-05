@@ -6,7 +6,7 @@
 #include "vulkan/vulkan.h"
 
 #include "buffer.h"
-#include "check.h"
+#include "engine/check.h"
 
 namespace Vkxel::VkUtil {
 

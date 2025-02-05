@@ -4,8 +4,8 @@
 
 #include <array>
 
+#include "engine/type.h"
 #include "model.h"
-#include "type.h"
 
 
 namespace Vkxel {
