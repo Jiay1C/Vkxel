@@ -12,6 +12,8 @@ namespace Vkxel {
 
     class Drawer : public Component {
     public:
+        using Component::Component;
+
         MaterialData material = {};
 
         void Draw(RenderContext &context) const;

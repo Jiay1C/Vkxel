@@ -7,20 +7,22 @@
 
 #include "glm/glm.hpp"
 
+#include "engine/application.h"
 #include "transform.h"
 
 namespace Vkxel {
 
     class Controller : public Component {
     public:
-        Controller &SetMoveSpeed(float speed);
-        Controller &SetRotateSpeed(float speed);
+        using Component::Component;
+
+        float moveSpeed = Application::DefaultMoveSpeed;
+        float rotateSpeed = Application::DefaultRotateSpeed;
+        float accelerateRatio = Application::DefaultAccelerateRatio;
 
         void Update() override;
 
     private:
-        float _move_speed = 0;
-        float _rotate_speed = 0;
         glm::vec2 _last_mouse_position = {};
     };
 

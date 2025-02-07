@@ -99,7 +99,8 @@ namespace Vkxel {
 
         int width, height;
         glfwGetWindowSize(glfwWindow, &width, &height);
-        _mousePosition = {glfwXPos / height, glfwYPos / height};
+        int length = std::min(width, height);
+        _mousePosition = {glfwXPos / length, glfwYPos / length};
     }
 
 

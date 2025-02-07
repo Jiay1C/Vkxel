@@ -22,17 +22,26 @@ namespace Vkxel {
         static constexpr std::string_view Name = "Vkxel";
         static constexpr std::uint32_t Version = 0;
         static constexpr uint32_t VulkanVersion = VK_API_VERSION_1_3;
+
         static constexpr uint32_t BackgroundModeMaxFps = 10;
-        static constexpr std::pair<uint32_t, uint32_t> DefaultWindowSize = {1280, 720};
+
+        static constexpr uint32_t DefaultWindowWidth = 1280;
+        static constexpr uint32_t DefaultWindowHeight = 720;
+
         static constexpr float DefaultFov = glm::radians(60.0f);
-        static constexpr std::pair<float, float> DefaultClipPlane = {0.01f, 1000.0f};
+        static constexpr float DefaultNearClipPlane = 0.01f;
+        static constexpr float DefaultFarClipPlane = 1000.0f;
+
         static constexpr VkPresentModeKHR DefaultPresentMode = VK_PRESENT_MODE_FIFO_KHR;
         static constexpr VkFormat DefaultFramebufferFormat = VK_FORMAT_R16G16B16A16_SFLOAT;
+
         static constexpr uint32_t DefaultStagingBufferSize = 104857600; // 100 MB
         static constexpr uint32_t DefaultDescriptorCount = 1000;
         static constexpr uint32_t DefaultDescriptorSetCount = 1000;
+
         static constexpr float DefaultMoveSpeed = 1.0f;
         static constexpr float DefaultRotateSpeed = 1.0f;
+        static constexpr float DefaultAccelerateRatio = 5.0f;
     };
 
 } // namespace Vkxel

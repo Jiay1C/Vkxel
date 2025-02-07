@@ -18,15 +18,12 @@ using namespace Vkxel;
 
 int main() {
 
+    // Variables
+
     uint32_t frame_count = 0;
     bool background_mode = false;
 
-    Window window = Window().SetSize(Application::DefaultWindowSize.first, Application::DefaultWindowSize.second)
-                            .SetTitle(Application::Name)
-                            .AddCallback(WindowEvent::Minimize, [&]() { background_mode = true; })
-                            .AddCallback(WindowEvent::Restore, [&]() { background_mode = false; });
-    window.Create();
-    GUI gui(window);
+    // Set Up Scene
 
     Scene scene;
     scene.name = "Main Scene";
@@ -36,16 +33,8 @@ int main() {
     camera_game_object.transform.position = {0, 0, 1};
 
     Camera &camera = camera_game_object.AddComponent<Camera>();
-    camera.nearClipPlane = Application::DefaultClipPlane.first;
-    camera.farClipPlane = Application::DefaultClipPlane.second;
-    camera.fieldOfViewY = Application::DefaultFov;
-    camera.aspect = window.GetAspect();
 
-    window.AddCallback(WindowEvent::Resize, [&]() { camera.aspect = window.GetAspect(); });
-
-    Controller &camera_controller = camera_game_object.AddComponent<Controller>()
-                                            .SetMoveSpeed(Application::DefaultMoveSpeed)
-                                            .SetRotateSpeed(Application::DefaultRotateSpeed);
+    Controller &camera_controller = camera_game_object.AddComponent<Controller>();
 
     scene.SetCamera(camera_game_object.name);
 
@@ -66,6 +55,17 @@ int main() {
 
     scene.Create();
 
+
+    // Create Engine
+
+    Window window = Window().SetSize(Application::DefaultWindowWidth, Application::DefaultWindowHeight)
+                            .SetTitle(Application::Name)
+                            .AddCallback(WindowEvent::Minimize, [&]() { background_mode = true; })
+                            .AddCallback(WindowEvent::Restore, [&]() { background_mode = false; })
+                            .AddCallback(WindowEvent::Resize, [&]() { camera.aspect = window.GetAspect(); });
+    window.Create();
+    GUI gui(window);
+
     gui.AddStaticItem("Vkxel", [&]() {
         ImGui::Text(std::format("Frame {0} ({1} ms)", frame_count, Time::RealDeltaSeconds() * 1000).data());
         ImGui::Text(std::format("Size ({0}, {1})", window.GetWidth(), window.GetHeight()).data());
@@ -77,12 +77,20 @@ int main() {
             ImGui::InputFloat3("Position", reinterpret_cast<float *>(&position));
             ImGui::InputFloat3("Rotation", reinterpret_cast<float *>(&rotation));
         }
+        if (ImGui::CollapsingHeader("Controller")) {
+            ImGui::DragFloat("Move Speed", &camera_controller.moveSpeed, 0.02f, 0.0f, 10.0f);
+            ImGui::DragFloat("Rotate Speed", &camera_controller.rotateSpeed, 0.02f, 0.0f, 10.0f);
+            ImGui::DragFloat("Accelerate Ratio", &camera_controller.accelerateRatio, 0.02f, 0.0f, 10.0f);
+        }
     });
 
     Renderer renderer(window, gui);
 
     renderer.Init();
     renderer.LoadScene(scene);
+
+
+    // Main Loop
 
     while (!window.ShouldClose()) {
         Input::Update();

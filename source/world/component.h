@@ -13,7 +13,9 @@ namespace Vkxel {
 
     class Component : public Object {
     public:
-        GameObject *gameObject = nullptr;
+        GameObject &gameObject;
+
+        explicit Component(GameObject &parentGameObject) : gameObject(parentGameObject) {}
     };
 
 } // namespace Vkxel

@@ -10,9 +10,9 @@
 namespace Vkxel {
 
     void Drawer::Draw(RenderContext &context) const {
-        if (const auto mesh_result = gameObject->GetComponent<Mesh>()) {
+        if (const auto mesh_result = gameObject.GetComponent<Mesh>()) {
             const Mesh &mesh = mesh_result.value();
-            context.objects.push_back({.transformMatrix = gameObject->transform.GetLocalToWorldMatrix(),
+            context.objects.push_back({.transformMatrix = gameObject.transform.GetLocalToWorldMatrix(),
                                        .index = mesh.index,
                                        .vertex = mesh.vertex});
         }
