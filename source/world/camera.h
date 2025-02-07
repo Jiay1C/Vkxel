@@ -5,23 +5,20 @@
 #ifndef VKXEL_CAMERA_H
 #define VKXEL_CAMERA_H
 
+#include "component.h"
 #include "glm/glm.hpp"
 
 #include "transform.h"
 
 namespace Vkxel {
 
-    struct ProjectionInfo {
+
+    class Camera : public Component {
+    public:
         float nearClipPlane = 0;
         float farClipPlane = 0;
         float fieldOfViewY = 0;
         float aspect = 0;
-    };
-
-    class Camera {
-    public:
-        Transform transform;
-        ProjectionInfo projectionInfo;
 
         glm::mat4 GetViewMatrix() const;
         glm::mat4 GetProjectionMatrix() const;

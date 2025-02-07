@@ -8,17 +8,18 @@
 #include <vector>
 
 #include "engine/type.h"
+#include "mesh.h"
 #include "transform.h"
 
 namespace Vkxel {
-    struct Model {
-        Transform transform;
-        std::vector<uint32_t> index;
-        std::vector<VertexInput> vertex;
-    };
 
     class ModelLibrary {
     public:
+        struct Model {
+            std::vector<uint32_t> index;
+            std::vector<VertexData> vertex;
+        };
+
         ModelLibrary() = delete;
         ~ModelLibrary() = delete;
 

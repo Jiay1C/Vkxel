@@ -11,12 +11,12 @@
 namespace Vkxel::VkUtil {
 
     void Image::Create() {
-        CHECK_RESULT_VK(vmaCreateImage(allocator, &imageCreateInfo, &allocationCreateInfo, &image, &allocation,
-                                       &allocationInfo));
+        CHECK_RESULT_VK(
+                vmaCreateImage(allocator, &createInfo, &allocationCreateInfo, &image, &allocation, &allocationInfo));
 
-        if (imageViewCreateInfo.sType == VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO) {
-            imageViewCreateInfo.image = image;
-            CHECK_RESULT_VK(vkCreateImageView(device, &imageViewCreateInfo, nullptr, &imageView));
+        if (viewCreateInfo.sType == VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO) {
+            viewCreateInfo.image = image;
+            CHECK_RESULT_VK(vkCreateImageView(device, &viewCreateInfo, nullptr, &imageView));
         }
     }
 
@@ -51,12 +51,12 @@ namespace Vkxel::VkUtil {
                 .srcAccessMask = srcAccessMask,
                 .dstStageMask = dstStageMask,
                 .dstAccessMask = dstAccessMask,
-                .oldLayout = imageCreateInfo.initialLayout,
-                .newLayout = newLayout == VK_IMAGE_LAYOUT_UNDEFINED ? imageCreateInfo.initialLayout : newLayout,
+                .oldLayout = createInfo.initialLayout,
+                .newLayout = newLayout == VK_IMAGE_LAYOUT_UNDEFINED ? createInfo.initialLayout : newLayout,
                 .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED, // TODO: Support Queue Family Transfer
                 .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                 .image = image,
-                .subresourceRange = imageViewCreateInfo.subresourceRange};
+                .subresourceRange = viewCreateInfo.subresourceRange};
 
         VkDependencyInfo dependency_info{.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
                                          .dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT,
@@ -65,18 +65,18 @@ namespace Vkxel::VkUtil {
 
         vkCmdPipelineBarrier2(commandBuffer, &dependency_info);
 
-        imageCreateInfo.initialLayout = newLayout; // TODO: More Precise Layout Update
+        createInfo.initialLayout = newLayout; // TODO: More Precise Layout Update
     }
 
 
     Image ImageBuilder::Build() const {
         Image image = {.device = _device,
                        .allocator = _allocator,
-                       .imageCreateInfo = _create_info,
+                       .createInfo = _create_info,
                        .allocationCreateInfo = _allocation_info};
 
         if (_create_image_view) {
-            image.imageViewCreateInfo = _view_create_info;
+            image.viewCreateInfo = _view_create_info;
         }
 
         return image;

@@ -11,12 +11,12 @@
 namespace Vkxel::VkUtil {
 
     void Buffer::Create() {
-        CHECK_RESULT_VK(vmaCreateBuffer(allocator, &bufferCreateInfo, &allocationCreateInfo, &buffer, &allocation,
+        CHECK_RESULT_VK(vmaCreateBuffer(allocator, &createInfo, &allocationCreateInfo, &buffer, &allocation,
                                         &allocationInfo));
 
-        if (bufferViewCreateInfo.sType == VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO) {
-            bufferViewCreateInfo.buffer = buffer;
-            CHECK_RESULT_VK(vkCreateBufferView(device, &bufferViewCreateInfo, nullptr, &bufferView));
+        if (viewCreateInfo.sType == VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO) {
+            viewCreateInfo.buffer = buffer;
+            CHECK_RESULT_VK(vkCreateBufferView(device, &viewCreateInfo, nullptr, &bufferView));
         }
     }
 
@@ -66,11 +66,11 @@ namespace Vkxel::VkUtil {
     Buffer BufferBuilder::Build() const {
         Buffer buffer = {.device = _device,
                          .allocator = _allocator,
-                         .bufferCreateInfo = _create_info,
+                         .createInfo = _create_info,
                          .allocationCreateInfo = _allocation_info};
 
         if (_create_buffer_view) {
-            buffer.bufferViewCreateInfo = _view_create_info;
+            buffer.viewCreateInfo = _view_create_info;
         }
 
         return buffer;

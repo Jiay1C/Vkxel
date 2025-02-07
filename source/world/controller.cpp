@@ -6,9 +6,9 @@
 
 #include "engine/input.h"
 #include "engine/vtime.h"
+#include "gameobject.h"
 
 namespace Vkxel {
-    Controller::Controller(Transform &transform) : _transform(transform) {}
 
     Controller &Controller::SetMoveSpeed(const float speed) {
         _move_speed = speed;
@@ -49,7 +49,7 @@ namespace Vkxel {
             translation += Transform::down;
         }
 
-        _transform.TranslateSelf(translation * _move_speed * delta_seconds);
+        gameObject->transform.TranslateSelf(translation * _move_speed * delta_seconds);
 
         glm::vec2 mouse_position = Input::GetMousePosition();
         glm::vec2 mouse_position_delta = mouse_position - _last_mouse_position;
@@ -59,7 +59,7 @@ namespace Vkxel {
         glm::vec2 camera_rotation = _rotate_speed * mouse_position_delta;
 
         if (Input::GetKey(KeyCode::MOUSE_BUTTON_RIGHT)) {
-            _transform.RotateSelf({-camera_rotation.y, -camera_rotation.x, 0});
+            gameObject->transform.RotateSelf({-camera_rotation.y, -camera_rotation.x, 0});
         }
     }
 
