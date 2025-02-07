@@ -2,8 +2,8 @@
 // Created by jiayi on 1/25/2025.
 //
 
-#ifndef VKXEL_TYPE_H
-#define VKXEL_TYPE_H
+#ifndef VKXEL_DATA_TYPE_H
+#define VKXEL_DATA_TYPE_H
 
 #include <list>
 #include <vector>
@@ -52,4 +52,4 @@ namespace Vkxel {
 
 } // namespace Vkxel
 
-#endif // VKXEL_TYPE_H
+#endif // VKXEL_DATA_TYPE_H

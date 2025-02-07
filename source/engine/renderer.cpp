@@ -11,9 +11,9 @@
 #include "vk_mem_alloc.h"
 #include "vulkan/vulkan.h"
 
+#include "data_type.h"
 #include "renderer.h"
 #include "shader.h"
-#include "type.h"
 #include "util/application.h"
 #include "util/check.h"
 #include "vkutil/buffer.h"
@@ -179,44 +179,41 @@ namespace Vkxel {
         };
         CHECK_RESULT_VK(vkCreateFence(_device, &fence_create_info, nullptr, &_command_buffer_fence));
 
-        _depth_image = VkUtil::ImageBuilder(_device, _vma_allocator)
-                               .SetImageType(VK_IMAGE_TYPE_2D)
-                               .SetFormat(VK_FORMAT_D32_SFLOAT)
-                               .SetExtent({_swapchain.extent.width, _swapchain.extent.height, 1})
-                               .SetUsage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
-                               .SetPQueueFamilyIndices(&_queue_family_index)
-                               .SetMemoryUsage(VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE)
-                               .SetViewSubresourceRange({.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
-                                                         .baseMipLevel = 0,
-                                                         .levelCount = 1,
-                                                         .baseArrayLayer = 0,
-                                                         .layerCount = 1})
-                               .CreateImageView()
-                               .Build();
-        _depth_image.Create();
+        _frame_resource.depthImage = VkUtil::ImageBuilder(_device, _vma_allocator)
+                                             .SetImageType(VK_IMAGE_TYPE_2D)
+                                             .SetFormat(VK_FORMAT_D32_SFLOAT)
+                                             .SetExtent({_swapchain.extent.width, _swapchain.extent.height, 1})
+                                             .SetUsage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
+                                             .SetPQueueFamilyIndices(&_queue_family_index)
+                                             .SetMemoryUsage(VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE)
+                                             .SetViewSubresourceRange({.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
+                                                                       .baseMipLevel = 0,
+                                                                       .levelCount = 1,
+                                                                       .baseArrayLayer = 0,
+                                                                       .layerCount = 1})
+                                             .CreateImageView()
+                                             .Build();
+        _frame_resource.depthImage.Create();
 
-        _color_image = VkUtil::ImageBuilder(_device, _vma_allocator)
-                               .SetImageType(VK_IMAGE_TYPE_2D)
-                               .SetFormat(Application::DefaultFramebufferFormat)
-                               .SetExtent({_swapchain.extent.width, _swapchain.extent.height, 1})
-                               .SetUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
-                               .SetPQueueFamilyIndices(&_queue_family_index)
-                               .SetMemoryUsage(VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE)
-                               .SetViewSubresourceRange({.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                                                         .baseMipLevel = 0,
-                                                         .levelCount = 1,
-                                                         .baseArrayLayer = 0,
-                                                         .layerCount = 1})
-                               .CreateImageView()
-                               .Build();
-        _color_image.Create();
+        _frame_resource.colorImage =
+                VkUtil::ImageBuilder(_device, _vma_allocator)
+                        .SetImageType(VK_IMAGE_TYPE_2D)
+                        .SetFormat(Application::DefaultFramebufferFormat)
+                        .SetExtent({_swapchain.extent.width, _swapchain.extent.height, 1})
+                        .SetUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
+                        .SetPQueueFamilyIndices(&_queue_family_index)
+                        .SetMemoryUsage(VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE)
+                        .SetViewSubresourceRange({.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                                                  .baseMipLevel = 0,
+                                                  .levelCount = 1,
+                                                  .baseArrayLayer = 0,
+                                                  .layerCount = 1})
+                        .CreateImageView()
+                        .Build();
+        _frame_resource.colorImage.Create();
 
         std::array descriptor_set_layout_binding = {
                 VkDescriptorSetLayoutBinding{.binding = 0,
-                                             .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                                             .descriptorCount = 1,
-                                             .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT},
-                VkDescriptorSetLayoutBinding{.binding = 1,
                                              .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
                                              .descriptorCount = 1,
                                              .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT}};
@@ -227,14 +224,20 @@ namespace Vkxel {
                 .pBindings = descriptor_set_layout_binding.data()};
 
         CHECK_RESULT_VK(vkCreateDescriptorSetLayout(_device, &descriptor_set_layout_create_info, nullptr,
-                                                    &_descriptor_set_layout));
+                                                    &_descriptor_set_layout_frame));
+        CHECK_RESULT_VK(vkCreateDescriptorSetLayout(_device, &descriptor_set_layout_create_info, nullptr,
+                                                    &_descriptor_set_layout_object));
 
 
         // Create Pipeline Layout
-        VkPipelineLayoutCreateInfo pipeline_layout_create_info{.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-                                                               .setLayoutCount = 1,
-                                                               .pSetLayouts = &_descriptor_set_layout,
-                                                               .pushConstantRangeCount = 0};
+
+        std::array pipeline_descriptor_set_layouts = {_descriptor_set_layout_frame, _descriptor_set_layout_object};
+
+        VkPipelineLayoutCreateInfo pipeline_layout_create_info{
+                .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+                .setLayoutCount = static_cast<uint32_t>(pipeline_descriptor_set_layouts.size()),
+                .pSetLayouts = pipeline_descriptor_set_layouts.data(),
+                .pushConstantRangeCount = 0};
         CHECK_RESULT_VK(vkCreatePipelineLayout(_device, &pipeline_layout_create_info, nullptr, &_pipeline_layout));
 
 
@@ -354,8 +357,8 @@ namespace Vkxel {
         VkPipelineRenderingCreateInfo pipeline_rendering_create_info{
                 .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
                 .colorAttachmentCount = 1,
-                .pColorAttachmentFormats = &_color_image.createInfo.format,
-                .depthAttachmentFormat = _depth_image.createInfo.format};
+                .pColorAttachmentFormats = &_frame_resource.colorImage.createInfo.format,
+                .depthAttachmentFormat = _frame_resource.depthImage.createInfo.format};
 
         VkGraphicsPipelineCreateInfo graphics_pipeline_create_info{
                 .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
@@ -387,12 +390,37 @@ namespace Vkxel {
         // Upload Data
         _frame_resource.constantBuffer =
                 VkUtil::BufferBuilder(_device, _vma_allocator)
-                        .SetMemoryUsage(VMA_MEMORY_USAGE_AUTO)
+                        .SetMemoryUsage(VMA_MEMORY_USAGE_AUTO_PREFER_HOST)
                         .SetPQueueFamilyIndices(&_queue_family_index)
                         .SetSize(sizeof(ConstantBufferPerFrame))
                         .SetUsage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT)
                         .Build();
         _frame_resource.constantBuffer.Create();
+
+        // Create Scene DescriptorSet
+        VkDescriptorSetAllocateInfo descriptor_set_allocate_info{.sType =
+                                                                         VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+                                                                 .descriptorPool = _descriptor_pool,
+                                                                 .descriptorSetCount = 1,
+                                                                 .pSetLayouts = &_descriptor_set_layout_frame};
+
+        CHECK_RESULT_VK(
+                vkAllocateDescriptorSets(_device, &descriptor_set_allocate_info, &_frame_resource.descriptorSet));
+
+        VkDescriptorBufferInfo constant_buffer_per_frame_info{
+                .buffer = _frame_resource.constantBuffer.buffer, .offset = 0, .range = VK_WHOLE_SIZE};
+        std::array descriptor_set_write_info = {VkWriteDescriptorSet{
+                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                .dstSet = _frame_resource.descriptorSet,
+                .dstBinding = 0,
+                .dstArrayElement = 0,
+                .descriptorCount = 1,
+                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                .pBufferInfo = &constant_buffer_per_frame_info,
+        }};
+
+        vkUpdateDescriptorSets(_device, static_cast<uint32_t>(descriptor_set_write_info.size()),
+                               descriptor_set_write_info.data(), 0, nullptr);
 
         _staging_buffer = VkUtil::BufferBuilder(_device, _vma_allocator)
                                   .SetSize(Application::DefaultStagingBufferSize)
@@ -465,10 +493,13 @@ namespace Vkxel {
         vkDestroySemaphore(_device, _image_ready_semaphore, nullptr);
         vkDestroySemaphore(_device, _render_complete_semaphore, nullptr);
 
-        vkDestroyDescriptorSetLayout(_device, _descriptor_set_layout, nullptr);
+        _frame_resource.depthImage.Destroy();
+        _frame_resource.colorImage.Destroy();
+        CHECK_RESULT_VK(vkFreeDescriptorSets(_device, _descriptor_pool, 1, &_frame_resource.descriptorSet));
 
-        _depth_image.Destroy();
-        _color_image.Destroy();
+        vkDestroyDescriptorSetLayout(_device, _descriptor_set_layout_frame, nullptr);
+        vkDestroyDescriptorSetLayout(_device, _descriptor_set_layout_object, nullptr);
+
 
         vkDestroyPipeline(_device, _pipeline, nullptr);
         vkDestroyPipelineLayout(_device, _pipeline_layout, nullptr);
@@ -538,21 +569,22 @@ namespace Vkxel {
                 VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT_KHR | VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
                 VK_ACCESS_2_UNIFORM_READ_BIT);
 
-        _color_image.CmdBarrier(command_buffer, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT, VK_ACCESS_2_NONE,
-                                VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-                                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        _frame_resource.colorImage.CmdBarrier(command_buffer, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT, VK_ACCESS_2_NONE,
+                                              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                              VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                                              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
 
         // Color Pass
         VkRenderingAttachmentInfo color_attachment_info{.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-                                                        .imageView = _color_image.imageView,
+                                                        .imageView = _frame_resource.colorImage.imageView,
                                                         .imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
                                                         .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
                                                         .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
                                                         .clearValue = {0, 0, 0, 0}};
 
         VkRenderingAttachmentInfo depth_attachment_info{.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-                                                        .imageView = _depth_image.imageView,
+                                                        .imageView = _frame_resource.depthImage.imageView,
                                                         .imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
                                                         .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
                                                         .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
@@ -569,14 +601,11 @@ namespace Vkxel {
         VkDeviceSize offset_zero = 0;
         vkCmdBeginRendering(command_buffer, &rendering_info); // Camera Pass
         vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
-        // vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 0, 1,
-        //                         &_descriptor_set, 0, nullptr);
-        // vkCmdBindIndexBuffer(command_buffer, _index_buffer.buffer, offset_zero, VK_INDEX_TYPE_UINT32);
-        // vkCmdBindVertexBuffers(command_buffer, 0, 1, &_vertex_buffer.buffer, &offset_zero);
-        // vkCmdDrawIndexed(command_buffer, static_cast<uint32_t>(_model.index.size()), 1, 0, 0, 0);
+        vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 0, 1,
+                                &_frame_resource.descriptorSet, 0, nullptr);
 
         for (const auto &object: _object_resource) {
-            vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 0, 1,
+            vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 1, 1,
                                     &object.descriptorSet, 0, nullptr);
             vkCmdBindIndexBuffer(command_buffer, object.indexBuffer.buffer, offset_zero, VK_INDEX_TYPE_UINT32);
             vkCmdBindVertexBuffers(command_buffer, 0, 1, &object.vertexBuffer.buffer, &offset_zero);
@@ -585,12 +614,12 @@ namespace Vkxel {
 
         vkCmdEndRendering(command_buffer);
 
-        _color_image.CmdBarrier(command_buffer, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT);
+        _frame_resource.colorImage.CmdBarrier(
+                command_buffer, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT);
 
         VkRenderingAttachmentInfo color_attachment_info_ui{.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-                                                           .imageView = _color_image.imageView,
+                                                           .imageView = _frame_resource.colorImage.imageView,
                                                            .imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
                                                            .loadOp = VK_ATTACHMENT_LOAD_OP_LOAD,
                                                            .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
@@ -608,9 +637,9 @@ namespace Vkxel {
         _gui.Render(command_buffer);
         vkCmdEndRendering(command_buffer);
 
-        _color_image.CmdBarrier(command_buffer, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_BLIT_BIT,
-                                VK_ACCESS_2_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+        _frame_resource.colorImage.CmdBarrier(command_buffer, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                              VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_BLIT_BIT,
+                                              VK_ACCESS_2_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
         VkImageMemoryBarrier2 present_image_memory_barrier{
                 .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
@@ -658,7 +687,7 @@ namespace Vkxel {
         };
 
         VkBlitImageInfo2 blit_info{.sType = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2,
-                                   .srcImage = _color_image.image,
+                                   .srcImage = _frame_resource.colorImage.image,
                                    .srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                                    .dstImage = present_image,
                                    .dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
@@ -726,19 +755,19 @@ namespace Vkxel {
         _swapchain_image = std::move(swapchain_image_result.value());
 
 
-        _depth_image.Destroy();
-        _depth_image = VkUtil::ImageBuilder(_depth_image)
-                               .SetLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-                               .SetExtent({_swapchain.extent.width, _swapchain.extent.height, 1})
-                               .Build();
-        _depth_image.Create();
+        _frame_resource.depthImage.Destroy();
+        _frame_resource.depthImage = VkUtil::ImageBuilder(_frame_resource.depthImage)
+                                             .SetLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+                                             .SetExtent({_swapchain.extent.width, _swapchain.extent.height, 1})
+                                             .Build();
+        _frame_resource.depthImage.Create();
 
-        _color_image.Destroy();
-        _color_image = VkUtil::ImageBuilder(_color_image)
-                               .SetLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-                               .SetExtent({_swapchain.extent.width, _swapchain.extent.height, 1})
-                               .Build();
-        _color_image.Create();
+        _frame_resource.colorImage.Destroy();
+        _frame_resource.colorImage = VkUtil::ImageBuilder(_frame_resource.colorImage)
+                                             .SetLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+                                             .SetExtent({_swapchain.extent.width, _swapchain.extent.height, 1})
+                                             .Build();
+        _frame_resource.colorImage.Create();
     }
 
 
@@ -799,32 +828,21 @@ namespace Vkxel {
                                                                          VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
                                                                  .descriptorPool = _descriptor_pool,
                                                                  .descriptorSetCount = 1,
-                                                                 .pSetLayouts = &_descriptor_set_layout};
+                                                                 .pSetLayouts = &_descriptor_set_layout_object};
 
         CHECK_RESULT_VK(vkAllocateDescriptorSets(_device, &descriptor_set_allocate_info, &descriptor_set));
 
-        VkDescriptorBufferInfo constant_buffer_per_frame_info{
-                .buffer = _frame_resource.constantBuffer.buffer, .offset = 0, .range = VK_WHOLE_SIZE};
         VkDescriptorBufferInfo constant_buffer_per_object_info{
                 .buffer = constant_buffer.buffer, .offset = 0, .range = VK_WHOLE_SIZE};
         std::array descriptor_set_write_info = {VkWriteDescriptorSet{
-                                                        .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                                                        .dstSet = descriptor_set,
-                                                        .dstBinding = 0,
-                                                        .dstArrayElement = 0,
-                                                        .descriptorCount = 1,
-                                                        .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                                                        .pBufferInfo = &constant_buffer_per_frame_info,
-                                                },
-                                                VkWriteDescriptorSet{
-                                                        .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                                                        .dstSet = descriptor_set,
-                                                        .dstBinding = 1,
-                                                        .dstArrayElement = 0,
-                                                        .descriptorCount = 1,
-                                                        .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                                                        .pBufferInfo = &constant_buffer_per_object_info,
-                                                }};
+                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                .dstSet = descriptor_set,
+                .dstBinding = 0,
+                .dstArrayElement = 0,
+                .descriptorCount = 1,
+                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                .pBufferInfo = &constant_buffer_per_object_info,
+        }};
 
         vkUpdateDescriptorSets(_device, static_cast<uint32_t>(descriptor_set_write_info.size()),
                                descriptor_set_write_info.data(), 0, nullptr);

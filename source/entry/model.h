@@ -7,7 +7,7 @@
 
 #include <vector>
 
-#include "engine/type.h"
+#include "engine/data_type.h"
 #include "world/mesh.h"
 #include "world/transform.h"
 

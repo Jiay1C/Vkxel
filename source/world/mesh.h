@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "component.h"
-#include "engine/type.h"
+#include "engine/data_type.h"
 
 namespace Vkxel {
 

@@ -38,7 +38,7 @@ struct ConstantBufferPerObject
 [[vk::binding(0,0)]]
 ConstantBuffer<ConstantBufferPerFrame> cbufferFrame;
 
-[[vk::binding(1,0)]]
+[[vk::binding(0,1)]]
 ConstantBuffer<ConstantBufferPerObject> cbufferObject;
 
 float3x3 GetNormalMatrix(float4x4 m)
