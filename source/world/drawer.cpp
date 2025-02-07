@@ -3,8 +3,7 @@
 //
 
 #include "drawer.h"
-
-#include "gameobject.h"
+#include "gameobject.hpp"
 #include "mesh.h"
 
 namespace Vkxel {

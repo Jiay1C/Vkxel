@@ -4,7 +4,7 @@
 
 #include "camera.h"
 
-#include "gameobject.h"
+#include "gameobject.hpp"
 #include "glm/ext/matrix_clip_space.hpp"
 #include "glm/glm.hpp"
 

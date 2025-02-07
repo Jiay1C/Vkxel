@@ -8,8 +8,8 @@
 #include <vector>
 
 #include "engine/type.h"
-#include "mesh.h"
-#include "transform.h"
+#include "world/mesh.h"
+#include "world/transform.h"
 
 namespace Vkxel {
 

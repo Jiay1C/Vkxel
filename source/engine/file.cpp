@@ -8,8 +8,8 @@
 #include <string_view>
 #include <vector>
 
-#include "check.h"
 #include "file.h"
+#include "util/check.h"
 
 namespace Vkxel {
     bool File::Exist(std::string_view filePath) {

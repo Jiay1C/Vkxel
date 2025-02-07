@@ -3,9 +3,9 @@
 //
 
 #include "scene.h"
-
 #include "camera.h"
 #include "drawer.h"
+#include "gameobject.hpp"
 
 namespace Vkxel {
 

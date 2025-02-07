@@ -43,6 +43,7 @@ namespace Vkxel {
         Window &_window;
         GUI &_gui;
 
+        bool _init = false;
         bool _pause = false;
 
         // Device Related Handle

@@ -4,15 +4,15 @@
 
 #include "glm/glm.hpp"
 
-#include "engine/application.h"
 #include "engine/input.h"
 #include "engine/renderer.h"
 #include "engine/vtime.h"
+#include "model.h"
+#include "util/application.h"
 #include "world/camera.h"
 #include "world/controller.h"
 #include "world/drawer.h"
 #include "world/mesh.h"
-#include "world/model.h"
 
 using namespace Vkxel;
 

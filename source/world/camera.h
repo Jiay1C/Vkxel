@@ -8,8 +8,8 @@
 #include "component.h"
 #include "glm/glm.hpp"
 
-#include "engine/application.h"
 #include "transform.h"
+#include "util/application.h"
 
 namespace Vkxel {
 

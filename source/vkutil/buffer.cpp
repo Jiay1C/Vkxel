@@ -6,13 +6,13 @@
 #include "vulkan/vulkan.h"
 
 #include "buffer.h"
-#include "engine/check.h"
+#include "util/check.h"
 
 namespace Vkxel::VkUtil {
 
     void Buffer::Create() {
-        CHECK_RESULT_VK(vmaCreateBuffer(allocator, &createInfo, &allocationCreateInfo, &buffer, &allocation,
-                                        &allocationInfo));
+        CHECK_RESULT_VK(
+                vmaCreateBuffer(allocator, &createInfo, &allocationCreateInfo, &buffer, &allocation, &allocationInfo));
 
         if (viewCreateInfo.sType == VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO) {
             viewCreateInfo.buffer = buffer;

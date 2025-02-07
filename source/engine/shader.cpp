@@ -13,9 +13,9 @@
 #include "slang-com-ptr.h"
 #include "slang.h"
 
-#include "check.h"
 #include "file.h"
 #include "shader.h"
+#include "util/check.h"
 
 namespace Vkxel {
     ShaderLoader &ShaderLoader::Instance() {

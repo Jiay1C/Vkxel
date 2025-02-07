@@ -98,10 +98,8 @@ endfunction()
 VKXEL_DEFINE_SOURCES(ENGINE_SOURCES "engine"
         window.cpp
         window.h
-        check.h
         renderer.cpp
         renderer.h
-        application.h
         shader.cpp
         shader.h
         file.cpp
@@ -113,13 +111,10 @@ VKXEL_DEFINE_SOURCES(ENGINE_SOURCES "engine"
         vtime.h
         gui.cpp
         gui.h
-        delegate.hpp
         resource.h
 )
 
 VKXEL_DEFINE_SOURCES(WORLD_SOURCES "world"
-        model.cpp
-        model.h
         camera.cpp
         camera.h
         transform.cpp
@@ -127,7 +122,7 @@ VKXEL_DEFINE_SOURCES(WORLD_SOURCES "world"
         controller.cpp
         controller.h
         object.h
-        gameobject.h
+        gameobject.hpp
         component.h
         mesh.h
         drawer.cpp
@@ -143,7 +138,15 @@ VKXEL_DEFINE_SOURCES(VKUTIL_SOURCES "vkutil"
         buffer.h
 )
 
+VKXEL_DEFINE_SOURCES(UTIL_SOURCES "util"
+        application.h
+        check.h
+        delegate.hpp
+)
+
 VKXEL_DEFINE_SOURCES(ENTRY_SOURCES "entry"
+        model.cpp
+        model.h
         main.cpp
 )
 
@@ -152,6 +155,7 @@ VKXEL_DEFINE_SOURCES(VKXEL_SOURCES ${VKXEL_SOURCE_PATH}
         ${ENGINE_SOURCES}
         ${WORLD_SOURCES}
         ${VKUTIL_SOURCES}
+        ${UTIL_SOURCES}
         ${ENTRY_SOURCES}
 )
 

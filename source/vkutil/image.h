@@ -5,6 +5,8 @@
 #ifndef VKXEL_IMAGE_H
 #define VKXEL_IMAGE_H
 
+#include <utility>
+
 #include "vk_mem_alloc.h"
 #include "vulkan/vulkan.h"
 
