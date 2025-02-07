@@ -15,12 +15,12 @@ namespace Vkxel::VkUtil {
         VkDevice device = nullptr;
         VmaAllocator allocator = nullptr;
         VkBuffer buffer = nullptr;
-        VkBufferCreateInfo bufferCreateInfo = {};
+        VkBufferCreateInfo createInfo = {};
         VmaAllocation allocation = nullptr;
         VmaAllocationCreateInfo allocationCreateInfo = {};
         VmaAllocationInfo allocationInfo = {};
         VkBufferView bufferView = nullptr;
-        VkBufferViewCreateInfo bufferViewCreateInfo = {};
+        VkBufferViewCreateInfo viewCreateInfo = {};
 
         void Create();
         void Destroy();
@@ -40,8 +40,8 @@ namespace Vkxel::VkUtil {
             _device(device), _allocator(allocator) {}
 
         explicit BufferBuilder(const Buffer &oldBuffer) :
-            _device(oldBuffer.device), _allocator(oldBuffer.allocator), _create_info(oldBuffer.bufferCreateInfo),
-            _view_create_info(oldBuffer.bufferViewCreateInfo), _allocation_info(oldBuffer.allocationCreateInfo),
+            _device(oldBuffer.device), _allocator(oldBuffer.allocator), _create_info(oldBuffer.createInfo),
+            _view_create_info(oldBuffer.viewCreateInfo), _allocation_info(oldBuffer.allocationCreateInfo),
             _create_buffer_view(oldBuffer.bufferView != nullptr) {}
 
         Buffer Build() const;

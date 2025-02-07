@@ -10,6 +10,9 @@
 #include "engine/vtime.h"
 #include "world/camera.h"
 #include "world/controller.h"
+#include "world/drawer.h"
+#include "world/mesh.h"
+#include "world/model.h"
 
 using namespace Vkxel;
 
@@ -23,45 +26,70 @@ int main() {
                             .AddCallback(WindowEvent::Minimize, [&]() { background_mode = true; })
                             .AddCallback(WindowEvent::Restore, [&]() { background_mode = false; });
     window.Create();
-
-    Camera camera = {.transform = {.position = glm::vec3{0, 0, 1}, .rotation = glm::vec3{0, 0, 0}},
-                     .projectionInfo = {.nearClipPlane = Application::DefaultClipPlane.first,
-                                        .farClipPlane = Application::DefaultClipPlane.second,
-                                        .fieldOfViewY = Application::DefaultFov,
-                                        .aspect = window.GetAspect()}};
-
-    window.AddCallback(WindowEvent::Resize, [&]() { camera.projectionInfo.aspect = window.GetAspect(); });
-
-    Controller camera_controller = Controller(camera.transform)
-                                           .SetMoveSpeed(Application::DefaultMoveSpeed)
-                                           .SetRotateSpeed(Application::DefaultRotateSpeed);
-
     GUI gui(window);
+
+    Scene scene;
+    scene.name = "Main Scene";
+
+    GameObject &camera_game_object = scene.CreateGameObject();
+    camera_game_object.name = "Main Camera";
+    camera_game_object.transform.position = {0, 0, 1};
+
+    Camera &camera = camera_game_object.AddComponent<Camera>();
+    camera.nearClipPlane = Application::DefaultClipPlane.first;
+    camera.farClipPlane = Application::DefaultClipPlane.second;
+    camera.fieldOfViewY = Application::DefaultFov;
+    camera.aspect = window.GetAspect();
+
+    window.AddCallback(WindowEvent::Resize, [&]() { camera.aspect = window.GetAspect(); });
+
+    Controller &camera_controller = camera_game_object.AddComponent<Controller>()
+                                            .SetMoveSpeed(Application::DefaultMoveSpeed)
+                                            .SetRotateSpeed(Application::DefaultRotateSpeed);
+
+    scene.SetCamera(camera_game_object.name);
+
+    for (int x = -5; x <= 5; ++x) {
+        for (int y = -5; y <= 5; ++y) {
+            GameObject &bunny = scene.CreateGameObject();
+            bunny.name = std::format("Bunny {0},{1}", x, y);
+            bunny.transform.position = {x, y, 0};
+            bunny.transform.scale = {3, 3, 3};
+
+            Mesh &bunny_mesh = bunny.AddComponent<Mesh>();
+            bunny_mesh.index = ModelLibrary::StanfordBunny.index;
+            bunny_mesh.vertex = ModelLibrary::StanfordBunny.vertex;
+
+            Drawer &bunny_drawer = bunny.AddComponent<Drawer>();
+        }
+    }
+
+    scene.Create();
+
     gui.AddStaticItem("Vkxel", [&]() {
         ImGui::Text(std::format("Frame {0} ({1} ms)", frame_count, Time::RealDeltaSeconds() * 1000).data());
         ImGui::Text(std::format("Size ({0}, {1})", window.GetWidth(), window.GetHeight()).data());
         ImGui::Text(std::format("Resolution ({0}, {1})", window.GetFrameBufferWidth(), window.GetFrameBufferHeight())
                             .data());
         if (ImGui::CollapsingHeader("Camera")) {
-            auto position = camera.transform.position;
-            auto rotation = glm::degrees(glm::eulerAngles(camera.transform.rotation));
+            auto position = camera_game_object.transform.position;
+            auto rotation = glm::degrees(glm::eulerAngles(camera_game_object.transform.rotation));
             ImGui::InputFloat3("Position", reinterpret_cast<float *>(&position));
             ImGui::InputFloat3("Rotation", reinterpret_cast<float *>(&rotation));
         }
     });
 
-    Renderer renderer(window, camera, gui);
+    Renderer renderer(window, gui);
 
     renderer.Init();
-    renderer.AllocateResource();
-    renderer.UploadData();
+    renderer.LoadScene(scene);
 
     while (!window.ShouldClose()) {
         Input::Update();
         Time::Update();
         window.Update();
-        camera_controller.Update();
         gui.Update();
+        scene.Update();
 
         renderer.Render();
 
@@ -76,8 +104,10 @@ int main() {
             std::this_thread::sleep_for(std::chrono::duration<float>(background_mode_sleep_seconds));
         }
     }
-    renderer.ReleaseResource();
+
+    renderer.UnloadScene();
     renderer.Destroy();
+    scene.Destroy();
 
     window.Destroy();
 

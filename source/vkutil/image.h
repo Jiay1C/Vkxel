@@ -13,12 +13,12 @@ namespace Vkxel::VkUtil {
         VkDevice device = nullptr;
         VmaAllocator allocator = nullptr;
         VkImage image = nullptr;
-        VkImageCreateInfo imageCreateInfo = {};
+        VkImageCreateInfo createInfo = {};
         VmaAllocation allocation = nullptr;
         VmaAllocationCreateInfo allocationCreateInfo = {};
         VmaAllocationInfo allocationInfo = {};
         VkImageView imageView = nullptr;
-        VkImageViewCreateInfo imageViewCreateInfo = {};
+        VkImageViewCreateInfo viewCreateInfo = {};
 
         void Create();
         void Destroy();
@@ -38,8 +38,8 @@ namespace Vkxel::VkUtil {
             _device(device), _allocator(allocator) {}
 
         explicit ImageBuilder(const Image &oldImage) :
-            _device(oldImage.device), _allocator(oldImage.allocator), _create_info(oldImage.imageCreateInfo),
-            _view_create_info(oldImage.imageViewCreateInfo), _allocation_info(oldImage.allocationCreateInfo),
+            _device(oldImage.device), _allocator(oldImage.allocator), _create_info(oldImage.createInfo),
+            _view_create_info(oldImage.viewCreateInfo), _allocation_info(oldImage.allocationCreateInfo),
             _create_image_view(oldImage.imageView != nullptr) {}
 
         Image Build() const;

@@ -114,6 +114,7 @@ VKXEL_DEFINE_SOURCES(ENGINE_SOURCES "engine"
         gui.cpp
         gui.h
         delegate.hpp
+        resource.h
 )
 
 VKXEL_DEFINE_SOURCES(WORLD_SOURCES "world"
@@ -125,6 +126,14 @@ VKXEL_DEFINE_SOURCES(WORLD_SOURCES "world"
         transform.h
         controller.cpp
         controller.h
+        object.h
+        gameobject.h
+        component.h
+        mesh.h
+        drawer.cpp
+        drawer.h
+        scene.cpp
+        scene.h
 )
 
 VKXEL_DEFINE_SOURCES(VKUTIL_SOURCES "vkutil"

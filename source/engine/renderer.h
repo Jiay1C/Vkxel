@@ -10,11 +10,11 @@
 #include "vulkan/vulkan.h"
 
 #include "gui.h"
+#include "resource.h"
 #include "vkutil/buffer.h"
 #include "vkutil/image.h"
 #include "window.h"
-#include "world/camera.h"
-#include "world/model.h"
+#include "world/scene.h"
 
 namespace Vkxel {
 
@@ -22,25 +22,25 @@ namespace Vkxel {
     public:
         friend class GUI;
 
-        explicit Renderer(Window &window, Camera &camera, GUI &gui);
+        explicit Renderer(Window &window, GUI &gui);
 
         void Init();
         void Destroy();
 
-        void AllocateResource();
-        void ReleaseResource();
-        void UploadData();
+        void LoadScene(const Scene &scene);
+        void UnloadScene();
 
         void Render();
 
         void Resize();
 
         Window &GetWindow() const;
-        Camera &GetCamera() const;
 
     private:
+        ObjectResource UploadObjectResource(VkCommandBuffer commandBuffer, const ObjectData &object);
+        void DestroyObjectResource(ObjectResource &object);
+
         Window &_window;
-        Camera &_camera;
         GUI &_gui;
 
         bool _pause = false;
@@ -59,25 +59,27 @@ namespace Vkxel {
         VkSurfaceKHR _surface = nullptr;
         VkQueue _queue = nullptr;
         VkCommandPool _command_pool = nullptr;
+        VkDescriptorPool _descriptor_pool = nullptr;
 
         uint32_t _queue_family_index = 0;
-
 
         // Resource Related Handle
 
         VkDescriptorSetLayout _descriptor_set_layout = nullptr;
-        VkDescriptorPool _descriptor_pool = nullptr;
-        VkDescriptorSet _descriptor_set = nullptr;
 
         VkPipelineLayout _pipeline_layout = nullptr;
         VkPipeline _pipeline = nullptr;
 
         VkUtil::Buffer _staging_buffer = {};
         std::byte *_staging_buffer_pointer = nullptr;
+        uint32_t _staging_buffer_count = 0;
 
-        VkUtil::Buffer _index_buffer = {};
-        VkUtil::Buffer _vertex_buffer = {};
-        VkUtil::Buffer _constant_buffer_per_frame = {};
+        // VkUtil::Buffer _index_buffer = {};
+        // VkUtil::Buffer _vertex_buffer = {};
+        // VkUtil::Buffer _constant_buffer_per_frame = {};
+
+        FrameResource _frame_resource = {};
+        std::vector<ObjectResource> _object_resource = {};
 
         VkUtil::Image _color_image = {};
         VkUtil::Image _depth_image = {};
@@ -87,8 +89,7 @@ namespace Vkxel {
 
         VkFence _command_buffer_fence = nullptr;
 
-        // Temp Variable
-        const decltype(ModelLibrary::StanfordBunny) &_model = ModelLibrary::StanfordBunny;
+        std::optional<std::reference_wrapper<const Scene>> _scene = std::nullopt;
     };
 
 } // namespace Vkxel

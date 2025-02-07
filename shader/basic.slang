@@ -19,15 +19,27 @@ struct VertexOutput
     float3 color;
 };
 
-struct ConstantBufferPerFrame
-{
-    float4x4 modelMatrix;
+struct SceneData{
     float4x4 viewMatrix;
     float4x4 projectionMatrix;
     float4 cameraPosition;
 };
 
-ConstantBuffer<ConstantBufferPerFrame> cbFrame;
+struct ConstantBufferPerFrame
+{
+    SceneData scene;
+};
+
+struct ConstantBufferPerObject
+{
+    float4x4 transformMatrix;
+};
+
+[[vk::binding(0,0)]]
+ConstantBuffer<ConstantBufferPerFrame> cbufferFrame;
+
+[[vk::binding(1,0)]]
+ConstantBuffer<ConstantBufferPerObject> cbufferObject;
 
 float3x3 GetNormalMatrix(float4x4 m)
 {
@@ -38,9 +50,9 @@ float3x3 GetNormalMatrix(float4x4 m)
 VertexOutput vertexMain(VertexInput input)
 {
     VertexOutput output;
-    float4x4 m = cbFrame.modelMatrix;
-    float4x4 v = cbFrame.viewMatrix;
-    float4x4 p = cbFrame.projectionMatrix;
+    float4x4 m = cbufferObject.transformMatrix;
+    float4x4 v = cbufferFrame.scene.viewMatrix;
+    float4x4 p = cbufferFrame.scene.projectionMatrix;
 
     float3x3 m_n = GetNormalMatrix(m);
     float3x3 v_n = GetNormalMatrix(v);
@@ -70,7 +82,7 @@ float4 fragmentMain(VertexOutput input) : SV_Target
 
     float3 normal = normalize(input.worldNormal);
     float3 lightDir = normalize(lightPosition - input.worldPosition.xyz);
-    float3 viewDir = normalize(cbFrame.cameraPosition.xyz - input.worldPosition.xyz);
+    float3 viewDir = normalize(cbufferFrame.scene.cameraPosition.xyz - input.worldPosition.xyz);
 
     // Ambient Component
     float3 ambient = 0.1 * lightColor;

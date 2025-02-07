@@ -11,17 +11,14 @@
 
 namespace Vkxel {
 
-    class Controller {
+    class Controller : public Component {
     public:
-        explicit Controller(Transform &transform);
-
         Controller &SetMoveSpeed(float speed);
         Controller &SetRotateSpeed(float speed);
 
-        void Update();
+        void Update() override;
 
     private:
-        Transform &_transform;
         float _move_speed = 0;
         float _rotate_speed = 0;
         glm::vec2 _last_mouse_position = {};
