@@ -9,7 +9,7 @@
 #include <optional>
 #include <string_view>
 
-#include "engine/type.h"
+#include "engine/data_type.h"
 #include "gameobject.hpp"
 
 namespace Vkxel {

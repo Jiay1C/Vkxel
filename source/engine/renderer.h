@@ -10,7 +10,7 @@
 #include "vulkan/vulkan.h"
 
 #include "gui.h"
-#include "resource.h"
+#include "resource_type.h"
 #include "vkutil/buffer.h"
 #include "vkutil/image.h"
 #include "window.h"
@@ -66,7 +66,6 @@ namespace Vkxel {
 
         // Resource Related Handle
 
-        VkDescriptorSetLayout _descriptor_set_layout = nullptr;
 
         VkPipelineLayout _pipeline_layout = nullptr;
         VkPipeline _pipeline = nullptr;
@@ -79,11 +78,11 @@ namespace Vkxel {
         // VkUtil::Buffer _vertex_buffer = {};
         // VkUtil::Buffer _constant_buffer_per_frame = {};
 
+        VkDescriptorSetLayout _descriptor_set_layout_frame = nullptr;
         FrameResource _frame_resource = {};
-        std::vector<ObjectResource> _object_resource = {};
 
-        VkUtil::Image _color_image = {};
-        VkUtil::Image _depth_image = {};
+        VkDescriptorSetLayout _descriptor_set_layout_object = nullptr;
+        std::vector<ObjectResource> _object_resource = {};
 
         VkSemaphore _image_ready_semaphore = nullptr;
         VkSemaphore _render_complete_semaphore = nullptr;

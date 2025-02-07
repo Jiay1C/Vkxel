@@ -104,13 +104,15 @@ VKXEL_DEFINE_SOURCES(ENGINE_SOURCES "engine"
         shader.h
         file.cpp
         file.h
-        type.h
+        data_type.h
         input.cpp
         input.h
         vtime.cpp
         vtime.h
         gui.cpp
         gui.h
+        resource_type.h
+        resource.cpp
         resource.h
 )
 
