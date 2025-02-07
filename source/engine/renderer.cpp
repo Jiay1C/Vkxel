@@ -11,20 +11,21 @@
 #include "vk_mem_alloc.h"
 #include "vulkan/vulkan.h"
 
-#include "application.h"
-#include "check.h"
 #include "renderer.h"
 #include "shader.h"
 #include "type.h"
+#include "util/application.h"
+#include "util/check.h"
 #include "vkutil/buffer.h"
 #include "vkutil/image.h"
-#include "world/model.h"
 
 
 namespace Vkxel {
     Renderer::Renderer(Window &window, GUI &gui) : _window(window), _gui(gui) {}
 
     void Renderer::Init() {
+
+        CHECK_NOTNULL(!_init);
 
         // Create Instance
         vkb::InstanceBuilder instance_builder;
@@ -136,9 +137,13 @@ namespace Vkxel {
                                   .ColorAttachmentFormat = Application::DefaultFramebufferFormat};
 
         _gui.InitVK(&gui_init_info);
+
+        _init = true;
     }
 
     void Renderer::Destroy() {
+        CHECK_NOTNULL(_init);
+
         vkDeviceWaitIdle(_device);
 
         _gui.DestroyVK();
@@ -150,9 +155,14 @@ namespace Vkxel {
         vkb::destroy_device(_device);
         _window.DestroySurface();
         vkb::destroy_instance(_instance);
+
+        _init = false;
     }
 
     void Renderer::LoadScene(const Scene &scene) {
+        CHECK_NOTNULL(_init);
+        CHECK_NOTNULL(!_scene);
+
         _scene = scene;
 
         RenderContext context;
@@ -441,6 +451,9 @@ namespace Vkxel {
     }
 
     void Renderer::UnloadScene() {
+        CHECK_NOTNULL(_init);
+        CHECK_NOTNULL(_scene);
+
         vkDeviceWaitIdle(_device);
 
         for (auto &object: _object_resource) {
@@ -459,11 +472,16 @@ namespace Vkxel {
 
         vkDestroyPipeline(_device, _pipeline, nullptr);
         vkDestroyPipelineLayout(_device, _pipeline_layout, nullptr);
+
+        _scene = std::nullopt;
     }
 
     void Renderer::Render() {
 
-        if (_pause || !_scene) {
+        CHECK_NOTNULL(_init);
+        CHECK_NOTNULL(_scene);
+
+        if (_pause) {
             return;
         }
 

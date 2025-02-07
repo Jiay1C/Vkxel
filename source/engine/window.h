@@ -13,7 +13,7 @@
 #include "GLFW/glfw3.h"
 #include "vulkan/vulkan.h"
 
-#include "delegate.hpp"
+#include "util/delegate.hpp"
 
 namespace Vkxel {
 

@@ -4,8 +4,8 @@
 
 #include "vulkan/vulkan.h"
 
-#include "check.h"
 #include "input.h"
+#include "util/check.h"
 #include "window.h"
 
 namespace Vkxel {

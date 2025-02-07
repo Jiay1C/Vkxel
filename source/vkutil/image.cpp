@@ -5,8 +5,8 @@
 #include "vk_mem_alloc.h"
 #include "vulkan/vulkan.h"
 
-#include "engine/check.h"
 #include "image.h"
+#include "util/check.h"
 
 namespace Vkxel::VkUtil {
 

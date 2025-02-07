@@ -12,9 +12,9 @@
 #include <string_view>
 
 #include "component.h"
-#include "engine/check.h"
 #include "object.h"
 #include "transform.h"
+#include "util/check.h"
 
 namespace Vkxel {
 

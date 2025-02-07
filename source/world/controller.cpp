@@ -6,7 +6,7 @@
 
 #include "engine/input.h"
 #include "engine/vtime.h"
-#include "gameobject.h"
+#include "gameobject.hpp"
 
 namespace Vkxel {
 
