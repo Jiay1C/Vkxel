@@ -44,7 +44,7 @@ namespace Vkxel {
             const Camera &camera = camera_game_object.GetComponent<Camera>().value();
             context.scene = {.viewMatrix = camera.GetViewMatrix(),
                              .projectionMatrix = camera.GetProjectionMatrix(),
-                             .cameraPosition = glm::vec4(camera.gameObject->transform.position, 1.0)};
+                             .cameraPosition = glm::vec4(camera.gameObject.transform.position, 1.0)};
             for (auto &game_object: _gameobjects) {
                 if (auto drawer_result = game_object.GetComponent<Drawer>()) {
                     const Drawer &drawer = drawer_result.value();

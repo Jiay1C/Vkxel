@@ -8,6 +8,7 @@
 #include "component.h"
 #include "glm/glm.hpp"
 
+#include "engine/application.h"
 #include "transform.h"
 
 namespace Vkxel {
@@ -15,10 +16,12 @@ namespace Vkxel {
 
     class Camera : public Component {
     public:
-        float nearClipPlane = 0;
-        float farClipPlane = 0;
-        float fieldOfViewY = 0;
-        float aspect = 0;
+        using Component::Component;
+
+        float nearClipPlane = Application::DefaultNearClipPlane;
+        float farClipPlane = Application::DefaultFarClipPlane;
+        float fieldOfViewY = Application::DefaultFov;
+        float aspect = static_cast<float>(Application::DefaultWindowWidth) / Application::DefaultWindowHeight;
 
         glm::mat4 GetViewMatrix() const;
         glm::mat4 GetProjectionMatrix() const;

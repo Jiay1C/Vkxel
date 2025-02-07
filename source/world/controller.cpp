@@ -10,16 +10,6 @@
 
 namespace Vkxel {
 
-    Controller &Controller::SetMoveSpeed(const float speed) {
-        _move_speed = speed;
-        return *this;
-    }
-
-    Controller &Controller::SetRotateSpeed(const float speed) {
-        _rotate_speed = speed;
-        return *this;
-    }
-
     void Controller::Update() {
         float delta_seconds = Time::DeltaSeconds();
 
@@ -49,17 +39,22 @@ namespace Vkxel {
             translation += Transform::down;
         }
 
-        gameObject->transform.TranslateSelf(translation * _move_speed * delta_seconds);
+        if (Input::GetKey(KeyCode::KEY_LEFT_SHIFT)) {
+            translation *= accelerateRatio;
+        }
+
+        translation *= moveSpeed * delta_seconds;
+        gameObject.transform.TranslateSelf(translation);
 
         glm::vec2 mouse_position = Input::GetMousePosition();
         glm::vec2 mouse_position_delta = mouse_position - _last_mouse_position;
         _last_mouse_position = mouse_position;
 
         // No need to add deltaTime since mouse position already include that info
-        glm::vec2 camera_rotation = _rotate_speed * mouse_position_delta;
+        glm::vec2 rotation = rotateSpeed * mouse_position_delta;
 
         if (Input::GetKey(KeyCode::MOUSE_BUTTON_RIGHT)) {
-            gameObject->transform.RotateSelf({-camera_rotation.y, -camera_rotation.x, 0});
+            gameObject.transform.RotateSelf({-rotation.y, -rotation.x, 0});
         }
     }
 

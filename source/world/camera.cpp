@@ -9,7 +9,7 @@
 #include "glm/glm.hpp"
 
 namespace Vkxel {
-    glm::mat4 Camera::GetViewMatrix() const { return gameObject->transform.GetWorldToLocalMatrix(); }
+    glm::mat4 Camera::GetViewMatrix() const { return gameObject.transform.GetWorldToLocalMatrix(); }
 
     glm::mat4 Camera::GetProjectionMatrix() const {
         glm::mat4 projectionMatrix = glm::perspectiveRH_ZO(fieldOfViewY, aspect, nearClipPlane, farClipPlane);

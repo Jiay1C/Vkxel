@@ -15,6 +15,8 @@ namespace Vkxel {
 
     class Mesh : public Component {
     public:
+        using Component::Component;
+
         std::vector<uint32_t> index;
         std::vector<VertexData> vertex;
     };

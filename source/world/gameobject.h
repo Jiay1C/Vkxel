@@ -20,7 +20,7 @@ namespace Vkxel {
 
     class GameObject final : public Object {
     public:
-        Transform transform;
+        Transform transform = Transform(*this);
 
         void Create() override {
             for (auto &component: _components) {
@@ -45,8 +45,7 @@ namespace Vkxel {
         T &AddComponent() {
             static_assert(std::is_base_of<Component, T>::value, "T must be derived from Component");
 
-            auto component = std::make_unique<T>();
-            component->gameObject = this;
+            auto component = std::make_unique<T>(*this);
             T &ref = *component;
             _components.emplace_back(std::move(component));
 
@@ -84,9 +83,10 @@ namespace Vkxel {
             }
         }
 
+    private:
         std::list<std::unique_ptr<Component>> _components;
     };
 
 } // namespace Vkxel
 
-#endif // VKXEL_IGAMEOBJECT_H
+#endif // VKXEL_GAMEOBJECT_H
