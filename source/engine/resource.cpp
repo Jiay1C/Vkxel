@@ -9,6 +9,7 @@
 
 #include "resource.h"
 
+#include "util/application.h"
 #include "util/check.h"
 #include "vkutil/command.h"
 
@@ -152,13 +153,91 @@ namespace Vkxel {
     }
 
 
-    void ResourceManager::DestroyObjectResource(ObjectResource &object) {
-        object.indexBuffer.Destroy();
-        object.vertexBuffer.Destroy();
-        object.constantBuffer.Destroy();
-        object.descriptorSet.Destroy();
+    void ResourceManager::DestroyObjectResource(ObjectResource &resource) {
+        resource.indexBuffer.Destroy();
+        resource.vertexBuffer.Destroy();
+        resource.constantBuffer.Destroy();
+        resource.descriptorSet.Destroy();
 
-        object = {};
+        resource = {};
+    }
+
+    FrameResource ResourceManager::CreateFrameResource(uint32_t swapchainWidth, uint32_t swapchainHeight) {
+        VkUtil::Image depth_image = VkUtil::ImageBuilder(_device, _allocator)
+                                            .SetImageType(VK_IMAGE_TYPE_2D)
+                                            .SetFormat(VK_FORMAT_D32_SFLOAT)
+                                            .SetExtent({swapchainWidth, swapchainHeight, 1})
+                                            .SetUsage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
+                                            .SetPQueueFamilyIndices(&_queue_family)
+                                            .SetMemoryUsage(VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE)
+                                            .SetViewSubresourceRange({.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
+                                                                      .baseMipLevel = 0,
+                                                                      .levelCount = 1,
+                                                                      .baseArrayLayer = 0,
+                                                                      .layerCount = 1})
+                                            .CreateImageView()
+                                            .Build();
+        depth_image.Create();
+
+        VkUtil::Image color_image =
+                VkUtil::ImageBuilder(_device, _allocator)
+                        .SetImageType(VK_IMAGE_TYPE_2D)
+                        .SetFormat(Application::DefaultFramebufferFormat)
+                        .SetExtent({swapchainWidth, swapchainHeight, 1})
+                        .SetUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
+                        .SetPQueueFamilyIndices(&_queue_family)
+                        .SetMemoryUsage(VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE)
+                        .SetViewSubresourceRange({.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                                                  .baseMipLevel = 0,
+                                                  .levelCount = 1,
+                                                  .baseArrayLayer = 0,
+                                                  .layerCount = 1})
+                        .CreateImageView()
+                        .Build();
+        color_image.Create();
+
+        VkUtil::Buffer constant_buffer =
+                VkUtil::BufferBuilder(_device, _allocator)
+                        .SetMemoryUsage(VMA_MEMORY_USAGE_AUTO_PREFER_HOST)
+                        .SetPQueueFamilyIndices(&_queue_family)
+                        .SetSize(sizeof(ConstantBufferPerFrame))
+                        .SetUsage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT)
+                        .Build();
+        constant_buffer.Create();
+
+        // Create Scene DescriptorSet
+        VkUtil::DescriptorSet descriptor_set =
+                VkUtil::DescriptorSetBuilder(_device, _descriptor_pool, _descriptor_set_layout_frame).Build();
+        descriptor_set.Create();
+
+        VkDescriptorBufferInfo constant_buffer_per_frame_info{
+                .buffer = constant_buffer.buffer, .offset = 0, .range = VK_WHOLE_SIZE};
+        std::array descriptor_set_write_info = {VkWriteDescriptorSet{
+                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                .dstSet = descriptor_set.set,
+                .dstBinding = 0,
+                .dstArrayElement = 0,
+                .descriptorCount = 1,
+                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                .pBufferInfo = &constant_buffer_per_frame_info,
+        }};
+
+        vkUpdateDescriptorSets(_device, static_cast<uint32_t>(descriptor_set_write_info.size()),
+                               descriptor_set_write_info.data(), 0, nullptr);
+
+        return {.constantBuffer = constant_buffer,
+                .colorImage = color_image,
+                .depthImage = depth_image,
+                .descriptorSet = descriptor_set};
+    }
+
+    void ResourceManager::DestroyFrameResource(FrameResource &resource) {
+        resource.constantBuffer.Destroy();
+        resource.depthImage.Destroy();
+        resource.colorImage.Destroy();
+        resource.descriptorSet.Destroy();
+
+        resource = {};
     }
 
 

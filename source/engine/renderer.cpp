@@ -181,38 +181,6 @@ namespace Vkxel {
         };
         CHECK_RESULT_VK(vkCreateFence(_device, &fence_create_info, nullptr, &_command_buffer_fence));
 
-        _frame_resource.depthImage = VkUtil::ImageBuilder(_device, _allocator)
-                                             .SetImageType(VK_IMAGE_TYPE_2D)
-                                             .SetFormat(VK_FORMAT_D32_SFLOAT)
-                                             .SetExtent({_swapchain.extent.width, _swapchain.extent.height, 1})
-                                             .SetUsage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
-                                             .SetPQueueFamilyIndices(&_queue_family_index)
-                                             .SetMemoryUsage(VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE)
-                                             .SetViewSubresourceRange({.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
-                                                                       .baseMipLevel = 0,
-                                                                       .levelCount = 1,
-                                                                       .baseArrayLayer = 0,
-                                                                       .layerCount = 1})
-                                             .CreateImageView()
-                                             .Build();
-        _frame_resource.depthImage.Create();
-
-        _frame_resource.colorImage =
-                VkUtil::ImageBuilder(_device, _allocator)
-                        .SetImageType(VK_IMAGE_TYPE_2D)
-                        .SetFormat(Application::DefaultFramebufferFormat)
-                        .SetExtent({_swapchain.extent.width, _swapchain.extent.height, 1})
-                        .SetUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
-                        .SetPQueueFamilyIndices(&_queue_family_index)
-                        .SetMemoryUsage(VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE)
-                        .SetViewSubresourceRange({.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                                                  .baseMipLevel = 0,
-                                                  .levelCount = 1,
-                                                  .baseArrayLayer = 0,
-                                                  .layerCount = 1})
-                        .CreateImageView()
-                        .Build();
-        _frame_resource.colorImage.Create();
 
         std::array descriptor_set_layout_binding = {
                 VkDescriptorSetLayoutBinding{.binding = 0,
@@ -229,6 +197,25 @@ namespace Vkxel {
                                                     &_descriptor_set_layout_frame));
         CHECK_RESULT_VK(vkCreateDescriptorSetLayout(_device, &descriptor_set_layout_create_info, nullptr,
                                                     &_descriptor_set_layout_object));
+
+
+        // Upload Data
+        _resource_manager = std::make_unique<ResourceManager>(_device, _queue_family_index, _queue, _command_pool,
+                                                              _descriptor_pool, _descriptor_set_layout_frame,
+                                                              _descriptor_set_layout_object, _allocator);
+        _resource_uploader =
+                std::make_unique<ResourceUploader>(_device, _queue_family_index, _queue, _command_pool, _allocator);
+
+        _frame_resource = _resource_manager->CreateFrameResource(_swapchain.extent.width, _swapchain.extent.height);
+
+        _object_resource.reserve(context.objects.size());
+
+        for (const auto &object: context.objects) {
+            ObjectResource &resource = _object_resource.emplace_back(_resource_manager->CreateObjectResource(object));
+            _resource_uploader->AddObject(object, resource);
+        }
+
+        _resource_uploader->UploadObjects();
 
 
         // Create Pipeline Layout
@@ -387,52 +374,6 @@ namespace Vkxel {
                 vkCreateGraphicsPipelines(_device, nullptr, 1, &graphics_pipeline_create_info, nullptr, &_pipeline));
 
         vkDestroyShaderModule(_device, shader_module, nullptr);
-
-
-        // Upload Data
-        _frame_resource.constantBuffer =
-                VkUtil::BufferBuilder(_device, _allocator)
-                        .SetMemoryUsage(VMA_MEMORY_USAGE_AUTO_PREFER_HOST)
-                        .SetPQueueFamilyIndices(&_queue_family_index)
-                        .SetSize(sizeof(ConstantBufferPerFrame))
-                        .SetUsage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT)
-                        .Build();
-        _frame_resource.constantBuffer.Create();
-
-        // Create Scene DescriptorSet
-        _frame_resource.descriptorSet =
-                VkUtil::DescriptorSetBuilder(_device, _descriptor_pool, _descriptor_set_layout_frame).Build();
-        _frame_resource.descriptorSet.Create();
-
-        VkDescriptorBufferInfo constant_buffer_per_frame_info{
-                .buffer = _frame_resource.constantBuffer.buffer, .offset = 0, .range = VK_WHOLE_SIZE};
-        std::array descriptor_set_write_info = {VkWriteDescriptorSet{
-                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                .dstSet = _frame_resource.descriptorSet.set,
-                .dstBinding = 0,
-                .dstArrayElement = 0,
-                .descriptorCount = 1,
-                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                .pBufferInfo = &constant_buffer_per_frame_info,
-        }};
-
-        vkUpdateDescriptorSets(_device, static_cast<uint32_t>(descriptor_set_write_info.size()),
-                               descriptor_set_write_info.data(), 0, nullptr);
-
-        _resource_manager = std::make_unique<ResourceManager>(_device, _queue_family_index, _queue, _command_pool,
-                                                              _descriptor_pool, _descriptor_set_layout_frame,
-                                                              _descriptor_set_layout_object, _allocator);
-        _resource_uploader =
-                std::make_unique<ResourceUploader>(_device, _queue_family_index, _queue, _command_pool, _allocator);
-
-        _object_resource.reserve(context.objects.size());
-
-        for (const auto &object: context.objects) {
-            ObjectResource &resource = _object_resource.emplace_back(_resource_manager->CreateObjectResource(object));
-            _resource_uploader->AddObject(object, resource);
-        }
-
-        _resource_uploader->UploadObjects();
     }
 
     void Renderer::UnloadScene() {
@@ -446,10 +387,7 @@ namespace Vkxel {
         }
         _object_resource.clear();
 
-        _frame_resource.constantBuffer.Destroy();
-        _frame_resource.depthImage.Destroy();
-        _frame_resource.colorImage.Destroy();
-        _frame_resource.descriptorSet.Destroy();
+        _resource_manager->DestroyFrameResource(_frame_resource);
 
         vkDestroyFence(_device, _command_buffer_fence, nullptr);
         vkDestroySemaphore(_device, _image_ready_semaphore, nullptr);
@@ -713,19 +651,8 @@ namespace Vkxel {
         _swapchain_image = std::move(swapchain_image_result.value());
 
 
-        _frame_resource.depthImage.Destroy();
-        _frame_resource.depthImage = VkUtil::ImageBuilder(_frame_resource.depthImage)
-                                             .SetLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-                                             .SetExtent({_swapchain.extent.width, _swapchain.extent.height, 1})
-                                             .Build();
-        _frame_resource.depthImage.Create();
-
-        _frame_resource.colorImage.Destroy();
-        _frame_resource.colorImage = VkUtil::ImageBuilder(_frame_resource.colorImage)
-                                             .SetLayout(VK_IMAGE_LAYOUT_UNDEFINED)
-                                             .SetExtent({_swapchain.extent.width, _swapchain.extent.height, 1})
-                                             .Build();
-        _frame_resource.colorImage.Create();
+        _resource_manager->DestroyFrameResource(_frame_resource);
+        _frame_resource = _resource_manager->CreateFrameResource(_swapchain.extent.width, _swapchain.extent.height);
     }
 
 

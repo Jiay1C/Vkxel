@@ -47,7 +47,10 @@ namespace Vkxel {
             _descriptor_set_layout_object(descriptorSetLayoutObject), _allocator(allocator) {}
 
         ObjectResource CreateObjectResource(const ObjectData &object);
-        void DestroyObjectResource(ObjectResource &object);
+        void DestroyObjectResource(ObjectResource &resource);
+
+        FrameResource CreateFrameResource(uint32_t swapchainWidth, uint32_t swapchainHeight);
+        void DestroyFrameResource(FrameResource &resource);
 
     private:
         VkDevice _device = nullptr;
