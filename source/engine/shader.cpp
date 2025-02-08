@@ -36,6 +36,8 @@ namespace Vkxel {
         sessionDesc.targetCount = 1;
 
         std::array options = {
+                slang::CompilerOptionEntry{slang::CompilerOptionName::EmitSpirvDirectly,
+                                           {slang::CompilerOptionValueKind::Int, 1, 0, nullptr, nullptr}},
                 slang::CompilerOptionEntry{slang::CompilerOptionName::VulkanUseEntryPointName,
                                            {slang::CompilerOptionValueKind::Int, 1, 0, nullptr, nullptr}},
                 slang::CompilerOptionEntry{slang::CompilerOptionName::GenerateWholeProgram,
