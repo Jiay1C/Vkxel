@@ -8,6 +8,7 @@
 #include <cstdint>
 
 #include "vkutil/buffer.h"
+#include "vkutil/descriptor.h"
 #include "vkutil/image.h"
 
 namespace Vkxel {
@@ -19,7 +20,7 @@ namespace Vkxel {
         VkUtil::Buffer indexBuffer = {};
         VkUtil::Buffer vertexBuffer = {};
         VkUtil::Buffer constantBuffer = {};
-        VkDescriptorSet descriptorSet = nullptr;
+        VkUtil::DescriptorSet descriptorSet = {};
     };
 
     struct FrameResource {
@@ -28,7 +29,7 @@ namespace Vkxel {
         VkUtil::Image colorImage = {};
         VkUtil::Image depthImage = {};
 
-        VkDescriptorSet descriptorSet;
+        VkUtil::DescriptorSet descriptorSet = {};
     };
 
 } // namespace Vkxel

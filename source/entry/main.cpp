@@ -30,7 +30,7 @@ int main() {
 
     GameObject &camera_game_object = scene.CreateGameObject();
     camera_game_object.name = "Main Camera";
-    camera_game_object.transform.position = {0, 0, 1};
+    camera_game_object.transform.position = {0, 0, 10};
 
     Camera &camera = camera_game_object.AddComponent<Camera>();
 

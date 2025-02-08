@@ -13,10 +13,12 @@
 
 #include "data_type.h"
 #include "renderer.h"
+#include "resource.h"
 #include "shader.h"
 #include "util/application.h"
 #include "util/check.h"
 #include "vkutil/buffer.h"
+#include "vkutil/command.h"
 #include "vkutil/image.h"
 
 
@@ -123,7 +125,7 @@ namespace Vkxel {
                 .instance = _instance,
         };
 
-        CHECK_RESULT_VK(vmaCreateAllocator(&vma_allocator_create_info, &_vma_allocator));
+        CHECK_RESULT_VK(vmaCreateAllocator(&vma_allocator_create_info, &_allocator));
 
         // Create GUI
         GuiInitInfo gui_init_info{.Instance = _instance,
@@ -148,7 +150,7 @@ namespace Vkxel {
 
         _gui.DestroyVK();
 
-        vmaDestroyAllocator(_vma_allocator);
+        vmaDestroyAllocator(_allocator);
         vkDestroyDescriptorPool(_device, _descriptor_pool, nullptr);
         vkDestroyCommandPool(_device, _command_pool, nullptr);
         vkb::destroy_swapchain(_swapchain);
@@ -179,7 +181,7 @@ namespace Vkxel {
         };
         CHECK_RESULT_VK(vkCreateFence(_device, &fence_create_info, nullptr, &_command_buffer_fence));
 
-        _frame_resource.depthImage = VkUtil::ImageBuilder(_device, _vma_allocator)
+        _frame_resource.depthImage = VkUtil::ImageBuilder(_device, _allocator)
                                              .SetImageType(VK_IMAGE_TYPE_2D)
                                              .SetFormat(VK_FORMAT_D32_SFLOAT)
                                              .SetExtent({_swapchain.extent.width, _swapchain.extent.height, 1})
@@ -196,7 +198,7 @@ namespace Vkxel {
         _frame_resource.depthImage.Create();
 
         _frame_resource.colorImage =
-                VkUtil::ImageBuilder(_device, _vma_allocator)
+                VkUtil::ImageBuilder(_device, _allocator)
                         .SetImageType(VK_IMAGE_TYPE_2D)
                         .SetFormat(Application::DefaultFramebufferFormat)
                         .SetExtent({_swapchain.extent.width, _swapchain.extent.height, 1})
@@ -389,7 +391,7 @@ namespace Vkxel {
 
         // Upload Data
         _frame_resource.constantBuffer =
-                VkUtil::BufferBuilder(_device, _vma_allocator)
+                VkUtil::BufferBuilder(_device, _allocator)
                         .SetMemoryUsage(VMA_MEMORY_USAGE_AUTO_PREFER_HOST)
                         .SetPQueueFamilyIndices(&_queue_family_index)
                         .SetSize(sizeof(ConstantBufferPerFrame))
@@ -398,20 +400,15 @@ namespace Vkxel {
         _frame_resource.constantBuffer.Create();
 
         // Create Scene DescriptorSet
-        VkDescriptorSetAllocateInfo descriptor_set_allocate_info{.sType =
-                                                                         VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-                                                                 .descriptorPool = _descriptor_pool,
-                                                                 .descriptorSetCount = 1,
-                                                                 .pSetLayouts = &_descriptor_set_layout_frame};
-
-        CHECK_RESULT_VK(
-                vkAllocateDescriptorSets(_device, &descriptor_set_allocate_info, &_frame_resource.descriptorSet));
+        _frame_resource.descriptorSet =
+                VkUtil::DescriptorSetBuilder(_device, _descriptor_pool, _descriptor_set_layout_frame).Build();
+        _frame_resource.descriptorSet.Create();
 
         VkDescriptorBufferInfo constant_buffer_per_frame_info{
                 .buffer = _frame_resource.constantBuffer.buffer, .offset = 0, .range = VK_WHOLE_SIZE};
         std::array descriptor_set_write_info = {VkWriteDescriptorSet{
                 .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                .dstSet = _frame_resource.descriptorSet,
+                .dstSet = _frame_resource.descriptorSet.set,
                 .dstBinding = 0,
                 .dstArrayElement = 0,
                 .descriptorCount = 1,
@@ -422,60 +419,20 @@ namespace Vkxel {
         vkUpdateDescriptorSets(_device, static_cast<uint32_t>(descriptor_set_write_info.size()),
                                descriptor_set_write_info.data(), 0, nullptr);
 
-        _staging_buffer = VkUtil::BufferBuilder(_device, _vma_allocator)
-                                  .SetSize(Application::DefaultStagingBufferSize)
-                                  .SetUsage(VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT)
-                                  .SetPQueueFamilyIndices(&_queue_family_index)
-                                  .SetAllocationFlags(VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT)
-                                  .SetMemoryUsage(VMA_MEMORY_USAGE_AUTO)
-                                  .SetRequiredFlags(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
-                                  .Build();
-
-        _staging_buffer.Create();
-        _staging_buffer_pointer = _staging_buffer.Map();
-        _staging_buffer_count = 0;
-
-        VkCommandBufferAllocateInfo command_buffer_allocate_info{.sType =
-                                                                         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-                                                                 .commandPool = _command_pool,
-                                                                 .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-                                                                 .commandBufferCount = 1};
-
-        VkCommandBuffer command_buffer;
-        CHECK_RESULT_VK(vkAllocateCommandBuffers(_device, &command_buffer_allocate_info, &command_buffer));
-
-        VkCommandBufferBeginInfo command_buffer_begin_info{.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-                                                           .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT};
-
-        CHECK_RESULT_VK(vkBeginCommandBuffer(command_buffer, &command_buffer_begin_info));
+        _resource_manager = std::make_unique<ResourceManager>(_device, _queue_family_index, _queue, _command_pool,
+                                                              _descriptor_pool, _descriptor_set_layout_frame,
+                                                              _descriptor_set_layout_object, _allocator);
+        _resource_uploader =
+                std::make_unique<ResourceUploader>(_device, _queue_family_index, _queue, _command_pool, _allocator);
 
         _object_resource.reserve(context.objects.size());
-        for (auto &object: context.objects) {
-            _object_resource.push_back(UploadObjectResource(command_buffer, object));
+
+        for (const auto &object: context.objects) {
+            ObjectResource &resource = _object_resource.emplace_back(_resource_manager->CreateObjectResource(object));
+            _resource_uploader->AddObject(object, resource);
         }
 
-        CHECK_RESULT_VK(vkEndCommandBuffer(command_buffer));
-
-        _staging_buffer.Flush(0, _staging_buffer_count);
-
-        VkSubmitInfo submit_info{
-                .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-                .commandBufferCount = 1,
-                .pCommandBuffers = &command_buffer,
-        };
-
-        CHECK_RESULT_VK(vkQueueSubmit(_queue, 1, &submit_info, _command_buffer_fence));
-
-        CHECK_RESULT_VK(
-                vkWaitForFences(_device, 1, &_command_buffer_fence, VK_TRUE, std::numeric_limits<uint64_t>::max()));
-        CHECK_RESULT_VK(vkResetFences(_device, 1, &_command_buffer_fence));
-
-        vkFreeCommandBuffers(_device, _command_pool, 1, &command_buffer);
-
-        _staging_buffer.Unmap();
-        _staging_buffer_pointer = nullptr;
-        _staging_buffer_count = 0;
-        _staging_buffer.Destroy();
+        _resource_uploader->UploadObjects();
     }
 
     void Renderer::UnloadScene() {
@@ -485,17 +442,18 @@ namespace Vkxel {
         vkDeviceWaitIdle(_device);
 
         for (auto &object: _object_resource) {
-            DestroyObjectResource(object);
+            _resource_manager->DestroyObjectResource(object);
         }
+        _object_resource.clear();
+
         _frame_resource.constantBuffer.Destroy();
+        _frame_resource.depthImage.Destroy();
+        _frame_resource.colorImage.Destroy();
+        _frame_resource.descriptorSet.Destroy();
 
         vkDestroyFence(_device, _command_buffer_fence, nullptr);
         vkDestroySemaphore(_device, _image_ready_semaphore, nullptr);
         vkDestroySemaphore(_device, _render_complete_semaphore, nullptr);
-
-        _frame_resource.depthImage.Destroy();
-        _frame_resource.colorImage.Destroy();
-        CHECK_RESULT_VK(vkFreeDescriptorSets(_device, _descriptor_pool, 1, &_frame_resource.descriptorSet));
 
         vkDestroyDescriptorSetLayout(_device, _descriptor_set_layout_frame, nullptr);
         vkDestroyDescriptorSetLayout(_device, _descriptor_set_layout_object, nullptr);
@@ -602,11 +560,11 @@ namespace Vkxel {
         vkCmdBeginRendering(command_buffer, &rendering_info); // Camera Pass
         vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
         vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 0, 1,
-                                &_frame_resource.descriptorSet, 0, nullptr);
+                                &_frame_resource.descriptorSet.set, 0, nullptr);
 
         for (const auto &object: _object_resource) {
             vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 1, 1,
-                                    &object.descriptorSet, 0, nullptr);
+                                    &object.descriptorSet.set, 0, nullptr);
             vkCmdBindIndexBuffer(command_buffer, object.indexBuffer.buffer, offset_zero, VK_INDEX_TYPE_UINT32);
             vkCmdBindVertexBuffers(command_buffer, 0, 1, &object.vertexBuffer.buffer, &offset_zero);
             vkCmdDrawIndexed(command_buffer, object.indexCount, 1, object.firstIndex, 0, 0);
@@ -772,98 +730,5 @@ namespace Vkxel {
 
 
     Window &Renderer::GetWindow() const { return _window; }
-
-    ObjectResource Renderer::UploadObjectResource(VkCommandBuffer commandBuffer, const ObjectData &object) {
-        VkUtil::BufferBuilder bufferBuilder(_device, _vma_allocator);
-        bufferBuilder.SetMemoryUsage(VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE).SetPQueueFamilyIndices(&_queue_family_index);
-
-        // Create Index Buffer
-        VkUtil::Buffer index_buffer =
-                bufferBuilder.SetSize(object.index.size() * sizeof(decltype(object.index)::value_type))
-                        .SetUsage(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT)
-                        .Build();
-        index_buffer.Create();
-
-        std::ranges::copy(object.index, reinterpret_cast<decltype(object.index)::value_type *>(_staging_buffer_pointer +
-                                                                                               _staging_buffer_count));
-        VkBufferCopy index_copy_region{
-                .srcOffset = _staging_buffer_count, .dstOffset = 0, .size = index_buffer.createInfo.size};
-        vkCmdCopyBuffer(commandBuffer, _staging_buffer.buffer, index_buffer.buffer, 1, &index_copy_region);
-        _staging_buffer_count += static_cast<uint32_t>(index_buffer.createInfo.size);
-
-        // Create Vertex Buffer
-        VkUtil::Buffer vertex_buffer =
-                bufferBuilder.SetSize(object.vertex.size() * sizeof(decltype(object.vertex)::value_type))
-                        .SetUsage(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT)
-                        .Build();
-        vertex_buffer.Create();
-
-        std::ranges::copy(object.vertex, reinterpret_cast<decltype(object.vertex)::value_type *>(
-                                                 _staging_buffer_pointer + _staging_buffer_count));
-        VkBufferCopy vertex_copy_region{
-                .srcOffset = _staging_buffer_count, .dstOffset = 0, .size = vertex_buffer.createInfo.size};
-        vkCmdCopyBuffer(commandBuffer, _staging_buffer.buffer, vertex_buffer.buffer, 1, &vertex_copy_region);
-        _staging_buffer_count += static_cast<uint32_t>(vertex_buffer.createInfo.size);
-
-        // Create Constant Buffer
-        // Change Matrix To Row Major
-        ConstantBufferPerObject constant_buffer_per_object{.transformMatrix = glm::transpose(object.transformMatrix)};
-        VkUtil::Buffer constant_buffer =
-                bufferBuilder.SetSize(sizeof(ConstantBufferPerObject))
-                        .SetUsage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT)
-                        .Build();
-        constant_buffer.Create();
-
-        *reinterpret_cast<ConstantBufferPerObject *>(_staging_buffer_pointer + _staging_buffer_count) =
-                constant_buffer_per_object;
-
-        VkBufferCopy constant_copy_region{
-                .srcOffset = _staging_buffer_count, .dstOffset = 0, .size = constant_buffer.createInfo.size};
-        vkCmdCopyBuffer(commandBuffer, _staging_buffer.buffer, constant_buffer.buffer, 1, &constant_copy_region);
-        _staging_buffer_count += static_cast<uint32_t>(constant_buffer.createInfo.size);
-
-        // Create DescriptorSet
-        VkDescriptorSet descriptor_set = nullptr;
-        VkDescriptorSetAllocateInfo descriptor_set_allocate_info{.sType =
-                                                                         VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-                                                                 .descriptorPool = _descriptor_pool,
-                                                                 .descriptorSetCount = 1,
-                                                                 .pSetLayouts = &_descriptor_set_layout_object};
-
-        CHECK_RESULT_VK(vkAllocateDescriptorSets(_device, &descriptor_set_allocate_info, &descriptor_set));
-
-        VkDescriptorBufferInfo constant_buffer_per_object_info{
-                .buffer = constant_buffer.buffer, .offset = 0, .range = VK_WHOLE_SIZE};
-        std::array descriptor_set_write_info = {VkWriteDescriptorSet{
-                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                .dstSet = descriptor_set,
-                .dstBinding = 0,
-                .dstArrayElement = 0,
-                .descriptorCount = 1,
-                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                .pBufferInfo = &constant_buffer_per_object_info,
-        }};
-
-        vkUpdateDescriptorSets(_device, static_cast<uint32_t>(descriptor_set_write_info.size()),
-                               descriptor_set_write_info.data(), 0, nullptr);
-
-        return {.indexCount = static_cast<uint32_t>(object.index.size()),
-                .firstIndex = 0,
-                .indexBuffer = index_buffer,
-                .vertexBuffer = vertex_buffer,
-                .constantBuffer = constant_buffer,
-                .descriptorSet = descriptor_set};
-    }
-
-    void Renderer::DestroyObjectResource(ObjectResource &object) {
-        object.indexBuffer.Destroy();
-        object.vertexBuffer.Destroy();
-        object.constantBuffer.Destroy();
-
-        CHECK_RESULT_VK(vkFreeDescriptorSets(_device, _descriptor_pool, 1, &object.descriptorSet));
-
-        object = {};
-    }
-
 
 } // namespace Vkxel
