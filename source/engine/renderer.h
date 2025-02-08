@@ -10,6 +10,7 @@
 #include "vulkan/vulkan.h"
 
 #include "gui.h"
+#include "resource.h"
 #include "resource_type.h"
 #include "vkutil/buffer.h"
 #include "vkutil/image.h"
@@ -37,8 +38,8 @@ namespace Vkxel {
         Window &GetWindow() const;
 
     private:
-        ObjectResource UploadObjectResource(VkCommandBuffer commandBuffer, const ObjectData &object);
-        void DestroyObjectResource(ObjectResource &object);
+        // ObjectResource UploadObjectResource(VkCommandBuffer commandBuffer, const ObjectData &object);
+        // void DestroyObjectResource(ObjectResource &object);
 
         Window &_window;
         GUI &_gui;
@@ -55,7 +56,7 @@ namespace Vkxel {
         vkb::Swapchain _swapchain;
         std::vector<VkImage> _swapchain_image;
 
-        VmaAllocator _vma_allocator = nullptr;
+        VmaAllocator _allocator = nullptr;
 
         VkSurfaceKHR _surface = nullptr;
         VkQueue _queue = nullptr;
@@ -66,21 +67,17 @@ namespace Vkxel {
 
         // Resource Related Handle
 
-
         VkPipelineLayout _pipeline_layout = nullptr;
         VkPipeline _pipeline = nullptr;
 
-        VkUtil::Buffer _staging_buffer = {};
-        std::byte *_staging_buffer_pointer = nullptr;
-        uint32_t _staging_buffer_count = 0;
+        std::unique_ptr<ResourceManager> _resource_manager;
+        std::unique_ptr<ResourceUploader> _resource_uploader;
 
-        // VkUtil::Buffer _index_buffer = {};
-        // VkUtil::Buffer _vertex_buffer = {};
-        // VkUtil::Buffer _constant_buffer_per_frame = {};
-
+        // Frame Resources
         VkDescriptorSetLayout _descriptor_set_layout_frame = nullptr;
         FrameResource _frame_resource = {};
 
+        // Object Resources
         VkDescriptorSetLayout _descriptor_set_layout_object = nullptr;
         std::vector<ObjectResource> _object_resource = {};
 

@@ -138,6 +138,10 @@ VKXEL_DEFINE_SOURCES(VKUTIL_SOURCES "vkutil"
         image.h
         buffer.cpp
         buffer.h
+        command.cpp
+        command.h
+        descriptor.cpp
+        descriptor.h
 )
 
 VKXEL_DEFINE_SOURCES(UTIL_SOURCES "util"
