@@ -22,15 +22,11 @@ namespace Vkxel {
     void ResourceUploader::UploadObjects() {
         VkDeviceSize total_size = 0;
 
-        constexpr VkDeviceSize index_type_size = sizeof(decltype(std::declval<ObjectData>().index)::value_type);
-        constexpr VkDeviceSize vertex_type_size = sizeof(decltype(std::declval<ObjectData>().vertex)::value_type);
-        constexpr VkDeviceSize constant_buffer_type_size = sizeof(ConstantBufferPerObject);
-
         for (const auto &object_wrapper: _objects | std::views::keys) {
             const ObjectData &object = object_wrapper;
-            total_size += index_type_size * object.index.size();
-            total_size += vertex_type_size * object.vertex.size();
-            total_size += constant_buffer_type_size;
+            total_size += sizeof(IndexType) * object.index.size();
+            total_size += sizeof(VertexType) * object.vertex.size();
+            total_size += sizeof(ConstantBufferPerObject);
         }
 
         VkUtil::Buffer staging_buffer =
@@ -55,16 +51,14 @@ namespace Vkxel {
             const ObjectResource &resource = resource_wrapper;
 
             // Upload Index Buffer
-            std::ranges::copy(object.index,
-                              reinterpret_cast<decltype(object.index)::value_type *>(host_buffer + host_buffer_offset));
+            std::ranges::copy(object.index, reinterpret_cast<IndexType *>(host_buffer + host_buffer_offset));
             VkBufferCopy index_copy_region{
                     .srcOffset = host_buffer_offset, .dstOffset = 0, .size = resource.indexBuffer.createInfo.size};
             vkCmdCopyBuffer(command_buffer, staging_buffer.buffer, resource.indexBuffer.buffer, 1, &index_copy_region);
             host_buffer_offset += static_cast<uint32_t>(resource.indexBuffer.createInfo.size);
 
             // Upload Vertex Buffer
-            std::ranges::copy(object.vertex, reinterpret_cast<decltype(object.vertex)::value_type *>(
-                                                     host_buffer + host_buffer_offset));
+            std::ranges::copy(object.vertex, reinterpret_cast<VertexType *>(host_buffer + host_buffer_offset));
             VkBufferCopy vertex_copy_region{
                     .srcOffset = host_buffer_offset, .dstOffset = 0, .size = resource.vertexBuffer.createInfo.size};
             vkCmdCopyBuffer(command_buffer, staging_buffer.buffer, resource.vertexBuffer.buffer, 1,
@@ -95,23 +89,20 @@ namespace Vkxel {
     }
 
     ObjectResource ResourceManager::CreateObjectResource(const ObjectData &object) {
-        constexpr VkDeviceSize index_type_size = sizeof(decltype(std::declval<ObjectData>().index)::value_type);
-        constexpr VkDeviceSize vertex_type_size = sizeof(decltype(std::declval<ObjectData>().vertex)::value_type);
-        constexpr VkDeviceSize constant_buffer_type_size = sizeof(ConstantBufferPerObject);
 
         VkUtil::BufferBuilder bufferBuilder(_device, _allocator);
         bufferBuilder.SetMemoryUsage(VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE).SetPQueueFamilyIndices(&_queue_family);
 
         // Create Index Buffer
         VkUtil::Buffer index_buffer =
-                bufferBuilder.SetSize(index_type_size * object.index.size())
+                bufferBuilder.SetSize(sizeof(IndexType) * object.index.size())
                         .SetUsage(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT)
                         .Build();
         index_buffer.Create();
 
         // Create Vertex Buffer
         VkUtil::Buffer vertex_buffer =
-                bufferBuilder.SetSize(vertex_type_size * object.vertex.size())
+                bufferBuilder.SetSize(sizeof(VertexType) * object.vertex.size())
                         .SetUsage(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT)
                         .Build();
         vertex_buffer.Create();
@@ -119,7 +110,7 @@ namespace Vkxel {
         // Create Constant Buffer
         // Change Matrix To Row Major
         VkUtil::Buffer constant_buffer =
-                bufferBuilder.SetSize(constant_buffer_type_size)
+                bufferBuilder.SetSize(sizeof(ConstantBufferPerObject))
                         .SetUsage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT)
                         .Build();
         constant_buffer.Create();

@@ -35,10 +35,13 @@ namespace Vkxel {
         glm::mat4 transformMatrix;
     };
 
+    using IndexType = uint32_t;
+    using VertexType = VertexData;
+
     struct ObjectData {
         glm::mat4 transformMatrix;
-        std::vector<uint32_t> index;
-        std::vector<VertexData> vertex;
+        const std::vector<IndexType> &index;
+        const std::vector<VertexType> &vertex;
     };
 
     struct ConstantBufferPerFrame {
