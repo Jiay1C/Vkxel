@@ -13,8 +13,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest]
-        build_type: [Debug, RelWithDebInfo, Release]
+        os: [ windows-latest ]
+        build_type: [ Debug, RelWithDebInfo, Release ]
     env:
       PROJECT_NAME: Vkxel
 
@@ -35,10 +35,10 @@ jobs:
         run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl
 
       - name: Build
-        run: cmake --build build --config ${{ matrix.build_type }} --verbose
+        run: cmake --build build --config ${{ matrix.build_type }}
 
       - name: Test
-        run: ctest --test-dir build -C ${{ matrix.build_type }} --verbose
+        run: ctest --test-dir build -C ${{ matrix.build_type }}
 
       - name: Upload
         uses: actions/upload-artifact@v4
