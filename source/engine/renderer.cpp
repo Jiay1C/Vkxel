@@ -443,7 +443,7 @@ namespace Vkxel {
         CHECK_RESULT_VK(vkBeginCommandBuffer(command_buffer, &command_buffer_begin_info));
 
         VkViewport viewport{.x = 0.0f,
-                            .y = 1.0f,
+                            .y = 0.0f,
                             .width = static_cast<float>(_swapchain.extent.width),
                             .height = static_cast<float>(_swapchain.extent.height),
                             .minDepth = 0.0f,
@@ -510,9 +510,11 @@ namespace Vkxel {
 
         vkCmdEndRendering(command_buffer);
 
+        // UI Pass
         _frame_resource.colorImage.CmdBarrier(
                 command_buffer, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-                VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT);
+                VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT);
 
         VkRenderingAttachmentInfo color_attachment_info_ui{.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
                                                            .imageView = _frame_resource.colorImage.imageView,
@@ -529,24 +531,25 @@ namespace Vkxel {
                                           .pDepthAttachment = nullptr,
                                           .pStencilAttachment = nullptr};
 
-        vkCmdBeginRendering(command_buffer, &rendering_info_ui); // UI Pass
+        vkCmdBeginRendering(command_buffer, &rendering_info_ui);
         _gui.Render(command_buffer);
         vkCmdEndRendering(command_buffer);
 
-        _frame_resource.colorImage.CmdBarrier(command_buffer, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                              VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_BLIT_BIT,
-                                              VK_ACCESS_2_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+        _frame_resource.colorImage.CmdBarrier(
+                command_buffer, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                VK_PIPELINE_STAGE_2_BLIT_BIT, VK_ACCESS_2_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
         VkImageMemoryBarrier2 present_image_memory_barrier{
                 .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-                .srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                .srcAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                .srcStageMask = VK_PIPELINE_STAGE_2_BLIT_BIT,
+                .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
                 .dstStageMask = VK_PIPELINE_STAGE_2_BLIT_BIT,
                 .dstAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
                 .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
                 .newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                .srcQueueFamilyIndex = _queue_family_index,
-                .dstQueueFamilyIndex = _queue_family_index,
+                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                 .image = present_image,
                 .subresourceRange = VkImageSubresourceRange{.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
                                                             .baseMipLevel = 0,
@@ -602,19 +605,27 @@ namespace Vkxel {
 
         vkCmdPipelineBarrier2(command_buffer, &dependency_info);
 
-
         CHECK_RESULT_VK(vkEndCommandBuffer(command_buffer));
 
-        VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        VkSubmitInfo submit_info{.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-                                 .waitSemaphoreCount = 1,
-                                 .pWaitSemaphores = &_image_ready_semaphore,
-                                 .pWaitDstStageMask = &wait_stage,
-                                 .commandBufferCount = 1,
-                                 .pCommandBuffers = &command_buffer,
-                                 .signalSemaphoreCount = 1,
-                                 .pSignalSemaphores = &_render_complete_semaphore};
-        CHECK_RESULT_VK(vkQueueSubmit(_queue, 1, &submit_info, _command_buffer_fence));
+        VkCommandBufferSubmitInfo command_buffer_submit_info{.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
+                                                             .commandBuffer = command_buffer};
+        VkSemaphoreSubmitInfo image_ready_semaphore_submit_info{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
+                                                                .semaphore = _image_ready_semaphore,
+                                                                .stageMask = VK_PIPELINE_STAGE_2_BLIT_BIT};
+
+        VkSemaphoreSubmitInfo render_complete_semaphore_submit_info{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
+                                                                    .semaphore = _render_complete_semaphore,
+                                                                    .stageMask =
+                                                                            VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT};
+
+        VkSubmitInfo2 submit_info{.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2,
+                                  .waitSemaphoreInfoCount = 1,
+                                  .pWaitSemaphoreInfos = &image_ready_semaphore_submit_info,
+                                  .commandBufferInfoCount = 1,
+                                  .pCommandBufferInfos = &command_buffer_submit_info,
+                                  .signalSemaphoreInfoCount = 1,
+                                  .pSignalSemaphoreInfos = &render_complete_semaphore_submit_info};
+        vkQueueSubmit2(_queue, 1, &submit_info, _command_buffer_fence);
 
 
         VkPresentInfoKHR present_info{.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
