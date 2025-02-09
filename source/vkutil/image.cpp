@@ -65,7 +65,7 @@ namespace Vkxel::VkUtil {
 
         vkCmdPipelineBarrier2(commandBuffer, &dependency_info);
 
-        createInfo.initialLayout = newLayout; // TODO: More Precise Layout Update
+        createInfo.initialLayout = image_memory_barrier.newLayout; // TODO: More Precise Layout Update
     }
 
 
