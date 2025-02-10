@@ -12,7 +12,7 @@
 
 namespace Vkxel {
 
-    class Transform : Component {
+    class Transform final : Component {
     public:
         using Component::Component;
 

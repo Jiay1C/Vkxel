@@ -14,7 +14,7 @@
 namespace Vkxel {
 
 
-    class Camera : public Component {
+    class Camera final : public Component {
     public:
         using Component::Component;
 

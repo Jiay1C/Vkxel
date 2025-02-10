@@ -12,7 +12,7 @@
 
 namespace Vkxel {
 
-    class Controller : public Component {
+    class Controller final : public Component {
     public:
         using Component::Component;
 
