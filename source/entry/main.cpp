@@ -4,6 +4,7 @@
 
 #include "glm/glm.hpp"
 
+#include "custom/dual_contouring.h"
 #include "engine/input.h"
 #include "engine/renderer.h"
 #include "engine/vtime.h"
@@ -38,6 +39,7 @@ int main() {
 
     scene.SetCamera(camera_game_object.name);
 
+    // Create Bunny
     for (int x = -5; x <= 5; ++x) {
         for (int y = -5; y <= 5; ++y) {
             GameObject &bunny = scene.CreateGameObject();
@@ -49,9 +51,22 @@ int main() {
             bunny_mesh.index = ModelLibrary::StanfordBunny.index;
             bunny_mesh.vertex = ModelLibrary::StanfordBunny.vertex;
 
-            Drawer &bunny_drawer = bunny.AddComponent<Drawer>();
+            bunny.AddComponent<Drawer>();
         }
     }
+
+    // Create Sphere
+    GameObject &sdf_object = scene.CreateGameObject();
+    sdf_object.name = "SDF Sphere";
+    sdf_object.transform.position = {0, 0, 5};
+    sdf_object.transform.rotation = glm::radians(glm::vec3{-90, 90, 0});
+    sdf_object.AddComponent<Mesh>();
+    sdf_object.AddComponent<Drawer>();
+    DualContouring &dual_contouring = sdf_object.AddComponent<DualContouring>();
+    dual_contouring.minBound = {-1, -1, -1};
+    dual_contouring.maxBound = {1, 1, 1};
+    dual_contouring.resolution = 20;
+    dual_contouring.sdf = SDFLibrary::StanfordBunny;
 
     scene.Create();
 

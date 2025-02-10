@@ -169,6 +169,7 @@ namespace Vkxel {
 
         RenderContext context;
         _scene.value().get().Draw(context);
+        CHECK_NOTNULL_MSG(!context.objects.empty(), "Empty Scene");
 
         VkSemaphoreCreateInfo semaphore_create_info{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
 

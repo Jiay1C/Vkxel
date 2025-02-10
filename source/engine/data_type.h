@@ -5,7 +5,6 @@
 #ifndef VKXEL_DATA_TYPE_H
 #define VKXEL_DATA_TYPE_H
 
-#include <list>
 #include <vector>
 
 #include "glm/glm.hpp"
@@ -49,7 +48,7 @@ namespace Vkxel {
     };
 
     struct RenderContext {
-        std::list<ObjectData> objects;
+        std::vector<ObjectData> objects;
         SceneData scene;
     };
 

@@ -162,6 +162,13 @@ VKXEL_DEFINE_SOURCES(ENTRY_SOURCES "entry"
         main.cpp
 )
 
+VKXEL_DEFINE_SOURCES(CUSTOM_SOURCES "custom"
+        sdf.cpp
+        sdf.h
+        dual_contouring.cpp
+        dual_contouring.h
+)
+
 set(VKXEL_SOURCE_PATH "source")
 VKXEL_DEFINE_SOURCES(VKXEL_SOURCES ${VKXEL_SOURCE_PATH}
         ${ENGINE_SOURCES}
@@ -169,6 +176,7 @@ VKXEL_DEFINE_SOURCES(VKXEL_SOURCES ${VKXEL_SOURCE_PATH}
         ${VKUTIL_SOURCES}
         ${UTIL_SOURCES}
         ${ENTRY_SOURCES}
+        ${CUSTOM_SOURCES}
 )
 
 # Set the source files
