@@ -12,6 +12,8 @@
 
 namespace Vkxel {
 
+    using IdType = uint64_t;
+
     struct ConstantBufferPerMaterial {};
 
     struct MaterialData {

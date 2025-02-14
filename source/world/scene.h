@@ -24,10 +24,12 @@ namespace Vkxel {
         GameObject &CreateGameObject();
         GameObject &AddGameObject(GameObject &&gameObject);
         void DestroyGameObject(const GameObject &gameObject);
+        void DestroyGameObject(IdType gameObjectId);
         void DestroyGameObject(std::string_view gameObjectName);
 
         void SetCamera(const GameObject &cameraObject);
-        void SetCamera(std::string_view name);
+        void SetCamera(IdType cameraObjectId);
+        void SetCamera(std::string_view cameraObjectName);
         std::optional<std::reference_wrapper<const GameObject>> GetCamera() const;
 
         void Draw(RenderContext &context) const;

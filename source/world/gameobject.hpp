@@ -18,22 +18,30 @@
 
 namespace Vkxel {
 
+    class Scene;
+
     class GameObject final : public Object {
     public:
+        Scene &scene;
         Transform transform = Transform(*this);
 
+        explicit GameObject(Scene &parentScene) : scene(parentScene) {}
+
+        // Event Function, Do Not Call Manually
         void Create() override {
             for (auto &component: _components) {
                 component->Create();
             }
         }
 
+        // Event Function, Do Not Call Manually
         void Update() override {
             for (auto &component: _components) {
                 component->Update();
             }
         }
 
+        // Event Function, Do Not Call Manually
         void Destroy() override {
             for (auto &component: _components) {
                 component->Destroy();
@@ -78,6 +86,16 @@ namespace Vkxel {
         void RemoveComponent(const Component &component) {
             std::erase_if(_components, [&component](std::unique_ptr<Component> &comp) {
                 if (comp.get() == &component) {
+                    comp->Destroy();
+                    return true;
+                }
+                return false;
+            });
+        }
+
+        void RemoveComponent(const IdType componentId) {
+            std::erase_if(_components, [&componentId](std::unique_ptr<Component> &comp) {
+                if (comp->id == componentId) {
                     comp->Destroy();
                     return true;
                 }
