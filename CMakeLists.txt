@@ -120,6 +120,8 @@ VKXEL_DEFINE_SOURCES(ENGINE_SOURCES "engine"
         resource_type.h
         resource.cpp
         resource.h
+        engine.cpp
+        engine.h
 )
 
 VKXEL_DEFINE_SOURCES(WORLD_SOURCES "world"

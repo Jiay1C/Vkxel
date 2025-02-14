@@ -10,7 +10,7 @@
 
 namespace Vkxel {
 
-    class Drawer : public Component {
+    class Drawer final : public Component {
     public:
         using Component::Component;
 

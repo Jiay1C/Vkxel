@@ -1,15 +1,12 @@
 #include <chrono>
 #include <format>
-#include <thread>
 
 #include "glm/glm.hpp"
 
 #include "custom/dual_contouring.h"
-#include "engine/input.h"
-#include "engine/renderer.h"
+#include "engine/engine.h"
 #include "engine/vtime.h"
 #include "model.h"
-#include "util/application.h"
 #include "world/camera.h"
 #include "world/controller.h"
 #include "world/drawer.h"
@@ -19,13 +16,7 @@ using namespace Vkxel;
 
 int main() {
 
-    // Variables
-
-    uint32_t frame_count = 0;
-    bool background_mode = false;
-
     // Set Up Scene
-
     Scene scene;
     scene.name = "Main Scene";
 
@@ -72,29 +63,32 @@ int main() {
     dual_contouring.resolution = 20;
     dual_contouring.sdf = SDFLibrary::StanfordBunny;
 
-    scene.Create();
-
-
     // Create Engine
+    Engine engine(scene);
+    Window &window = engine.GetWindow();
+    GUI &gui = engine.GetGUI();
 
-    Window window = Window().SetSize(Application::DefaultWindowWidth, Application::DefaultWindowHeight)
-                            .SetTitle(Application::Name)
-                            .AddCallback(WindowEvent::Minimize, [&]() { background_mode = true; })
-                            .AddCallback(WindowEvent::Restore, [&]() { background_mode = false; })
-                            .AddCallback(WindowEvent::Resize, [&]() { camera.aspect = window.GetAspect(); });
-    window.Create();
-    GUI gui(window);
+    window.AddCallback(WindowEvent::Resize, [&]() { camera.aspect = window.GetAspect(); });
 
     gui.AddStaticItem("Vkxel", [&]() {
-        ImGui::Text(std::format("Frame {0} ({1} ms)", frame_count, Time::RealDeltaSeconds() * 1000).data());
+        ImGui::Text(std::format("Frame {0} ({1} ms)", engine.GetFrameCount(), Time::RealDeltaSeconds() * 1000).data());
         ImGui::Text(std::format("Size ({0}, {1})", window.GetWidth(), window.GetHeight()).data());
         ImGui::Text(std::format("Resolution ({0}, {1})", window.GetFrameBufferWidth(), window.GetFrameBufferHeight())
                             .data());
         if (ImGui::CollapsingHeader("Camera")) {
-            auto position = camera_game_object.transform.position;
+            auto &position = camera_game_object.transform.position;
+            ImGui::DragFloat3("Position", reinterpret_cast<float *>(&position));
+
             auto rotation = glm::degrees(glm::eulerAngles(camera_game_object.transform.rotation));
-            ImGui::InputFloat3("Position", reinterpret_cast<float *>(&position));
-            ImGui::InputFloat3("Rotation", reinterpret_cast<float *>(&rotation));
+            ImGui::DragFloat3("Rotation", reinterpret_cast<float *>(&rotation));
+            camera_game_object.transform.rotation = glm::radians(rotation);
+
+            ImGui::DragFloat("Near Clip Plane", &camera.nearClipPlane);
+            ImGui::DragFloat("Far Clip Plane", &camera.farClipPlane);
+
+            auto fov = glm::degrees(camera.fieldOfViewY);
+            ImGui::DragFloat("Field of View", &fov);
+            camera.fieldOfViewY = glm::radians(fov);
         }
         if (ImGui::CollapsingHeader("Controller")) {
             ImGui::DragFloat("Move Speed", &camera_controller.moveSpeed, 0.02f, 0.0f, 10.0f);
@@ -103,40 +97,8 @@ int main() {
         }
     });
 
-    Renderer renderer(window, gui);
-
-    renderer.Init();
-    renderer.LoadScene(scene);
-
-
     // Main Loop
-
-    while (!window.ShouldClose()) {
-        Input::Update();
-        Time::Update();
-        window.Update();
-        gui.Update();
-        scene.Update();
-
-        renderer.Render();
-
-        if (Input::GetKey(KeyCode::KEY_ESCAPE)) {
-            window.RequestClose();
-        }
-
-        ++frame_count;
-
-        if (background_mode) {
-            constexpr float background_mode_sleep_seconds = 1.0f / Application::BackgroundModeMaxFps;
-            std::this_thread::sleep_for(std::chrono::duration<float>(background_mode_sleep_seconds));
-        }
-    }
-
-    renderer.UnloadScene();
-    renderer.Destroy();
-    scene.Destroy();
-
-    window.Destroy();
+    engine.Run();
 
     return 0;
 }
