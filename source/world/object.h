@@ -7,40 +7,46 @@
 
 #include <string>
 
+#include "engine/data_type.h"
+
 namespace Vkxel {
 
     class Object {
     public:
         std::string name;
+        IdType id;
 
-        Object() = default;
+        Object() { id = ObjectCount++; };
         Object(const Object &) = delete;
         Object &operator=(const Object &) = delete;
 
         Object(Object &&) = default;
         Object &operator=(Object &&) = default;
 
-        // Event Function
+        // Event Function, Do Not Call Manually
         // Call when create object
         virtual void Init() {}
 
-        // Event Function
+        // Event Function, Do Not Call Manually
         // Call when create scene
         virtual void Create() {}
 
-        // Event Function
+        // Event Function, Do Not Call Manually
         // Call before the first frame
         virtual void Start() {}
 
-        // Event Function
+        // Event Function, Do Not Call Manually
         // Call in every frame
         virtual void Update() {}
 
-        // Event Function
+        // Event Function, Do Not Call Manually
         // Call when destroy the object
         virtual void Destroy() {}
 
         virtual ~Object() = default;
+
+    private:
+        inline static IdType ObjectCount = 0;
     };
 
 } // namespace Vkxel
