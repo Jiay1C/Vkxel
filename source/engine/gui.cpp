@@ -24,7 +24,7 @@ namespace Vkxel {
             }
 
             // Dynamic Items
-            while (gui_item.DynamicItem.size() > 0) {
+            while (!gui_item.DynamicItem.empty()) {
                 gui_item.DynamicItem.front()();
                 gui_item.DynamicItem.pop();
             }
