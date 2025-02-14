@@ -37,13 +37,17 @@ int main() {
 
     Controller &camera_controller = camera_game_object.AddComponent<Controller>();
 
-    scene.SetCamera(camera_game_object.name);
+    scene.SetCamera(camera_game_object);
+
+    GameObject &bunny_root = scene.CreateGameObject();
+    bunny_root.name = "Bunny Root";
 
     // Create Bunny
     for (int x = -5; x <= 5; ++x) {
         for (int y = -5; y <= 5; ++y) {
             GameObject &bunny = scene.CreateGameObject();
             bunny.name = std::format("Bunny {0},{1}", x, y);
+            bunny.transform.SetParent(bunny_root.transform);
             bunny.transform.position = {x, y, 0};
             bunny.transform.scale = {3, 3, 3};
 
@@ -55,7 +59,7 @@ int main() {
         }
     }
 
-    // Create Sphere
+    // Create SDF Object
     GameObject &sdf_object = scene.CreateGameObject();
     sdf_object.name = "SDF Sphere";
     sdf_object.transform.position = {0, 0, 5};

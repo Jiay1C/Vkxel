@@ -54,7 +54,7 @@ namespace Vkxel {
         glm::vec2 rotation = rotateSpeed * mouse_position_delta;
 
         if (Input::GetKey(KeyCode::MOUSE_BUTTON_RIGHT)) {
-            gameObject.transform.RotateSelf({-rotation.y, -rotation.x, 0});
+            gameObject.transform.RotateSelf(glm::vec3{-rotation.y, -rotation.x, 0});
         }
     }
 

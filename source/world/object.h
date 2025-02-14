@@ -20,8 +20,24 @@ namespace Vkxel {
         Object(Object &&) = default;
         Object &operator=(Object &&) = default;
 
+        // Event Function
+        // Call when create object
+        virtual void Init() {}
+
+        // Event Function
+        // Call when create scene
         virtual void Create() {}
+
+        // Event Function
+        // Call before the first frame
+        virtual void Start() {}
+
+        // Event Function
+        // Call in every frame
         virtual void Update() {}
+
+        // Event Function
+        // Call when destroy the object
         virtual void Destroy() {}
 
         virtual ~Object() = default;
