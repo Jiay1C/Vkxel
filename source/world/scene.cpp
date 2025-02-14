@@ -2,12 +2,26 @@
 // Created by jiayi on 2/6/2025.
 //
 
-#include "scene.h"
+#include <optional>
+#include <string_view>
+#include <utility>
+
 #include "camera.h"
 #include "drawer.h"
 #include "gameobject.hpp"
+#include "scene.h"
 
 namespace Vkxel {
+
+    std::optional<std::reference_wrapper<GameObject>> Scene::GetGameObject(std::string_view gameObjectName) {
+        for (auto &gameObject: _gameobjects) {
+            if (gameObject.name == gameObjectName) {
+                return gameObject;
+            }
+        }
+        return std::nullopt;
+    }
+
 
     GameObject &Scene::CreateGameObject() { return _gameobjects.emplace_back(); }
 
@@ -15,15 +29,43 @@ namespace Vkxel {
         return _gameobjects.emplace_back(std::move(gameObject));
     }
 
-    void Scene::DestroyGameObject(const std::string_view gameobjectName) {
-        for (auto it = _gameobjects.begin(); it != _gameobjects.end(); ++it) {
-            auto &game_object = *it;
-            if (game_object.name == gameobjectName) {
-                game_object.Destroy();
-                _gameobjects.erase(it);
+    void Scene::DestroyGameObject(const GameObject &gameObject) {
+        auto it = std::ranges::find_if(_gameobjects, [&](const GameObject &go) { return &go == &gameObject; });
+
+        if (it != _gameobjects.end()) {
+            for (auto &child: it->transform.GetChildren()) {
+                DestroyGameObject(child.get().gameObject);
             }
+
+            it->Destroy();
+            _gameobjects.erase(it);
         }
     }
+
+    void Scene::DestroyGameObject(const std::string_view gameObjectName) {
+        auto it = std::ranges::find_if(_gameobjects, [&](const GameObject &go) { return go.name == gameObjectName; });
+
+        if (it != _gameobjects.end()) {
+            for (auto &child: it->transform.GetChildren()) {
+                DestroyGameObject(child.get().gameObject);
+            }
+
+            it->Destroy();
+            _gameobjects.erase(it);
+        }
+    }
+
+    void Scene::SetCamera(const GameObject &cameraObject) {
+        _mainCamera = std::nullopt;
+        for (auto &game_object: _gameobjects) {
+            if (&game_object == &cameraObject && game_object.GetComponent<Camera>()) {
+                _mainCamera = game_object;
+                return;
+            }
+        }
+        CHECK_NOTNULL_MSG(false, "Camera Not Found");
+    }
+
 
     void Scene::SetCamera(const std::string_view gameobjectName) {
         _mainCamera = std::nullopt;

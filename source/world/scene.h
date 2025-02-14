@@ -20,10 +20,13 @@ namespace Vkxel {
         void Update() override;
         void Destroy() override;
 
+        std::optional<std::reference_wrapper<GameObject>> GetGameObject(std::string_view name);
         GameObject &CreateGameObject();
         GameObject &AddGameObject(GameObject &&gameObject);
-        void DestroyGameObject(std::string_view name);
+        void DestroyGameObject(const GameObject &gameObject);
+        void DestroyGameObject(std::string_view gameObjectName);
 
+        void SetCamera(const GameObject &cameraObject);
         void SetCamera(std::string_view name);
         std::optional<std::reference_wrapper<const GameObject>> GetCamera() const;
 

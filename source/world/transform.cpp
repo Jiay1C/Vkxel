@@ -1,65 +1,83 @@
-//
-// Created by jiayi on 1/25/2025.
-//
-
-#define GLM_ENABLE_EXPERIMENTAL
-#include "glm/glm.hpp"
-#include "glm/gtc/matrix_transform.hpp"
-#include "glm/gtc/quaternion.hpp"
-#include "glm/gtx/quaternion.hpp"
-
 #include "transform.h"
 
 namespace Vkxel {
 
-    // Translate in world space
-    void Transform::TranslateWorld(const glm::vec3 &translation) { position += translation; }
-
-    // Translate relative to the object's local space
-    void Transform::TranslateSelf(const glm::vec3 &translation) { position += rotation * translation; }
-
-    // Rotate in world space
-    void Transform::RotateWorld(const glm::vec3 &eulerAngel) { rotation = glm::quat(eulerAngel) * rotation; }
-
-    void Transform::RotateWorld(const glm::quat &quaternion) { rotation = quaternion * rotation; }
-
-    // Rotate relative to the object's local space
-    void Transform::RotateSelf(const glm::vec3 &eulerAngel) { rotation *= glm::quat(eulerAngel); }
-
-    void Transform::RotateSelf(const glm::quat &quaternion) { rotation *= quaternion; }
-
-    void Transform::LookAt(const glm::vec3 &point, const glm::vec3 &upDirection) {
-        glm::vec3 direction = normalize((point - position));
-        rotation = glm::quatLookAt(direction, upDirection);
+    std::vector<std::reference_wrapper<Transform>> Transform::GetChildren() const {
+        return {_children.begin(), _children.end()};
     }
 
+    std::optional<std::reference_wrapper<Transform>> Transform::GetParent() const { return _parent; }
 
-    // Get the forward vector of the transform
-    glm::vec3 Transform::GetForwardVector() const { return rotation * glm::vec3(0.0f, 0.0f, -1.0f); }
+    void Transform::SetParent(std::optional<std::reference_wrapper<Transform>> newParent) {
+        if (_parent) {
+            auto &currentParent = _parent.value().get();
+            std::erase_if(currentParent._children,
+                          [this](const std::reference_wrapper<Transform> &child) { return &child.get() == this; });
+        }
+        _parent = newParent;
+        if (newParent) {
+            newParent.value().get()._children.emplace_back(*this);
+        }
+    }
 
-    // Get the right vector of the transform
-    glm::vec3 Transform::GetRightVector() const { return rotation * glm::vec3(1.0f, 0.0f, 0.0f); }
+    glm::vec3 Transform::GetWorldPosition() const {
+        return _parent ? _parent->get().GetWorldPosition() + _parent->get().GetWorldRotation() * position : position;
+    }
 
-    // Get the up vector of the transform
-    glm::vec3 Transform::GetUpVector() const { return rotation * glm::vec3(0.0f, 1.0f, 0.0f); }
+    glm::quat Transform::GetWorldRotation() const {
+        return _parent ? _parent->get().GetWorldRotation() * rotation : rotation;
+    }
 
-    // Get the local-to-world transformation matrix
+    glm::vec3 Transform::GetWorldScale() const { return _parent ? _parent->get().GetWorldScale() * scale : scale; }
+
+    void Transform::SetWorldPosition(const glm::vec3 &worldPosition) {
+        position = _parent ? glm::inverse(_parent->get().GetWorldRotation()) *
+                                     (worldPosition - _parent->get().GetWorldPosition())
+                           : worldPosition;
+    }
+
+    void Transform::SetWorldRotation(const glm::quat &worldRotation) {
+        rotation = _parent ? glm::inverse(_parent->get().GetWorldRotation()) * worldRotation : worldRotation;
+    }
+
+    void Transform::SetWorldScale(const glm::vec3 &worldScale) {
+        scale = _parent ? worldScale / _parent->get().GetWorldScale() : worldScale;
+    }
+
+    void Transform::TranslateWorld(const glm::vec3 &worldTranslation) {
+        SetWorldPosition(GetWorldPosition() + worldTranslation);
+    }
+
+    void Transform::TranslateRelative(const glm::vec3 &relativeTranslation) { position += relativeTranslation; }
+
+    void Transform::TranslateSelf(const glm::vec3 &selfTranslation) { position += rotation * selfTranslation; }
+
+    void Transform::RotateWorld(const glm::quat &worldRotation) {
+        SetWorldRotation(worldRotation * GetWorldRotation());
+    }
+
+    void Transform::RotateRelative(const glm::quat &relativeRotation) { rotation = relativeRotation * rotation; }
+
+    void Transform::RotateSelf(const glm::quat &selfRotation) { rotation *= selfRotation; }
+
+    glm::vec3 Transform::GetForwardVector() const { return GetWorldRotation() * forward; }
+
+    glm::vec3 Transform::GetRightVector() const { return GetWorldRotation() * right; }
+
+    glm::vec3 Transform::GetUpVector() const { return GetWorldRotation() * up; }
+
+    glm::mat4 Transform::GetLocalToRelativeMatrix() const {
+        return glm::translate(glm::mat4(1.0f), position) * glm::mat4_cast(rotation) *
+               glm::scale(glm::mat4(1.0f), scale);
+    }
+
+    glm::mat4 Transform::GetRelativeToLocalMatrix() const { return glm::inverse(GetLocalToRelativeMatrix()); }
+
     glm::mat4 Transform::GetLocalToWorldMatrix() const {
-        glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), position);
-        glm::mat4 rotationMatrix = glm::toMat4(rotation);
-        glm::mat4 scaleMatrix = glm::scale(glm::mat4(1.0f), scale);
-        return translationMatrix * rotationMatrix * scaleMatrix;
+        return _parent ? _parent->get().GetLocalToWorldMatrix() * GetLocalToRelativeMatrix()
+                       : GetLocalToRelativeMatrix();
     }
 
-    // Get the world-to-local transformation matrix
     glm::mat4 Transform::GetWorldToLocalMatrix() const { return glm::inverse(GetLocalToWorldMatrix()); }
-
-    constexpr glm::vec3 Transform::forward = {0, 0, -1};
-    constexpr glm::vec3 Transform::back = {0, 0, 1};
-    constexpr glm::vec3 Transform::up = {0, 1, 0};
-    constexpr glm::vec3 Transform::down = {0, -1, 0};
-    constexpr glm::vec3 Transform::right = {1, 0, 0};
-    constexpr glm::vec3 Transform::left = {-1, 0, 0};
-
 
 } // namespace Vkxel

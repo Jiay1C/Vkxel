@@ -43,10 +43,11 @@ namespace Vkxel {
 
         template<typename T>
         T &AddComponent() {
-            static_assert(std::is_base_of<Component, T>::value, "T must be derived from Component");
+            static_assert(std::is_base_of_v<Component, T>, "T must be derived from Component");
 
             auto component = std::make_unique<T>(*this);
             T &ref = *component;
+            ref.Init();
             _components.emplace_back(std::move(component));
 
             return ref;
@@ -65,22 +66,33 @@ namespace Vkxel {
 
         template<typename T>
         void RemoveComponent() {
-            for (auto it = _components.begin(); it != _components.end(); ++it) {
-                if (T *casted = dynamic_cast<T *>((*it).get())) {
+            std::erase_if(_components, [](std::unique_ptr<Component> &comp) {
+                if (T *casted = dynamic_cast<T *>(comp.get())) {
                     casted->Destroy();
-                    _components.erase(it);
+                    return true;
                 }
-            }
+                return false;
+            });
         }
 
-        void RemoveComponent(const std::string_view componentName) {
-            for (auto it = _components.begin(); it != _components.end(); ++it) {
-                auto &component = **it;
-                if (component.name == componentName) {
-                    component.Destroy();
-                    _components.erase(it);
+        void RemoveComponent(const Component &component) {
+            std::erase_if(_components, [&component](std::unique_ptr<Component> &comp) {
+                if (comp.get() == &component) {
+                    comp->Destroy();
+                    return true;
                 }
-            }
+                return false;
+            });
+        }
+
+        void RemoveComponent(std::string_view componentName) {
+            std::erase_if(_components, [&componentName](std::unique_ptr<Component> &comp) {
+                if (comp->name == componentName) {
+                    comp->Destroy();
+                    return true;
+                }
+                return false;
+            });
         }
 
     private:
