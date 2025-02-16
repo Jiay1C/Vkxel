@@ -146,9 +146,9 @@ namespace Vkxel {
         if (!gameObject.GetComponent<Mesh>()) {
             gameObject.AddComponent<Mesh>();
         }
+
         Mesh &mesh = gameObject.GetComponent<Mesh>().value();
-        mesh.index = std::move(indices);
-        mesh.vertex = std::move(vertices);
+        mesh.SetMesh({.index = std::move(indices), .vertex = std::move(vertices)});
     }
 
     glm::vec3 DualContouring::CalculateNormal(const glm::vec3 &position) const {

@@ -43,8 +43,7 @@ int main() {
             bunny.transform.scale = {3, 3, 3};
 
             Mesh &bunny_mesh = bunny.AddComponent<Mesh>();
-            bunny_mesh.index = ModelLibrary::StanfordBunny.index;
-            bunny_mesh.vertex = ModelLibrary::StanfordBunny.vertex;
+            bunny_mesh.SetMesh(ModelLibrary::StanfordBunny);
 
             bunny.AddComponent<Drawer>();
         }
@@ -71,7 +70,7 @@ int main() {
     window.AddCallback(WindowEvent::Resize, [&]() { camera.aspect = window.GetAspect(); });
 
     gui.AddStaticItem("Vkxel", [&]() {
-        ImGui::Text(std::format("Frame {0} ({1} ms)", engine.GetFrameCount(), Time::RealDeltaSeconds() * 1000).data());
+        ImGui::Text(std::format("Frame {0} ({1} ms)", Time::GetTicks(), Time::GetRealDeltaSeconds() * 1000).data());
         ImGui::Text(std::format("Size ({0}, {1})", window.GetWidth(), window.GetHeight()).data());
         ImGui::Text(std::format("Resolution ({0}, {1})", window.GetFrameBufferWidth(), window.GetFrameBufferHeight())
                             .data());

@@ -17,8 +17,16 @@ namespace Vkxel {
     public:
         using Component::Component;
 
-        std::vector<uint32_t> index;
-        std::vector<VertexData> vertex;
+        const MeshData &GetMesh() const;
+        void SetMesh(const MeshData &meshData);
+        void SetMesh(MeshData &&meshData);
+
+        bool GetDirtyFlag() const;
+        void ClearDirtyFlag();
+
+    private:
+        MeshData _mesh_data;
+        bool _is_dirty = false;
     };
 
 } // namespace Vkxel

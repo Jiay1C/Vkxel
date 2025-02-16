@@ -15,17 +15,12 @@ namespace Vkxel {
 
     class ModelLibrary {
     public:
-        struct Model {
-            std::vector<uint32_t> index;
-            std::vector<VertexData> vertex;
-        };
-
         ModelLibrary() = delete;
         ~ModelLibrary() = delete;
 
-        static const Model Triangle;
+        static const MeshData Triangle;
 
-        static const Model StanfordBunny;
+        static const MeshData StanfordBunny;
     };
 
 } // namespace Vkxel

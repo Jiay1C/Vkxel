@@ -134,6 +134,7 @@ VKXEL_DEFINE_SOURCES(WORLD_SOURCES "world"
         object.h
         gameobject.hpp
         component.h
+        mesh.cpp
         mesh.h
         drawer.cpp
         drawer.h
