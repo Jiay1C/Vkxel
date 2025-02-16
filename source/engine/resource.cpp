@@ -24,8 +24,8 @@ namespace Vkxel {
 
         for (const auto &object_wrapper: _objects | std::views::keys) {
             const ObjectData &object = object_wrapper;
-            total_size += sizeof(IndexType) * object.index.size();
-            total_size += sizeof(VertexType) * object.vertex.size();
+            total_size += sizeof(IndexType) * object.mesh.index.size();
+            total_size += sizeof(VertexType) * object.mesh.vertex.size();
             total_size += sizeof(ConstantBufferPerObject);
         }
 
@@ -51,14 +51,14 @@ namespace Vkxel {
             const ObjectResource &resource = resource_wrapper;
 
             // Upload Index Buffer
-            std::ranges::copy(object.index, reinterpret_cast<IndexType *>(host_buffer + host_buffer_offset));
+            std::ranges::copy(object.mesh.index, reinterpret_cast<IndexType *>(host_buffer + host_buffer_offset));
             VkBufferCopy index_copy_region{
                     .srcOffset = host_buffer_offset, .dstOffset = 0, .size = resource.indexBuffer.createInfo.size};
             vkCmdCopyBuffer(command_buffer, staging_buffer.buffer, resource.indexBuffer.buffer, 1, &index_copy_region);
             host_buffer_offset += static_cast<uint32_t>(resource.indexBuffer.createInfo.size);
 
             // Upload Vertex Buffer
-            std::ranges::copy(object.vertex, reinterpret_cast<VertexType *>(host_buffer + host_buffer_offset));
+            std::ranges::copy(object.mesh.vertex, reinterpret_cast<VertexType *>(host_buffer + host_buffer_offset));
             VkBufferCopy vertex_copy_region{
                     .srcOffset = host_buffer_offset, .dstOffset = 0, .size = resource.vertexBuffer.createInfo.size};
             vkCmdCopyBuffer(command_buffer, staging_buffer.buffer, resource.vertexBuffer.buffer, 1,
@@ -67,8 +67,7 @@ namespace Vkxel {
 
             // Upload Constant Buffer
             // Change Matrix To Row Major
-            ConstantBufferPerObject constant_buffer_per_object{.transformMatrix =
-                                                                       glm::transpose(object.transformMatrix)};
+            ConstantBufferPerObject constant_buffer_per_object{.transformMatrix = glm::transpose(object.transform)};
             *reinterpret_cast<ConstantBufferPerObject *>(host_buffer + host_buffer_offset) = constant_buffer_per_object;
 
             VkBufferCopy constant_copy_region{
@@ -95,14 +94,14 @@ namespace Vkxel {
 
         // Create Index Buffer
         VkUtil::Buffer index_buffer =
-                bufferBuilder.SetSize(sizeof(IndexType) * object.index.size())
+                bufferBuilder.SetSize(sizeof(IndexType) * object.mesh.index.size())
                         .SetUsage(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT)
                         .Build();
         index_buffer.Create();
 
         // Create Vertex Buffer
         VkUtil::Buffer vertex_buffer =
-                bufferBuilder.SetSize(sizeof(VertexType) * object.vertex.size())
+                bufferBuilder.SetSize(sizeof(VertexType) * object.mesh.vertex.size())
                         .SetUsage(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT)
                         .Build();
         vertex_buffer.Create();
@@ -135,7 +134,7 @@ namespace Vkxel {
         vkUpdateDescriptorSets(_device, static_cast<uint32_t>(descriptor_set_write_info.size()),
                                descriptor_set_write_info.data(), 0, nullptr);
 
-        return {.indexCount = static_cast<uint32_t>(object.index.size()),
+        return {.indexCount = static_cast<uint32_t>(object.mesh.index.size()),
                 .firstIndex = 0,
                 .indexBuffer = index_buffer,
                 .vertexBuffer = vertex_buffer,

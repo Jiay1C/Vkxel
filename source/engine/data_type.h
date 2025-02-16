@@ -14,6 +14,8 @@ namespace Vkxel {
 
     using IdType = uint64_t;
 
+    using TickType = uint64_t;
+
     struct ConstantBufferPerMaterial {};
 
     struct MaterialData {
@@ -39,10 +41,14 @@ namespace Vkxel {
     using IndexType = uint32_t;
     using VertexType = VertexData;
 
+    struct MeshData {
+        std::vector<IndexType> index;
+        std::vector<VertexType> vertex;
+    };
+
     struct ObjectData {
-        glm::mat4 transformMatrix;
-        const std::vector<IndexType> &index;
-        const std::vector<VertexType> &vertex;
+        glm::mat4 transform;
+        const MeshData &mesh;
     };
 
     struct ConstantBufferPerFrame {

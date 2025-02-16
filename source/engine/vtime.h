@@ -7,6 +7,8 @@
 
 #include <chrono>
 
+#include "data_type.h"
+
 namespace Vkxel {
 
     class Time {
@@ -14,17 +16,20 @@ namespace Vkxel {
         static float timeRatio;
 
         static void Update();
-        static float DeltaSeconds();
-        static float RealDeltaSeconds();
+
+        static TickType GetTicks();
+        static float GetDeltaSeconds();
+        static float GetRealDeltaSeconds();
 
         void Start();
         void Stop();
         void Reset();
 
-        float ElapsedSeconds() const;
-        float RealElapsedSeconds() const;
+        float GetElapsedSeconds() const;
+        float GetRealElapsedSeconds() const;
 
     private:
+        static TickType _tick_count;
         static std::chrono::duration<float> _last_update_duration;
         static std::chrono::time_point<std::chrono::steady_clock> _last_update_timestamp;
 

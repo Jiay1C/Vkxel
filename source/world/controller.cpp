@@ -11,7 +11,7 @@
 namespace Vkxel {
 
     void Controller::Update() {
-        float delta_seconds = Time::DeltaSeconds();
+        float delta_seconds = Time::GetDeltaSeconds();
 
         glm::vec3 translation = {};
 
