@@ -15,6 +15,7 @@ namespace Vkxel {
     struct MaterialResource {};
 
     struct ObjectResource {
+        bool isActive = false;
         uint32_t indexCount = 0;
         uint32_t firstIndex = 0;
         VkUtil::Buffer indexBuffer = {};

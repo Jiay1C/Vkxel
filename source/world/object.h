@@ -16,7 +16,7 @@ namespace Vkxel {
         std::string name;
         IdType id;
 
-        Object() { id = ObjectCount++; };
+        Object() { id = ObjectCount++; }
         Object(const Object &) = delete;
         Object &operator=(const Object &) = delete;
 

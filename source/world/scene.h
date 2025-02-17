@@ -20,9 +20,13 @@ namespace Vkxel {
         void Update() override;
         void Destroy() override;
 
-        std::optional<std::reference_wrapper<GameObject>> GetGameObject(std::string_view name);
+        std::optional<std::reference_wrapper<GameObject>> GetGameObject(std::string_view gameObjectName);
+        std::optional<std::reference_wrapper<GameObject>> GetGameObject(IdType gameObjectId);
+        std::list<GameObject> &GetGameObjectList();
+
         GameObject &CreateGameObject();
         GameObject &AddGameObject(GameObject &&gameObject);
+
         void DestroyGameObject(const GameObject &gameObject);
         void DestroyGameObject(IdType gameObjectId);
         void DestroyGameObject(std::string_view gameObjectName);

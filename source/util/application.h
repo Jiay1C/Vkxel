@@ -28,7 +28,7 @@ namespace Vkxel {
         static constexpr uint32_t DefaultWindowWidth = 1280;
         static constexpr uint32_t DefaultWindowHeight = 720;
 
-        static constexpr float DefaultFov = glm::radians(60.0f);
+        static constexpr float DefaultFov = glm::radians(75.0f);
         static constexpr float DefaultNearClipPlane = 0.01f;
         static constexpr float DefaultFarClipPlane = 1000.0f;
 

@@ -6,6 +6,8 @@
 
 namespace Vkxel {
 
+    bool Mesh::Empty() const { return _mesh_data.index.empty(); }
+
     const MeshData &Mesh::GetMesh() const { return _mesh_data; }
 
     void Mesh::SetMesh(const MeshData &meshData) {

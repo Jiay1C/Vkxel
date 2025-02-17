@@ -5,9 +5,6 @@
 #ifndef VKXEL_MESH_H
 #define VKXEL_MESH_H
 
-#include <cstdint>
-#include <vector>
-
 #include "component.h"
 #include "engine/data_type.h"
 
@@ -17,6 +14,7 @@ namespace Vkxel {
     public:
         using Component::Component;
 
+        bool Empty() const;
         const MeshData &GetMesh() const;
         void SetMesh(const MeshData &meshData);
         void SetMesh(MeshData &&meshData);

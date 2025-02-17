@@ -138,6 +138,8 @@ VKXEL_DEFINE_SOURCES(WORLD_SOURCES "world"
         mesh.h
         drawer.cpp
         drawer.h
+        mover.cpp
+        mover.h
         scene.cpp
         scene.h
 )

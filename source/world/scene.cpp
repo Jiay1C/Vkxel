@@ -13,7 +13,7 @@
 
 namespace Vkxel {
 
-    std::optional<std::reference_wrapper<GameObject>> Scene::GetGameObject(std::string_view gameObjectName) {
+    std::optional<std::reference_wrapper<GameObject>> Scene::GetGameObject(const std::string_view gameObjectName) {
         for (auto &gameObject: _gameobjects) {
             if (gameObject.name == gameObjectName) {
                 return gameObject;
@@ -22,6 +22,16 @@ namespace Vkxel {
         return std::nullopt;
     }
 
+    std::optional<std::reference_wrapper<GameObject>> Scene::GetGameObject(const IdType gameObjectId) {
+        for (auto &gameObject: _gameobjects) {
+            if (gameObject.id == gameObjectId) {
+                return gameObject;
+            }
+        }
+        return std::nullopt;
+    }
+
+    std::list<GameObject> &Scene::GetGameObjectList() { return _gameobjects; }
 
     GameObject &Scene::CreateGameObject() { return _gameobjects.emplace_back(*this); }
 
@@ -29,6 +39,7 @@ namespace Vkxel {
         return _gameobjects.emplace_back(std::move(gameObject));
     }
 
+    // TODO: Add queue for GameObject wait to be deleted to avoid crash during the loop
     void Scene::DestroyGameObject(const GameObject &gameObject) {
         auto it = std::ranges::find_if(_gameobjects, [&](const GameObject &go) { return &go == &gameObject; });
 

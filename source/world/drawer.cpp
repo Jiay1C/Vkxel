@@ -10,11 +10,13 @@ namespace Vkxel {
 
     void Drawer::Draw(RenderContext &context) const {
         if (const auto mesh_result = gameObject.GetComponent<Mesh>()) {
-            const Mesh &mesh = mesh_result.value();
-            const MeshData &mesh_data = mesh.GetMesh();
-            if (!mesh_data.index.empty()) {
-                context.objects.push_back(
-                        {.transform = gameObject.transform.GetLocalToWorldMatrix(), .mesh = mesh_data});
+            if (Mesh &mesh = mesh_result.value(); !mesh.Empty()) {
+                const MeshData &mesh_data = mesh.GetMesh();
+                context.objects.push_back({.objectId = gameObject.id,
+                                           .transform = gameObject.transform.GetLocalToWorldMatrix(),
+                                           .mesh = mesh_data,
+                                           .isDirty = mesh.GetDirtyFlag()});
+                mesh.ClearDirtyFlag();
             }
         }
     }
