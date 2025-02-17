@@ -51,7 +51,9 @@ namespace Vkxel {
 
         template<typename T>
         T &AddComponent() {
-            static_assert(std::is_base_of_v<Component, T>, "T must be derived from Component");
+            static_assert(std::is_base_of_v<Component, T>, "Type must be derived from Component");
+
+            CHECK_NOTNULL_MSG(!GetComponent<T>(), "Only support one instance for every Type");
 
             auto component = std::make_unique<T>(*this);
             T &ref = *component;
@@ -71,6 +73,8 @@ namespace Vkxel {
 
             return std::nullopt;
         }
+
+        std::list<std::unique_ptr<Component>> &GetComponentList() { return _components; }
 
         template<typename T>
         void RemoveComponent() {

@@ -3,6 +3,7 @@
 //
 
 #include <array>
+#include <ranges>
 #include <utility>
 #include <vector>
 
@@ -13,6 +14,7 @@
 
 #include "data_type.h"
 #include "renderer.h"
+
 #include "resource.h"
 #include "shader.h"
 #include "util/application.h"
@@ -167,9 +169,9 @@ namespace Vkxel {
 
         _scene = scene;
 
-        RenderContext context;
-        _scene.value().get().Draw(context);
-        CHECK_NOTNULL_MSG(!context.objects.empty(), "Empty Scene");
+        // RenderContext context;
+        // _scene.value().get().Draw(context);
+        // CHECK_NOTNULL_MSG(!context.objects.empty(), "Empty Scene");
 
         VkSemaphoreCreateInfo semaphore_create_info{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
 
@@ -209,14 +211,15 @@ namespace Vkxel {
 
         _frame_resource = _resource_manager->CreateFrameResource(_swapchain.extent.width, _swapchain.extent.height);
 
-        _object_resource.reserve(context.objects.size());
-
-        for (const auto &object: context.objects) {
-            ObjectResource &resource = _object_resource.emplace_back(_resource_manager->CreateObjectResource(object));
-            _resource_uploader->AddObject(object, resource);
-        }
-
-        _resource_uploader->UploadObjects();
+        // _object_resource.reserve(context.objects.size());
+        //
+        // for (const auto &object: context.objects) {
+        //     ObjectResource &resource =
+        //     _object_resource.emplace_back(_resource_manager->CreateObjectResource(object));
+        //     _resource_uploader->AddObject(object, resource);
+        // }
+        //
+        // _resource_uploader->Upload();
 
 
         // Create Pipeline Layout
@@ -383,7 +386,7 @@ namespace Vkxel {
 
         vkDeviceWaitIdle(_device);
 
-        for (auto &object: _object_resource) {
+        for (auto &object: _object_resource | std::views::values) {
             _resource_manager->DestroyObjectResource(object);
         }
         _object_resource.clear();
@@ -413,15 +416,20 @@ namespace Vkxel {
             return;
         }
 
+        // Release Outdated Object Resource
+        for (auto it = _object_resource.begin(); it != _object_resource.end();) {
+            if (auto &[object_id, object_resource] = *it; !object_resource.isActive) {
+                _resource_manager->DestroyObjectResource(object_resource);
+                it = _object_resource.erase(it);
+            } else {
+                // Mark Object As Inactive
+                object_resource.isActive = false;
+                ++it;
+            }
+        }
+
         RenderContext context;
         _scene.value().get().Draw(context);
-
-        // Create Constant Buffer Per Frame
-        // Change Matrix To Row Major
-        ConstantBufferPerFrame constant_buffer_per_frame{
-                .scene = {.viewMatrix = glm::transpose(context.scene.viewMatrix),
-                          .projectionMatrix = glm::transpose(context.scene.projectionMatrix),
-                          .cameraPosition = context.scene.cameraPosition}};
 
         uint32_t image_index;
         CHECK_RESULT_VK(vkAcquireNextImageKHR(_device, _swapchain, std::numeric_limits<uint64_t>::max(),
@@ -454,17 +462,30 @@ namespace Vkxel {
         vkCmdSetViewport(command_buffer, 0, 1, &viewport);
         vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 
-        _frame_resource.constantBuffer.CmdBarrier(command_buffer, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT, VK_ACCESS_2_NONE,
-                                                  VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT);
+        // Upload Scene
+        for (const auto &object: context.objects) {
+            if (_object_resource.contains(object.objectId)) {
+                ObjectResource &object_resource = _object_resource.at(object.objectId);
+                if (object.isDirty) {
+                    _resource_manager->DestroyObjectResource(object_resource);
+                    object_resource = _resource_manager->CreateObjectResource(object);
+                    _resource_uploader->AddObject(object, object_resource);
+                } else {
+                    object_resource.isActive = true;
+                }
+                _resource_manager->UpdateObjectResource(command_buffer, object, object_resource);
+            } else {
+                ObjectResource &object_resource = _object_resource[object.objectId] =
+                        _resource_manager->CreateObjectResource(object);
+                _resource_uploader->AddObject(object, object_resource);
+                _resource_manager->UpdateObjectResource(command_buffer, object, object_resource);
+            }
+        }
+        _resource_manager->UpdateFrameResource(command_buffer, context.scene, _frame_resource);
 
-        // Update Constant Buffer
-        vkCmdUpdateBuffer(command_buffer, _frame_resource.constantBuffer.buffer, 0, sizeof(ConstantBufferPerFrame),
-                          &constant_buffer_per_frame);
-
-        _frame_resource.constantBuffer.CmdBarrier(
-                command_buffer, VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT_KHR | VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                VK_ACCESS_2_UNIFORM_READ_BIT);
+        // Upload Object Mesh Data (Block Wait)
+        // TODO Support Async Upload
+        _resource_uploader->Upload();
 
         _frame_resource.colorImage.CmdBarrier(command_buffer, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT, VK_ACCESS_2_NONE,
                                               VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
@@ -501,7 +522,7 @@ namespace Vkxel {
         vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 0, 1,
                                 &_frame_resource.descriptorSet.set, 0, nullptr);
 
-        for (const auto &object: _object_resource) {
+        for (const auto &object: _object_resource | std::views::values) {
             vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 1, 1,
                                     &object.descriptorSet.set, 0, nullptr);
             vkCmdBindIndexBuffer(command_buffer, object.indexBuffer.buffer, offset_zero, VK_INDEX_TYPE_UINT32);
@@ -669,5 +690,8 @@ namespace Vkxel {
 
 
     Window &Renderer::GetWindow() const { return _window; }
+
+    GUI &Renderer::GetGUI() const { return _gui; }
+
 
 } // namespace Vkxel

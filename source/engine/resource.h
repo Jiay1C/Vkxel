@@ -25,6 +25,7 @@ namespace Vkxel {
 
         ResourceUploader &AddObject(const ObjectData &object, ObjectResource &resource);
         void UploadObjects();
+        void Upload();
 
     private:
         VkDevice _device = nullptr;
@@ -43,13 +44,19 @@ namespace Vkxel {
                         const VkDescriptorSetLayout descriptorSetLayoutFrame,
                         const VkDescriptorSetLayout descriptorSetLayoutObject, const VmaAllocator allocator) :
             _device(device), _queue_family(queueFamily), _queue(queue), _command_pool(commandPool),
-            _descriptor_pool(descriptorPool), _descriptor_set_layout_frame(descriptorSetLayoutFrame),
-            _descriptor_set_layout_object(descriptorSetLayoutObject), _allocator(allocator) {}
+            _descriptor_pool(descriptorPool), _allocator(allocator),
+            _descriptor_set_layout_frame(descriptorSetLayoutFrame),
+            _descriptor_set_layout_object(descriptorSetLayoutObject) {}
 
         ObjectResource CreateObjectResource(const ObjectData &object);
+        // TODO: Might modify function signature to support more members
+        void UpdateObjectResource(VkCommandBuffer commandBuffer, const ObjectData &object,
+                                  ObjectResource &objectResource);
         void DestroyObjectResource(ObjectResource &resource);
 
         FrameResource CreateFrameResource(uint32_t swapchainWidth, uint32_t swapchainHeight);
+        // TODO: Might modify function signature to support more members
+        void UpdateFrameResource(VkCommandBuffer commandBuffer, const SceneData &scene, FrameResource &frameResource);
         void DestroyFrameResource(FrameResource &resource);
 
     private:

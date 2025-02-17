@@ -5,6 +5,8 @@
 #ifndef VKXEL_RENDERER_H
 #define VKXEL_RENDERER_H
 
+#include <unordered_map>
+
 #include "VkBootstrap.h"
 #include "vk_mem_alloc.h"
 #include "vulkan/vulkan.h"
@@ -12,8 +14,6 @@
 #include "gui.h"
 #include "resource.h"
 #include "resource_type.h"
-#include "vkutil/buffer.h"
-#include "vkutil/image.h"
 #include "window.h"
 #include "world/scene.h"
 
@@ -36,6 +36,7 @@ namespace Vkxel {
         void Resize();
 
         Window &GetWindow() const;
+        GUI &GetGUI() const;
 
     private:
         // ObjectResource UploadObjectResource(VkCommandBuffer commandBuffer, const ObjectData &object);
@@ -79,7 +80,7 @@ namespace Vkxel {
 
         // Object Resources
         VkDescriptorSetLayout _descriptor_set_layout_object = nullptr;
-        std::vector<ObjectResource> _object_resource = {};
+        std::unordered_map<IdType, ObjectResource> _object_resource;
 
         VkSemaphore _image_ready_semaphore = nullptr;
         VkSemaphore _render_complete_semaphore = nullptr;

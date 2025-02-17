@@ -47,8 +47,10 @@ namespace Vkxel {
     };
 
     struct ObjectData {
+        IdType objectId;
         glm::mat4 transform;
         const MeshData &mesh;
+        bool isDirty;
     };
 
     struct ConstantBufferPerFrame {

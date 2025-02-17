@@ -20,13 +20,17 @@ namespace Vkxel {
     }
 
     void ResourceUploader::UploadObjects() {
+        if (_objects.empty()) {
+            return;
+        }
+
         VkDeviceSize total_size = 0;
 
         for (const auto &object_wrapper: _objects | std::views::keys) {
             const ObjectData &object = object_wrapper;
             total_size += sizeof(IndexType) * object.mesh.index.size();
             total_size += sizeof(VertexType) * object.mesh.vertex.size();
-            total_size += sizeof(ConstantBufferPerObject);
+            // total_size += sizeof(ConstantBufferPerObject);
         }
 
         VkUtil::Buffer staging_buffer =
@@ -65,16 +69,21 @@ namespace Vkxel {
                             &vertex_copy_region);
             host_buffer_offset += static_cast<uint32_t>(resource.vertexBuffer.createInfo.size);
 
+
+            // Change Constant Buffer Upload To Per Frame
+
             // Upload Constant Buffer
             // Change Matrix To Row Major
-            ConstantBufferPerObject constant_buffer_per_object{.transformMatrix = glm::transpose(object.transform)};
-            *reinterpret_cast<ConstantBufferPerObject *>(host_buffer + host_buffer_offset) = constant_buffer_per_object;
-
-            VkBufferCopy constant_copy_region{
-                    .srcOffset = host_buffer_offset, .dstOffset = 0, .size = resource.constantBuffer.createInfo.size};
-            vkCmdCopyBuffer(command_buffer, staging_buffer.buffer, resource.constantBuffer.buffer, 1,
-                            &constant_copy_region);
-            host_buffer_offset += static_cast<uint32_t>(resource.constantBuffer.createInfo.size);
+            // ConstantBufferPerObject constant_buffer_per_object{.transformMatrix = glm::transpose(object.transform)};
+            // *reinterpret_cast<ConstantBufferPerObject *>(host_buffer + host_buffer_offset) =
+            // constant_buffer_per_object;
+            //
+            // VkBufferCopy constant_copy_region{
+            //         .srcOffset = host_buffer_offset, .dstOffset = 0, .size =
+            //         resource.constantBuffer.createInfo.size};
+            // vkCmdCopyBuffer(command_buffer, staging_buffer.buffer, resource.constantBuffer.buffer, 1,
+            //                 &constant_copy_region);
+            // host_buffer_offset += static_cast<uint32_t>(resource.constantBuffer.createInfo.size);
         }
 
         staging_buffer.Flush();
@@ -86,6 +95,9 @@ namespace Vkxel {
 
         _objects.clear();
     }
+
+    void ResourceUploader::Upload() { UploadObjects(); }
+
 
     ObjectResource ResourceManager::CreateObjectResource(const ObjectData &object) {
 
@@ -134,12 +146,30 @@ namespace Vkxel {
         vkUpdateDescriptorSets(_device, static_cast<uint32_t>(descriptor_set_write_info.size()),
                                descriptor_set_write_info.data(), 0, nullptr);
 
-        return {.indexCount = static_cast<uint32_t>(object.mesh.index.size()),
+        return {.isActive = true,
+                .indexCount = static_cast<uint32_t>(object.mesh.index.size()),
                 .firstIndex = 0,
                 .indexBuffer = index_buffer,
                 .vertexBuffer = vertex_buffer,
                 .constantBuffer = constant_buffer,
                 .descriptorSet = descriptor_set};
+    }
+
+    void ResourceManager::UpdateObjectResource(const VkCommandBuffer commandBuffer, const ObjectData &object,
+                                               ObjectResource &objectResource) {
+        objectResource.constantBuffer.CmdBarrier(commandBuffer, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT, VK_ACCESS_2_NONE,
+                                                 VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT);
+
+        // Update Constant Buffer
+        // Change Matrix To Row Major
+        ConstantBufferPerObject constant_buffer_per_object = {.transformMatrix = glm::transpose(object.transform)};
+        vkCmdUpdateBuffer(commandBuffer, objectResource.constantBuffer.buffer, 0, sizeof(ConstantBufferPerObject),
+                          &constant_buffer_per_object);
+
+        objectResource.constantBuffer.CmdBarrier(
+                commandBuffer, VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT_KHR | VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                VK_ACCESS_2_UNIFORM_READ_BIT);
     }
 
 
@@ -220,6 +250,27 @@ namespace Vkxel {
                 .depthImage = depth_image,
                 .descriptorSet = descriptor_set};
     }
+
+    void ResourceManager::UpdateFrameResource(const VkCommandBuffer commandBuffer, const SceneData &scene,
+                                              FrameResource &frameResource) {
+        frameResource.constantBuffer.CmdBarrier(commandBuffer, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT, VK_ACCESS_2_NONE,
+                                                VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT);
+
+        // Update Constant Buffer
+        // Change Matrix To Row Major
+        ConstantBufferPerFrame constant_buffer_per_frame{
+                .scene = {.viewMatrix = glm::transpose(scene.viewMatrix),
+                          .projectionMatrix = glm::transpose(scene.projectionMatrix),
+                          .cameraPosition = scene.cameraPosition}};
+        vkCmdUpdateBuffer(commandBuffer, frameResource.constantBuffer.buffer, 0, sizeof(ConstantBufferPerFrame),
+                          &constant_buffer_per_frame);
+
+        frameResource.constantBuffer.CmdBarrier(
+                commandBuffer, VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT_KHR | VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                VK_ACCESS_2_UNIFORM_READ_BIT);
+    }
+
 
     void ResourceManager::DestroyFrameResource(FrameResource &resource) {
         resource.constantBuffer.Destroy();
