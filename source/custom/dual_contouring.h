@@ -11,7 +11,7 @@
 
 #include "glm/glm.hpp"
 
-#include "sdf.h"
+#include "sdf_surface.h"
 #include "world/component.h"
 
 namespace Vkxel {
@@ -19,8 +19,6 @@ namespace Vkxel {
     class DualContouring final : public Component {
     public:
         using Component::Component;
-
-        SDF sdf;
 
         glm::vec3 minBound = {-1, -1, -1};
         glm::vec3 maxBound = {1, 1, 1};
@@ -32,9 +30,13 @@ namespace Vkxel {
 
         void Create() override;
 
+        void GenerateMesh();
+
     private:
         glm::vec3 CalculateNormal(const glm::vec3 &position) const;
         glm::vec3 Grid2World(const glm::vec3 &index) const;
+
+        SDFType sdf;
 
         static constexpr std::array<glm::ivec3, 8> _voxel_point{
                 {{0, 0, 0}, {1, 0, 0}, {1, 0, 1}, {0, 0, 1}, {0, 1, 0}, {1, 1, 0}, {1, 1, 1}, {0, 1, 1}}};

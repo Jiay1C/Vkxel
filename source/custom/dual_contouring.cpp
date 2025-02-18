@@ -17,7 +17,17 @@
 
 namespace Vkxel {
 
-    void DualContouring::Create() {
+    void DualContouring::Create() { GenerateMesh(); }
+
+    void DualContouring::GenerateMesh() {
+        auto sdf_surface_result = gameObject.GetComponent<SDFSurface>();
+        if (!sdf_surface_result) {
+            return;
+        }
+
+        SDFSurface &sdf_surface = sdf_surface_result.value();
+        sdf = sdf_surface.GetSDF();
+
         const glm::ivec3 grid_size = glm::ivec3((maxBound - minBound) * resolution);
         std::vector<std::vector<std::vector<float>>> grid(
                 grid_size.x, std::vector<std::vector<float>>(grid_size.y, std::vector<float>(grid_size.z)));
