@@ -121,58 +121,6 @@ int main() {
             ImGui::DragFloat("Rotate Speed", &camera_controller.rotateSpeed, 0.02f, 0.0f, 10.0f);
             ImGui::DragFloat("Accelerate Ratio", &camera_controller.accelerateRatio, 0.02f, 0.0f, 10.0f);
         }
-        if (ImGui::CollapsingHeader("Scene")) {
-            for (auto &gameobject: scene.GetGameObjectList()) {
-                ImGui::PushID(gameobject.id);
-                if (ImGui::TreeNode(std::format("{0} ({1})", gameobject.name, gameobject.id).data())) {
-                    // Transform
-                    if (ImGui::TreeNode(std::format("Transform ({0})", gameobject.transform.id).data())) {
-                        auto &position = gameobject.transform.position;
-                        ImGui::DragFloat3("Position", reinterpret_cast<float *>(&position));
-
-                        auto rotation = glm::degrees(glm::eulerAngles(gameobject.transform.rotation));
-                        ImGui::DragFloat3("Rotation", reinterpret_cast<float *>(&rotation));
-                        gameobject.transform.rotation = glm::radians(rotation);
-
-                        auto &scale = gameobject.transform.scale;
-                        ImGui::DragFloat3("Scale", reinterpret_cast<float *>(&scale));
-
-                        ImGui::TreePop();
-                    }
-
-                    // Other Components
-                    for (const auto &component: gameobject.GetComponentList()) {
-                        ImGui::PushID(component->id);
-                        if (ImGui::TreeNode(std::format("{0} ({1})", component->name, component->id).data())) {
-                            ImGui::TreePop();
-                        }
-                        ImGui::PopID();
-                    }
-
-                    // Debug Features
-                    // if (ImGui::TreeNode("Debug")) {
-                    //     if (auto mesh_result = gameobject.GetComponent<Mesh>()) {
-                    //         if (ImGui::SmallButton("Apply SDF Mesh")) {
-                    //             Mesh &mesh = mesh_result.value();
-                    //             mesh.SetMesh(sdf_mesh.GetMesh());
-                    //             gameobject.transform.scale = {0.3f, 0.3f, 0.3f};
-                    //         }
-                    //     }
-                    //
-                    //     // Destroy Button
-                    //     // TODO: Support Destroy
-                    //     // if (ImGui::SmallButton("Destroy")) {
-                    //     //     scene.DestroyGameObject(gameobject);
-                    //     // }
-                    //
-                    //     ImGui::TreePop();
-                    // }
-
-                    ImGui::TreePop();
-                }
-                ImGui::PopID();
-            }
-        }
         if (ImGui::CollapsingHeader("Dual Contouring")) {
             ImGui::DragFloat3("Min Bound", reinterpret_cast<float *>(&dual_contouring.minBound));
             ImGui::DragFloat3("Max Bound", reinterpret_cast<float *>(&dual_contouring.maxBound));
@@ -180,6 +128,44 @@ int main() {
             if (ImGui::Button("Generate Mesh")) {
                 dual_contouring.GenerateMesh();
             }
+        }
+    });
+
+    gui.AddStaticItem("Scene", [&]() {
+        for (auto &gameobject: scene.GetGameObjectList()) {
+            ImGui::PushID(gameobject.id);
+            if (ImGui::TreeNode(std::format("{0} ({1})", gameobject.name, gameobject.id).data())) {
+                // Transform
+                if (ImGui::TreeNode(std::format("Transform ({0})", gameobject.transform.id).data())) {
+                    auto &position = gameobject.transform.position;
+                    ImGui::DragFloat3("Position", reinterpret_cast<float *>(&position));
+
+                    auto rotation = glm::degrees(glm::eulerAngles(gameobject.transform.rotation));
+                    ImGui::DragFloat3("Rotation", reinterpret_cast<float *>(&rotation));
+                    gameobject.transform.rotation = glm::radians(rotation);
+
+                    auto &scale = gameobject.transform.scale;
+                    ImGui::DragFloat3("Scale", reinterpret_cast<float *>(&scale));
+
+                    ImGui::TreePop();
+                }
+
+                // Other Components
+                for (const auto &component: gameobject.GetComponentList()) {
+                    ImGui::PushID(component->id);
+                    if (ImGui::TreeNode(std::format("{0} ({1})", component->name, component->id).data())) {
+                        ImGui::TreePop();
+                    }
+                    ImGui::PopID();
+                }
+
+                if (ImGui::Button("Destroy")) {
+                    scene.DestroyGameObject(gameobject);
+                }
+
+                ImGui::TreePop();
+            }
+            ImGui::PopID();
         }
     });
 

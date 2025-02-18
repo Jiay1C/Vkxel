@@ -416,18 +416,6 @@ namespace Vkxel {
             return;
         }
 
-        // Release Outdated Object Resource
-        for (auto it = _object_resource.begin(); it != _object_resource.end();) {
-            if (auto &[object_id, object_resource] = *it; !object_resource.isActive) {
-                _resource_manager->DestroyObjectResource(object_resource);
-                it = _object_resource.erase(it);
-            } else {
-                // Mark Object As Inactive
-                object_resource.isActive = false;
-                ++it;
-            }
-        }
-
         RenderContext context;
         _scene.value().get().Draw(context);
 
@@ -523,11 +511,13 @@ namespace Vkxel {
                                 &_frame_resource.descriptorSet.set, 0, nullptr);
 
         for (const auto &object: _object_resource | std::views::values) {
-            vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 1, 1,
-                                    &object.descriptorSet.set, 0, nullptr);
-            vkCmdBindIndexBuffer(command_buffer, object.indexBuffer.buffer, offset_zero, VK_INDEX_TYPE_UINT32);
-            vkCmdBindVertexBuffers(command_buffer, 0, 1, &object.vertexBuffer.buffer, &offset_zero);
-            vkCmdDrawIndexed(command_buffer, object.indexCount, 1, object.firstIndex, 0, 0);
+            if (object.isActive) {
+                vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 1, 1,
+                                        &object.descriptorSet.set, 0, nullptr);
+                vkCmdBindIndexBuffer(command_buffer, object.indexBuffer.buffer, offset_zero, VK_INDEX_TYPE_UINT32);
+                vkCmdBindVertexBuffers(command_buffer, 0, 1, &object.vertexBuffer.buffer, &offset_zero);
+                vkCmdDrawIndexed(command_buffer, object.indexCount, 1, object.firstIndex, 0, 0);
+            }
         }
 
         vkCmdEndRendering(command_buffer);
@@ -659,6 +649,18 @@ namespace Vkxel {
                                       .pResults = nullptr};
 
         CHECK_RESULT_VK(vkQueuePresentKHR(_queue, &present_info));
+
+        // Release Outdated Object Resource
+        for (auto it = _object_resource.begin(); it != _object_resource.end();) {
+            if (auto &[object_id, object_resource] = *it; !object_resource.isActive) {
+                _resource_manager->DestroyObjectResource(object_resource);
+                it = _object_resource.erase(it);
+            } else {
+                // Mark Object As Inactive
+                object_resource.isActive = false;
+                ++it;
+            }
+        }
 
         CHECK_RESULT_VK(
                 vkWaitForFences(_device, 1, &_command_buffer_fence, VK_TRUE, std::numeric_limits<uint64_t>::max()));
