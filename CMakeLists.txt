@@ -162,14 +162,14 @@ VKXEL_DEFINE_SOURCES(UTIL_SOURCES "util"
 )
 
 VKXEL_DEFINE_SOURCES(ENTRY_SOURCES "entry"
-        model.cpp
-        model.h
+        model_library.cpp
+        model_library.h
         main.cpp
 )
 
 VKXEL_DEFINE_SOURCES(CUSTOM_SOURCES "custom"
-        sdf.cpp
-        sdf.h
+        sdf_surface.cpp
+        sdf_surface.h
         dual_contouring.cpp
         dual_contouring.h
 )

@@ -6,7 +6,7 @@
 #include "custom/dual_contouring.h"
 #include "engine/engine.h"
 #include "engine/vtime.h"
-#include "model.h"
+#include "model_library.h"
 #include "world/camera.h"
 #include "world/controller.h"
 #include "world/drawer.h"
@@ -30,25 +30,49 @@ int main() {
 
     scene.SetCamera(camera_game_object);
 
+    GameObject &root_object = scene.CreateGameObject();
+    root_object.name = "Root";
+
     // Create SDF Object
     GameObject &sdf_object = scene.CreateGameObject();
-    sdf_object.name = "SDF Sphere";
+    sdf_object.name = "SDF Object";
+    sdf_object.transform.SetParent(root_object.transform);
     sdf_object.transform.position = {0, 0, 7};
-    sdf_object.transform.rotation = glm::radians(glm::vec3{-90, 90, 0});
-    Mesh &sdf_mesh = sdf_object.AddComponent<Mesh>();
+    sdf_object.AddComponent<Mesh>();
     sdf_object.AddComponent<Drawer>();
 
     Mover &sdf_mover = sdf_object.AddComponent<Mover>();
-    sdf_mover.angularVelocity = glm::radians(glm::vec3{0, 0, -20});
+    sdf_mover.angularVelocity = glm::radians(glm::vec3{0, 20, 0});
+
+    SDFSurface &sdf_surface = sdf_object.AddComponent<SDFSurface>();
+    sdf_surface.surfaceType = SurfaceType::CSG;
+    sdf_surface.csgType = CSGType::Union;
 
     DualContouring &dual_contouring = sdf_object.AddComponent<DualContouring>();
     dual_contouring.minBound = {-1, -1, -1};
     dual_contouring.maxBound = {1, 1, 1};
     dual_contouring.resolution = 20;
-    dual_contouring.sdf = SDFLibrary::StanfordBunny;
+
+    GameObject &sdf_bunny = scene.CreateGameObject();
+    sdf_bunny.name = "SDF Bunny";
+    sdf_bunny.transform.SetParent(sdf_object.transform);
+    sdf_bunny.transform.rotation = glm::radians(glm::vec3{-90, 90, 0});
+    SDFSurface &sdf_bunny_surface = sdf_bunny.AddComponent<SDFSurface>();
+    sdf_bunny_surface.surfaceType = SurfaceType::Custom;
+    sdf_bunny_surface.customSDF = ModelLibrary::StanfordBunnySDF;
+
+    GameObject &sdf_sphere = scene.CreateGameObject();
+    sdf_sphere.name = "SDF Sphere";
+    sdf_sphere.transform.SetParent(sdf_object.transform);
+    sdf_sphere.transform.position = {0.5f, 0.5f, 0.2f};
+    sdf_sphere.transform.scale = {0.2f, 0.2f, 0.2f};
+    SDFSurface &sdf_sphere_surface = sdf_sphere.AddComponent<SDFSurface>();
+    sdf_sphere_surface.surfaceType = SurfaceType::Primitive;
+    sdf_sphere_surface.primitiveType = PrimitiveType::Sphere;
 
     GameObject &bunny_root = scene.CreateGameObject();
     bunny_root.name = "Bunny Root";
+    bunny_root.transform.SetParent(root_object.transform);
 
     Mover &bunny_mover = bunny_root.AddComponent<Mover>();
     bunny_mover.angularVelocity = glm::radians(glm::vec3{20, 20, 20});
@@ -65,7 +89,7 @@ int main() {
                 bunny.transform.scale = {3, 3, 3};
 
                 Mesh &bunny_mesh = bunny.AddComponent<Mesh>();
-                bunny_mesh.SetMesh(ModelLibrary::StanfordBunny);
+                bunny_mesh.SetMesh(ModelLibrary::StanfordBunnyMesh);
 
                 bunny.AddComponent<Drawer>();
             }
@@ -147,6 +171,14 @@ int main() {
                     ImGui::TreePop();
                 }
                 ImGui::PopID();
+            }
+        }
+        if (ImGui::CollapsingHeader("Dual Contouring")) {
+            ImGui::DragFloat3("Min Bound", reinterpret_cast<float *>(&dual_contouring.minBound));
+            ImGui::DragFloat3("Max Bound", reinterpret_cast<float *>(&dual_contouring.maxBound));
+            ImGui::DragFloat("Resolution", &dual_contouring.resolution);
+            if (ImGui::Button("Generate Mesh")) {
+                dual_contouring.GenerateMesh();
             }
         }
     });
