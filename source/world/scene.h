@@ -40,7 +40,7 @@ namespace Vkxel {
 
     private:
         std::list<GameObject> _gameobjects;
-        std::vector<std::list<GameObject>::iterator> _destroyed_gameobjects;
+        std::vector<decltype(_gameobjects)::iterator> _destroyed_gameobjects;
         std::optional<std::reference_wrapper<GameObject>> _mainCamera;
     };
 

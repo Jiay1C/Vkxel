@@ -33,7 +33,11 @@ namespace Vkxel {
 
     std::list<GameObject> &Scene::GetGameObjectList() { return _gameobjects; }
 
-    GameObject &Scene::CreateGameObject() { return _gameobjects.emplace_back(*this); }
+    GameObject &Scene::CreateGameObject() {
+        GameObject &game_object = _gameobjects.emplace_back(*this);
+        game_object.Init();
+        return game_object;
+    }
 
     GameObject &Scene::AddGameObject(GameObject &&gameObject) {
         return _gameobjects.emplace_back(std::move(gameObject));
