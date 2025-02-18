@@ -39,46 +39,38 @@ namespace Vkxel {
         return _gameobjects.emplace_back(std::move(gameObject));
     }
 
-    // TODO: Add queue for GameObject wait to be deleted to avoid crash during the loop
     void Scene::DestroyGameObject(const GameObject &gameObject) {
-        auto it = std::ranges::find_if(_gameobjects, [&](const GameObject &go) { return &go == &gameObject; });
-
-        if (it != _gameobjects.end()) {
+        if (auto it = std::ranges::find_if(_gameobjects, [&](const GameObject &go) { return &go == &gameObject; });
+            it != _gameobjects.end()) {
             for (auto &child: it->transform.GetChildren()) {
                 DestroyGameObject(child.get().gameObject);
             }
 
-            it->Destroy();
-            _gameobjects.erase(it);
+            _destroyed_gameobjects.push_back(it);
         }
     }
 
     void Scene::DestroyGameObject(IdType gameObjectId) {
-        auto it = std::ranges::find_if(_gameobjects,
-                                       [&gameObjectId](const GameObject &go) { return go.id == gameObjectId; });
-
-        if (it != _gameobjects.end()) {
+        if (auto it = std::ranges::find_if(_gameobjects, [&](const GameObject &go) { return go.id == gameObjectId; });
+            it != _gameobjects.end()) {
             for (auto &child: it->transform.GetChildren()) {
                 DestroyGameObject(child.get().gameObject);
             }
 
-            it->Destroy();
-            _gameobjects.erase(it);
+            _destroyed_gameobjects.push_back(it);
         }
     }
 
 
     void Scene::DestroyGameObject(const std::string_view gameObjectName) {
-        auto it = std::ranges::find_if(_gameobjects,
-                                       [&gameObjectName](const GameObject &go) { return go.name == gameObjectName; });
-
-        if (it != _gameobjects.end()) {
+        if (auto it =
+                    std::ranges::find_if(_gameobjects, [&](const GameObject &go) { return go.name == gameObjectName; });
+            it != _gameobjects.end()) {
             for (auto &child: it->transform.GetChildren()) {
                 DestroyGameObject(child.get().gameObject);
             }
 
-            it->Destroy();
-            _gameobjects.erase(it);
+            _destroyed_gameobjects.push_back(it);
         }
     }
 
@@ -142,6 +134,13 @@ namespace Vkxel {
     }
 
     void Scene::Update() {
+        // Destroy GameObjects
+        for (const auto &it: _destroyed_gameobjects) {
+            it->Destroy();
+            _gameobjects.erase(it);
+        }
+        _destroyed_gameobjects.clear();
+
         for (auto &game_object: _gameobjects) {
             game_object.Update();
         }
