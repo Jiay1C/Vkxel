@@ -27,8 +27,16 @@ namespace Vkxel {
 
         explicit GameObject(Scene &parentScene) : scene(parentScene) {}
 
+        void Init() override {
+            transform.Init();
+            for (auto &component: _components) {
+                component->Init();
+            }
+        }
+
         // Event Function, Do Not Call Manually
         void Create() override {
+            transform.Create();
             for (auto &component: _components) {
                 component->Create();
             }
@@ -36,6 +44,7 @@ namespace Vkxel {
 
         // Event Function, Do Not Call Manually
         void Update() override {
+            transform.Update();
             for (auto &component: _components) {
                 component->Update();
             }
@@ -43,6 +52,7 @@ namespace Vkxel {
 
         // Event Function, Do Not Call Manually
         void Destroy() override {
+            transform.Destroy();
             for (auto &component: _components) {
                 component->Destroy();
             }

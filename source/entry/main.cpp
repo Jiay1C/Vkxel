@@ -136,15 +136,16 @@ int main() {
             ImGui::PushID(gameobject.id);
             if (ImGui::TreeNode(std::format("{0} ({1})", gameobject.name, gameobject.id).data())) {
                 // Transform
-                if (ImGui::TreeNode(std::format("Transform ({0})", gameobject.transform.id).data())) {
-                    auto &position = gameobject.transform.position;
+                if (Transform &transform = gameobject.transform;
+                    ImGui::TreeNode(std::format("{0} ({1})", transform.name, transform.id).data())) {
+                    auto &position = transform.position;
                     ImGui::DragFloat3("Position", reinterpret_cast<float *>(&position));
 
-                    auto rotation = glm::degrees(glm::eulerAngles(gameobject.transform.rotation));
+                    auto rotation = glm::degrees(glm::eulerAngles(transform.rotation));
                     ImGui::DragFloat3("Rotation", reinterpret_cast<float *>(&rotation));
-                    gameobject.transform.rotation = glm::radians(rotation);
+                    transform.rotation = glm::radians(rotation);
 
-                    auto &scale = gameobject.transform.scale;
+                    auto &scale = transform.scale;
                     ImGui::DragFloat3("Scale", reinterpret_cast<float *>(&scale));
 
                     ImGui::TreePop();
@@ -154,6 +155,10 @@ int main() {
                 for (const auto &component: gameobject.GetComponentList()) {
                     ImGui::PushID(component->id);
                     if (ImGui::TreeNode(std::format("{0} ({1})", component->name, component->id).data())) {
+                        // TODO: Fix Crash When Remove Component
+                        // if (ImGui::Button("Remove")) {
+                        //     gameobject.RemoveComponent(*component);
+                        // }
                         ImGui::TreePop();
                     }
                     ImGui::PopID();

@@ -6,6 +6,7 @@
 #define VKXEL_OBJECT_H
 
 #include <string>
+#include <typeinfo>
 
 #include "engine/data_type.h"
 
@@ -25,7 +26,7 @@ namespace Vkxel {
 
         // Event Function, Do Not Call Manually
         // Call when create object
-        virtual void Init() {}
+        virtual void Init() { name = typeid(*this).name(); }
 
         // Event Function, Do Not Call Manually
         // Call when create scene
