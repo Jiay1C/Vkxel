@@ -5,7 +5,7 @@
 #ifndef VKXEL_RESOURCE_H
 #define VKXEL_RESOURCE_H
 
-#include <list>
+#include <vector>
 
 #include "vk_mem_alloc.h"
 #include "vulkan/vulkan.h"
@@ -34,7 +34,8 @@ namespace Vkxel {
         VkCommandPool _command_pool = nullptr;
         VmaAllocator _allocator = nullptr;
 
-        std::list<std::pair<std::reference_wrapper<const ObjectData>, std::reference_wrapper<ObjectResource>>> _objects;
+        std::vector<std::pair<std::reference_wrapper<const ObjectData>, std::reference_wrapper<ObjectResource>>>
+                _objects;
     };
 
     class ResourceManager {

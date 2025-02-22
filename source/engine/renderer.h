@@ -39,14 +39,16 @@ namespace Vkxel {
         GUI &GetGUI() const;
 
     private:
-        // ObjectResource UploadObjectResource(VkCommandBuffer commandBuffer, const ObjectData &object);
-        // void DestroyObjectResource(ObjectResource &object);
+
+        constexpr static std::string_view _gui_window_name = "Canvas";
 
         Window &_window;
         GUI &_gui;
 
         bool _init = false;
         bool _pause = false;
+
+        RenderContext _context = {};
 
         // Device Related Handle
 

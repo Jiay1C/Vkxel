@@ -15,9 +15,15 @@ namespace Vkxel {
 
     class Engine {
     public:
+        enum class Status {
+            Running,
+            Sleeping,
+            Exiting,
+        };
+
         explicit Engine(Scene &scene);
 
-        void Run();
+        Status Tick();
 
         ~Engine();
 
@@ -28,7 +34,7 @@ namespace Vkxel {
         uint32_t GetFrameCount() const;
         bool IsBackGroundMode() const;
 
-    private:
+    protected:
         // TODO: Support Multiple Scenes
         Scene &_scene;
         std::unique_ptr<GUI> _gui;

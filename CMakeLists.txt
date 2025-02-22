@@ -124,6 +124,11 @@ VKXEL_DEFINE_SOURCES(ENGINE_SOURCES "engine"
         engine.h
 )
 
+VKXEL_DEFINE_SOURCES(EDITOR_SOURCES "editor"
+        editor.cpp
+        editor.h
+)
+
 VKXEL_DEFINE_SOURCES(WORLD_SOURCES "world"
         camera.cpp
         camera.h
@@ -140,6 +145,8 @@ VKXEL_DEFINE_SOURCES(WORLD_SOURCES "world"
         drawer.h
         mover.cpp
         mover.h
+        canvas.cpp
+        canvas.h
         scene.cpp
         scene.h
 )
@@ -164,6 +171,8 @@ VKXEL_DEFINE_SOURCES(UTIL_SOURCES "util"
 VKXEL_DEFINE_SOURCES(ENTRY_SOURCES "entry"
         model_library.cpp
         model_library.h
+        scene_library.cpp
+        scene_library.h
         main.cpp
 )
 
@@ -177,6 +186,7 @@ VKXEL_DEFINE_SOURCES(CUSTOM_SOURCES "custom"
 set(VKXEL_SOURCE_PATH "source")
 VKXEL_DEFINE_SOURCES(VKXEL_SOURCES ${VKXEL_SOURCE_PATH}
         ${ENGINE_SOURCES}
+        ${EDITOR_SOURCES}
         ${WORLD_SOURCES}
         ${VKUTIL_SOURCES}
         ${UTIL_SOURCES}

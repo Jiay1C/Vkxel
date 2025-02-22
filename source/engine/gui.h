@@ -19,8 +19,6 @@
 
 namespace Vkxel {
 
-    using GuiItem = std::function<void(void)>;
-
     struct GuiInitInfo {
         VkInstance Instance;
         VkPhysicalDevice PhysicalDevice;
@@ -35,6 +33,8 @@ namespace Vkxel {
 
     class GUI {
     public:
+        using GuiDelegate = Delegate<>;
+
         explicit GUI(Window &window) : _window(window) {}
 
         void InitVK(const GuiInitInfo *pInfo);
@@ -42,20 +42,15 @@ namespace Vkxel {
         void Update();
         void DestroyVK();
 
-        void AddStaticItem(const std::string &guiWindow, const GuiItem &item);
-        void AddDynamicItem(const std::string &guiWindow, const GuiItem &item);
+        void AddItem(const std::string &guiWindow, const GuiDelegate::Callback &item);
+        void RemoveWindow(const std::string &guiWindow);
 
     private:
         void OnGUI();
         void ApplyContext();
         void RestoreContext();
 
-        struct GuiWindow {
-            std::vector<GuiItem> StaticItem;
-            std::queue<GuiItem> DynamicItem;
-        };
-
-        std::unordered_map<std::string, GuiWindow> _gui_window;
+        std::unordered_map<std::string, GuiDelegate> _gui_window;
 
         Window &_window;
 

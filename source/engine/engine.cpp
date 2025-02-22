@@ -9,6 +9,7 @@
 #include "input.h"
 #include "util/application.h"
 #include "vtime.h"
+#include "world/camera.h"
 
 namespace Vkxel {
 
@@ -19,7 +20,14 @@ namespace Vkxel {
         _window->SetSize(Application::DefaultWindowWidth, Application::DefaultWindowHeight)
                 .SetTitle(Application::Name)
                 .AddCallback(WindowEvent::Minimize, [&]() { _background_mode = true; })
-                .AddCallback(WindowEvent::Restore, [&]() { _background_mode = false; });
+                .AddCallback(WindowEvent::Restore, [&]() { _background_mode = false; })
+                .AddCallback(WindowEvent::Resize, [&]() {
+                    if (auto camera_result = _scene.GetCamera()) {
+                        GameObject &camera_object = camera_result.value();
+                        Camera &camera = camera_object.GetComponent<Camera>().value();
+                        camera.aspect = _window->GetAspect();
+                    } // Ugly code to update camera aspect
+                });
         _window->Create();
 
         _gui = std::make_unique<GUI>(*_window);
@@ -29,28 +37,33 @@ namespace Vkxel {
         _renderer->LoadScene(scene);
     }
 
-    void Engine::Run() {
-        while (!_window->ShouldClose()) {
-            Input::Update();
-            Time::Update();
+    Engine::Status Engine::Tick() {
+        Input::Update();
+        Time::Update();
 
-            _window->Update();
-            _gui->Update();
-            _scene.Update();
+        _window->Update();
+        _gui->Update();
+        _scene.Update();
 
-            _renderer->Render();
+        _renderer->Render();
 
-            if (Input::GetKey(KeyCode::KEY_ESCAPE)) {
-                _window->RequestClose();
-            }
-
-            ++_frame_count;
-
-            if (_background_mode) {
-                constexpr float background_mode_sleep_seconds = 1.0f / Application::BackgroundModeMaxFps;
-                std::this_thread::sleep_for(std::chrono::duration<float>(background_mode_sleep_seconds));
-            }
+        if (Input::GetKey(KeyCode::KEY_ESCAPE)) {
+            _window->RequestClose();
         }
+
+        ++_frame_count;
+
+        if (_window->ShouldClose()) {
+            return Status::Exiting;
+        }
+
+        if (_background_mode) {
+            constexpr float background_mode_sleep_seconds = 1.0f / Application::BackgroundModeMaxFps;
+            std::this_thread::sleep_for(std::chrono::duration<float>(background_mode_sleep_seconds));
+            return Status::Sleeping;
+        }
+
+        return Status::Running;
     }
 
     Engine::~Engine() {

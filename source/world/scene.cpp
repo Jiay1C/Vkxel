@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "camera.h"
+#include "canvas.h"
 #include "drawer.h"
 #include "gameobject.hpp"
 #include "scene.h"
@@ -112,7 +113,7 @@ namespace Vkxel {
         CHECK_NOTNULL_MSG(false, "Camera Not Found");
     }
 
-    std::optional<std::reference_wrapper<const GameObject>> Scene::GetCamera() const { return _mainCamera; }
+    std::optional<std::reference_wrapper<GameObject>> Scene::GetCamera() const { return _mainCamera; }
 
     void Scene::Draw(RenderContext &context) const {
         if (auto camera_result = GetCamera()) {
@@ -125,6 +126,10 @@ namespace Vkxel {
                 if (auto drawer_result = game_object.GetComponent<Drawer>()) {
                     const Drawer &drawer = drawer_result.value();
                     drawer.Draw(context);
+                }
+                if (auto canvas_result = game_object.GetComponent<Canvas>()) {
+                    const Canvas &canvas = canvas_result.value();
+                    context.uis += [&]() { canvas.OnGUI(); };
                 }
             }
         }

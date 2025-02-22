@@ -34,14 +34,14 @@ namespace Vkxel {
         void SetCamera(const GameObject &cameraObject);
         void SetCamera(IdType cameraObjectId);
         void SetCamera(std::string_view cameraObjectName);
-        std::optional<std::reference_wrapper<const GameObject>> GetCamera() const;
+        std::optional<std::reference_wrapper<GameObject>> GetCamera() const;
 
         void Draw(RenderContext &context) const;
 
     private:
         std::list<GameObject> _gameobjects;
         std::vector<decltype(_gameobjects)::iterator> _destroyed_gameobjects;
-        std::optional<std::reference_wrapper<GameObject>> _mainCamera;
+        std::optional<std::reference_wrapper<GameObject>> _mainCamera; // TODO: Use Camera Component
     };
 
 } // namespace Vkxel

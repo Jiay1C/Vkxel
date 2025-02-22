@@ -15,19 +15,10 @@ namespace Vkxel {
     void GUI::OnGUI() {
         ImGui::ShowDemoWindow();
 
-        for (auto &[gui_window, gui_item]: _gui_window) {
+        for (auto &[gui_window, gui_delegate]: _gui_window) {
             ImGui::Begin(gui_window.data());
 
-            // Static Items
-            for (auto &item: gui_item.StaticItem) {
-                item();
-            }
-
-            // Dynamic Items
-            while (!gui_item.DynamicItem.empty()) {
-                gui_item.DynamicItem.front()();
-                gui_item.DynamicItem.pop();
-            }
+            gui_delegate();
 
             ImGui::End();
         }
@@ -97,13 +88,16 @@ namespace Vkxel {
         RestoreContext();
     }
 
-    void GUI::AddStaticItem(const std::string &guiWindow, const GuiItem &item) {
-        _gui_window[guiWindow].StaticItem.push_back(item);
+    void GUI::AddItem(const std::string &guiWindow, const GuiDelegate::Callback &item) {
+        _gui_window[guiWindow] += item;
     }
 
-    void GUI::AddDynamicItem(const std::string &guiWindow, const GuiItem &item) {
-        _gui_window[guiWindow].DynamicItem.push(item);
+    void GUI::RemoveWindow(const std::string &guiWindow) {
+        if (_gui_window.contains(guiWindow)) {
+            _gui_window.erase(guiWindow);
+        }
     }
+
 
     void GUI::ApplyContext() {
         _last_context = ImGui::GetCurrentContext();

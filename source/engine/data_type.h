@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "glm/glm.hpp"
+#include "util/delegate.hpp"
 #include "vulkan/vulkan.h"
 
 namespace Vkxel {
@@ -60,6 +61,7 @@ namespace Vkxel {
     struct RenderContext {
         std::vector<ObjectData> objects;
         SceneData scene;
+        Delegate<> uis;
     };
 
 } // namespace Vkxel
