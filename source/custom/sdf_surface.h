@@ -26,12 +26,15 @@ namespace Vkxel {
     enum class PrimitiveType {
         None,
         Sphere,
+        Box,
+        Capsule,
     };
 
     enum class CSGType {
         None,
-        Union,
+        Unionize,
         Intersect,
+        Subtract,
     };
 
     class SDFSurface final : public Component {
@@ -41,7 +44,10 @@ namespace Vkxel {
         SurfaceType surfaceType = SurfaceType::None;
 
         PrimitiveType primitiveType = PrimitiveType::None;
+
         CSGType csgType = CSGType::None;
+        float csgSmoothFactor = 0.0f;
+
         SDFType customSDF;
 
         SDFType GetSDF() const;
@@ -52,13 +58,16 @@ namespace Vkxel {
         SDFType GetCSG() const;
 
         // CSGs
-        SDFType Union() const;
+        SDFType Unionize() const;
         SDFType Intersect() const;
+        SDFType Subtract() const;
 
         std::vector<SDFType> GetChildSDF() const;
 
         // Primitives
         const static SDFType SphereSDF;
+        const static SDFType BoxSDF;
+        const static SDFType CapsuleSDF;
         const static SDFType NoneSDF;
     };
 } // namespace Vkxel

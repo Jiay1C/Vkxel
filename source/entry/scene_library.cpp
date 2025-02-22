@@ -44,7 +44,8 @@ namespace Vkxel {
 
         SDFSurface &sdf_surface = sdf_object.AddComponent<SDFSurface>();
         sdf_surface.surfaceType = SurfaceType::CSG;
-        sdf_surface.csgType = CSGType::Union;
+        sdf_surface.csgType = CSGType::Subtract;
+        sdf_surface.csgSmoothFactor = 0.2f;
 
         DualContouring &dual_contouring = sdf_object.AddComponent<DualContouring>();
         dual_contouring.minBound = {-1, -1, -1};
@@ -61,13 +62,21 @@ namespace Vkxel {
             }
         };
 
-        GameObject &sdf_bunny = scene.CreateGameObject();
-        sdf_bunny.name = "SDF Bunny";
-        sdf_bunny.transform.SetParent(sdf_object.transform);
-        sdf_bunny.transform.rotation = glm::radians(glm::vec3{-90, 90, 0});
-        SDFSurface &sdf_bunny_surface = sdf_bunny.AddComponent<SDFSurface>();
-        sdf_bunny_surface.surfaceType = SurfaceType::Custom;
-        sdf_bunny_surface.customSDF = ModelLibrary::StanfordBunnySDF;
+        // GameObject &sdf_bunny = scene.CreateGameObject();
+        // sdf_bunny.name = "SDF Bunny";
+        // sdf_bunny.transform.SetParent(sdf_object.transform);
+        // sdf_bunny.transform.rotation = glm::radians(glm::vec3{-90, 90, 0});
+        // SDFSurface &sdf_bunny_surface = sdf_bunny.AddComponent<SDFSurface>();
+        // sdf_bunny_surface.surfaceType = SurfaceType::Custom;
+        // sdf_bunny_surface.customSDF = ModelLibrary::StanfordBunnySDF;
+
+        GameObject &sdf_box = scene.CreateGameObject();
+        sdf_box.name = "SDF Box";
+        sdf_box.transform.SetParent(sdf_object.transform);
+        sdf_box.transform.scale = {0.6f, 0.6f, 0.6f};
+        SDFSurface &sdf_box_surface = sdf_box.AddComponent<SDFSurface>();
+        sdf_box_surface.surfaceType = SurfaceType::Primitive;
+        sdf_box_surface.primitiveType = PrimitiveType::Box;
 
         GameObject &sdf_sphere = scene.CreateGameObject();
         sdf_sphere.name = "SDF Sphere";
@@ -77,6 +86,15 @@ namespace Vkxel {
         SDFSurface &sdf_sphere_surface = sdf_sphere.AddComponent<SDFSurface>();
         sdf_sphere_surface.surfaceType = SurfaceType::Primitive;
         sdf_sphere_surface.primitiveType = PrimitiveType::Sphere;
+
+        GameObject &sdf_capsule = scene.CreateGameObject();
+        sdf_capsule.name = "SDF Capsule";
+        sdf_capsule.transform.SetParent(sdf_object.transform);
+        sdf_capsule.transform.position = {-0.6f, 0.2f, 0.2f};
+        sdf_capsule.transform.scale = {0.3f, 0.4f, 0.3f};
+        SDFSurface &sdf_capsule_surface = sdf_capsule.AddComponent<SDFSurface>();
+        sdf_capsule_surface.surfaceType = SurfaceType::Primitive;
+        sdf_capsule_surface.primitiveType = PrimitiveType::Capsule;
 
         GameObject &bunny_root = scene.CreateGameObject();
         bunny_root.name = "Bunny Root";
