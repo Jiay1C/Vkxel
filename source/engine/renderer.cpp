@@ -169,7 +169,7 @@ namespace Vkxel {
 
         _scene = scene;
 
-        _gui.AddItem(_gui_window_name.data(), [&]() { _context.uis(); });
+        _gui.AddItem(Application::DefaultCanvasPanelName.data(), [&]() { _context.uis(); });
 
         // RenderContext context;
         // _scene.value().get().Draw(context);
@@ -405,7 +405,7 @@ namespace Vkxel {
         vkDestroyPipeline(_device, _pipeline, nullptr);
         vkDestroyPipelineLayout(_device, _pipeline_layout, nullptr);
 
-        _gui.RemoveWindow(_gui_window_name.data());
+        _gui.RemovePanel(Application::DefaultCanvasPanelName.data());
 
         _scene = std::nullopt;
 

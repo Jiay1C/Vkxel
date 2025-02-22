@@ -48,6 +48,8 @@ namespace Vkxel {
         std::vector<Callback> _callbacks;
     };
 
+    using Action = Delegate<>::Callback;
+
 } // namespace Vkxel
 
 #endif // VKXEL_DELEGATE_H

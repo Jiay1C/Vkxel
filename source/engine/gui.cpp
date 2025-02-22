@@ -15,10 +15,10 @@ namespace Vkxel {
     void GUI::OnGUI() {
         ImGui::ShowDemoWindow();
 
-        for (auto &[gui_window, gui_delegate]: _gui_window) {
-            ImGui::Begin(gui_window.data());
+        for (auto &[panel_name, panel_delegate]: _panel) {
+            ImGui::Begin(panel_name.data());
 
-            gui_delegate();
+            panel_delegate();
 
             ImGui::End();
         }
@@ -88,13 +88,11 @@ namespace Vkxel {
         RestoreContext();
     }
 
-    void GUI::AddItem(const std::string &guiWindow, const GuiDelegate::Callback &item) {
-        _gui_window[guiWindow] += item;
-    }
+    void GUI::AddItem(const std::string &panel, const GuiDelegate::Callback &item) { _panel[panel] += item; }
 
-    void GUI::RemoveWindow(const std::string &guiWindow) {
-        if (_gui_window.contains(guiWindow)) {
-            _gui_window.erase(guiWindow);
+    void GUI::RemovePanel(const std::string &panel) {
+        if (_panel.contains(panel)) {
+            _panel.erase(panel);
         }
     }
 

@@ -39,15 +39,15 @@ namespace Vkxel {
         void Update();
         void DestroyVK();
 
-        void AddItem(const std::string &guiWindow, const GuiDelegate::Callback &item);
-        void RemoveWindow(const std::string &guiWindow);
+        void AddItem(const std::string &panel, const GuiDelegate::Callback &item);
+        void RemovePanel(const std::string &panel);
 
     private:
         void OnGUI();
         void ApplyContext();
         void RestoreContext();
 
-        std::unordered_map<std::string, GuiDelegate> _gui_window;
+        std::unordered_map<std::string, GuiDelegate> _panel;
 
         Window &_window;
 

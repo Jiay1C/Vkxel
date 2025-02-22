@@ -41,6 +41,8 @@ namespace Vkxel {
         static constexpr float DefaultMoveSpeed = 1.0f;
         static constexpr float DefaultRotateSpeed = 1.0f;
         static constexpr float DefaultAccelerateRatio = 5.0f;
+
+        static constexpr std::string_view DefaultCanvasPanelName = "Canvas";
     };
 
 } // namespace Vkxel
