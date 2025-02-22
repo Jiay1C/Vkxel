@@ -79,46 +79,13 @@ namespace Vkxel {
         }
     }
 
-    void Scene::SetCamera(const GameObject &cameraObject) {
-        _mainCamera = std::nullopt;
-        for (auto &game_object: _gameobjects) {
-            if (&game_object == &cameraObject && game_object.GetComponent<Camera>()) {
-                _mainCamera = game_object;
-                return;
-            }
-        }
-        CHECK_NOTNULL_MSG(false, "Camera Not Found");
-    }
+    void Scene::SetCamera(Camera &camera) { _mainCamera = camera; }
 
-    void Scene::SetCamera(const IdType cameraObjectId) {
-        _mainCamera = std::nullopt;
-        for (auto &game_object: _gameobjects) {
-            if (game_object.id == cameraObjectId && game_object.GetComponent<Camera>()) {
-                _mainCamera = game_object;
-                return;
-            }
-        }
-        CHECK_NOTNULL_MSG(false, "Camera Not Found");
-    }
-
-
-    void Scene::SetCamera(const std::string_view cameraObjectName) {
-        _mainCamera = std::nullopt;
-        for (auto &game_object: _gameobjects) {
-            if (game_object.name == cameraObjectName && game_object.GetComponent<Camera>()) {
-                _mainCamera = game_object;
-                return;
-            }
-        }
-        CHECK_NOTNULL_MSG(false, "Camera Not Found");
-    }
-
-    std::optional<std::reference_wrapper<GameObject>> Scene::GetCamera() const { return _mainCamera; }
+    std::optional<std::reference_wrapper<Camera>> Scene::GetCamera() const { return _mainCamera; }
 
     void Scene::Draw(RenderContext &context) const {
         if (auto camera_result = GetCamera()) {
-            const GameObject &camera_game_object = camera_result.value();
-            const Camera &camera = camera_game_object.GetComponent<Camera>().value();
+            const Camera &camera = camera_result.value();
             context.scene = {.viewMatrix = camera.GetViewMatrix(),
                              .projectionMatrix = camera.GetProjectionMatrix(),
                              .cameraPosition = glm::vec4(camera.gameObject.transform.position, 1.0)};

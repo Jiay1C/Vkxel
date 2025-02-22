@@ -20,11 +20,11 @@ namespace Vkxel {
         Scene scene;
         scene.name = "Test Scene";
 
-        GameObject &camera = scene.CreateGameObject();
-        camera.name = "Main Camera";
-        camera.transform.position = {0, 0, 10};
-        camera.AddComponent<Camera>();
-        camera.AddComponent<Controller>();
+        GameObject &camera_object = scene.CreateGameObject();
+        camera_object.name = "Main Camera";
+        camera_object.transform.position = {0, 0, 10};
+        Camera &camera = camera_object.AddComponent<Camera>();
+        camera_object.AddComponent<Controller>();
 
         scene.SetCamera(camera);
 

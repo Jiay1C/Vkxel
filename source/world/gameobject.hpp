@@ -84,6 +84,26 @@ namespace Vkxel {
             return std::nullopt;
         }
 
+        std::optional<std::reference_wrapper<Component>> GetComponent(const IdType componentId) const {
+            for (auto &comp: _components) {
+                if (comp->id == componentId) {
+                    return *comp;
+                }
+            }
+
+            return std::nullopt;
+        }
+
+        std::optional<std::reference_wrapper<Component>> GetComponent(const std::string_view componentName) const {
+            for (auto &comp: _components) {
+                if (comp->name == componentName) {
+                    return *comp;
+                }
+            }
+
+            return std::nullopt;
+        }
+
         std::list<std::unique_ptr<Component>> &GetComponentList() { return _components; }
 
         template<typename T>

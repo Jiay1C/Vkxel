@@ -6,11 +6,8 @@
 #define VKXEL_GUI_H
 
 #include <cstdint>
-#include <functional>
-#include <queue>
 #include <string>
 #include <unordered_map>
-#include <vector>
 
 #include "imgui.h"
 #include "vulkan/vulkan.h"

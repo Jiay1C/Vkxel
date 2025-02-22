@@ -23,8 +23,7 @@ namespace Vkxel {
                 .AddCallback(WindowEvent::Restore, [&]() { _background_mode = false; })
                 .AddCallback(WindowEvent::Resize, [&]() {
                     if (auto camera_result = _scene.GetCamera()) {
-                        GameObject &camera_object = camera_result.value();
-                        Camera &camera = camera_object.GetComponent<Camera>().value();
+                        Camera &camera = camera_result.value();
                         camera.aspect = _window->GetAspect();
                     } // Ugly code to update camera aspect
                 });
