@@ -25,6 +25,10 @@ namespace Vkxel {
         switch (primitiveType) {
             case PrimitiveType::Sphere:
                 return SphereSDF;
+            case PrimitiveType::Box:
+                return BoxSDF;
+            case PrimitiveType::Capsule:
+                return CapsuleSDF;
             default:
                 return NoneSDF;
         }
@@ -32,22 +36,37 @@ namespace Vkxel {
 
     SDFType SDFSurface::GetCSG() const {
         switch (csgType) {
+            case CSGType::Unionize:
+                return Unionize();
             case CSGType::Intersect:
                 return Intersect();
-            case CSGType::Union:
-                return Union();
+            case CSGType::Subtract:
+                return Subtract();
             default:
                 return NoneSDF;
         }
     }
 
-    SDFType SDFSurface::Union() const {
+    SDFType SDFSurface::Unionize() const {
         const auto child_sdf = GetChildSDF();
 
+        if (csgSmoothFactor <= 0.0f) { // Union
+            return [=](SDFInputType p) {
+                SDFOutputType value = std::numeric_limits<SDFOutputType>::max();
+                for (const auto &sdf: child_sdf) {
+                    value = std::min(value, sdf(p));
+                }
+                return value;
+            };
+        }
+
+        // Smooth Union
         return [=](SDFInputType p) {
             SDFOutputType value = std::numeric_limits<SDFOutputType>::max();
             for (const auto &sdf: child_sdf) {
-                value = std::min(value, sdf(p));
+                float sdf_value = sdf(p);
+                float h = glm::clamp(0.5f + 0.5f * (sdf_value - value) / csgSmoothFactor, 0.0f, 1.0f);
+                value = glm::mix(sdf_value, value, h) - csgSmoothFactor * h * (1.0f - h);
             }
             return value;
         };
@@ -56,14 +75,65 @@ namespace Vkxel {
     SDFType SDFSurface::Intersect() const {
         const auto child_sdf = GetChildSDF();
 
+        // Intersect
+        if (csgSmoothFactor <= 0.0f) {
+            return [=](SDFInputType p) {
+                SDFOutputType value = std::numeric_limits<SDFOutputType>::lowest();
+                for (const auto &sdf: child_sdf) {
+                    value = std::max(value, sdf(p));
+                }
+                return value;
+            };
+        }
+
+        // Smooth Intersect
         return [=](SDFInputType p) {
             SDFOutputType value = std::numeric_limits<SDFOutputType>::lowest();
             for (const auto &sdf: child_sdf) {
-                value = std::max(value, sdf(p));
+                float sdf_value = sdf(p);
+                float h = glm::clamp(0.5f - 0.5f * (sdf_value - value) / csgSmoothFactor, 0.0f, 1.0f);
+                value = glm::mix(sdf_value, value, h) + csgSmoothFactor * h * (1.0f - h);
             }
             return value;
         };
     }
+
+    SDFType SDFSurface::Subtract() const {
+        const auto child_sdf = GetChildSDF();
+
+        // Subtract
+        if (csgSmoothFactor <= 0.0f) {
+            return [=](SDFInputType p) {
+                SDFOutputType value = std::numeric_limits<SDFOutputType>::max();
+                for (bool first = true; const auto &sdf: child_sdf) {
+                    if (first) {
+                        value = sdf(p);
+                    } else {
+                        value = std::max(value, -sdf(p));
+                    }
+                    first = false;
+                }
+                return value;
+            };
+        }
+
+        // Smooth Subtract
+        return [=](SDFInputType p) {
+            SDFOutputType value = std::numeric_limits<SDFOutputType>::max();
+            for (bool first = true; const auto &sdf: child_sdf) {
+                if (first) {
+                    value = sdf(p);
+                } else {
+                    float sdf_value = sdf(p);
+                    float h = glm::clamp(0.5f - 0.5f * (value + sdf_value) / csgSmoothFactor, 0.0f, 1.0f);
+                    value = glm::mix(value, -sdf_value, h) + csgSmoothFactor * h * (1.0f - h);
+                }
+                first = false;
+            }
+            return value;
+        };
+    }
+
 
     std::vector<SDFType> SDFSurface::GetChildSDF() const {
         std::vector<SDFType> child_sdf;
@@ -83,6 +153,17 @@ namespace Vkxel {
     }
 
     const SDFType SDFSurface::SphereSDF = [](SDFInputType p) { return glm::length(p) - 1; };
+
+    const SDFType SDFSurface::BoxSDF = [](SDFInputType p) {
+        glm::vec3 q = glm::abs(p) - glm::vec3{1, 1, 1};
+        return glm::length(glm::max(q, 0.0f)) + glm::min(glm::max(q.x, glm::max(q.y, q.z)), 0.0f);
+    };
+
+    const SDFType SDFSurface::CapsuleSDF = [](SDFInputType p) {
+        glm::vec3 q = p;
+        q.y -= glm::clamp(q.y, -0.5f, 0.5f);
+        return glm::length(q) - 0.5f;
+    };
 
     const SDFType SDFSurface::NoneSDF = [](SDFInputType p) { return std::numeric_limits<float>::max(); };
 
