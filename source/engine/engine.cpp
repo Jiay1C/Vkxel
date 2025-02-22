@@ -7,6 +7,7 @@
 
 #include "engine.h"
 #include "input.h"
+#include "timer.h"
 #include "util/application.h"
 #include "vtime.h"
 #include "world/camera.h"
@@ -37,8 +38,9 @@ namespace Vkxel {
     }
 
     Engine::Status Engine::Tick() {
-        Input::Update();
         Time::Update();
+        Timer::Update();
+        Input::Update();
 
         _window->Update();
         _gui->Update();

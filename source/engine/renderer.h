@@ -39,9 +39,6 @@ namespace Vkxel {
         GUI &GetGUI() const;
 
     private:
-
-        constexpr static std::string_view _gui_window_name = "Canvas";
-
         Window &_window;
         GUI &_gui;
 

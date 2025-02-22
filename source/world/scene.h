@@ -38,8 +38,9 @@ namespace Vkxel {
         void Draw(RenderContext &context) const;
 
     private:
+        void DestroyGameObjectInternal(const std::list<GameObject>::iterator &it);
+
         std::list<GameObject> _gameobjects;
-        std::vector<decltype(_gameobjects)::iterator> _destroyed_gameobjects;
         std::optional<std::reference_wrapper<Camera>> _mainCamera;
     };
 

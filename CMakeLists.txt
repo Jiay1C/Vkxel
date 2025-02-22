@@ -120,6 +120,8 @@ VKXEL_DEFINE_SOURCES(ENGINE_SOURCES "engine"
         resource_type.h
         resource.cpp
         resource.h
+        timer.cpp
+        timer.h
         engine.cpp
         engine.h
 )

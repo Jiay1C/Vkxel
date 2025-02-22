@@ -12,6 +12,7 @@
 #include <string_view>
 
 #include "component.h"
+#include "engine/timer.h"
 #include "object.h"
 #include "transform.h"
 #include "util/check.h"
@@ -118,33 +119,37 @@ namespace Vkxel {
         }
 
         void RemoveComponent(const Component &component) {
-            std::erase_if(_components, [&component](std::unique_ptr<Component> &comp) {
-                if (comp.get() == &component) {
-                    comp->Destroy();
-                    return true;
-                }
-                return false;
-            });
+            if (auto it = std::ranges::find_if(
+                        _components, [&](const std::unique_ptr<Component> &comp) { return comp.get() == &component; });
+                it != _components.end()) {
+                Timer::ExecuteAfterTicks(1, [&, it]() {
+                    it->get()->Destroy();
+                    _components.erase(it);
+                });
+            }
         }
 
         void RemoveComponent(const IdType componentId) {
-            std::erase_if(_components, [&componentId](std::unique_ptr<Component> &comp) {
-                if (comp->id == componentId) {
-                    comp->Destroy();
-                    return true;
-                }
-                return false;
-            });
+            if (auto it = std::ranges::find_if(
+                        _components, [&](const std::unique_ptr<Component> &comp) { return comp->id == componentId; });
+                it != _components.end()) {
+                Timer::ExecuteAfterTicks(1, [&, it]() {
+                    it->get()->Destroy();
+                    _components.erase(it);
+                });
+            }
         }
 
-        void RemoveComponent(std::string_view componentName) {
-            std::erase_if(_components, [&componentName](std::unique_ptr<Component> &comp) {
-                if (comp->name == componentName) {
-                    comp->Destroy();
-                    return true;
-                }
-                return false;
-            });
+        void RemoveComponent(const std::string_view componentName) {
+            if (auto it = std::ranges::find_if(
+                        _components,
+                        [&](const std::unique_ptr<Component> &comp) { return comp->name == componentName; });
+                it != _components.end()) {
+                Timer::ExecuteAfterTicks(1, [&, it]() {
+                    it->get()->Destroy();
+                    _components.erase(it);
+                });
+            }
         }
 
     private:

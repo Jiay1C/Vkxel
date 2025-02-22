@@ -9,6 +9,7 @@
 #include "camera.h"
 #include "canvas.h"
 #include "drawer.h"
+#include "engine/timer.h"
 #include "gameobject.hpp"
 #include "scene.h"
 
@@ -47,22 +48,14 @@ namespace Vkxel {
     void Scene::DestroyGameObject(const GameObject &gameObject) {
         if (auto it = std::ranges::find_if(_gameobjects, [&](const GameObject &go) { return &go == &gameObject; });
             it != _gameobjects.end()) {
-            for (auto &child: it->transform.GetChildren()) {
-                DestroyGameObject(child.get().gameObject);
-            }
-
-            _destroyed_gameobjects.push_back(it);
+            DestroyGameObjectInternal(it);
         }
     }
 
-    void Scene::DestroyGameObject(IdType gameObjectId) {
+    void Scene::DestroyGameObject(const IdType gameObjectId) {
         if (auto it = std::ranges::find_if(_gameobjects, [&](const GameObject &go) { return go.id == gameObjectId; });
             it != _gameobjects.end()) {
-            for (auto &child: it->transform.GetChildren()) {
-                DestroyGameObject(child.get().gameObject);
-            }
-
-            _destroyed_gameobjects.push_back(it);
+            DestroyGameObjectInternal(it);
         }
     }
 
@@ -71,12 +64,19 @@ namespace Vkxel {
         if (auto it =
                     std::ranges::find_if(_gameobjects, [&](const GameObject &go) { return go.name == gameObjectName; });
             it != _gameobjects.end()) {
-            for (auto &child: it->transform.GetChildren()) {
-                DestroyGameObject(child.get().gameObject);
-            }
-
-            _destroyed_gameobjects.push_back(it);
+            DestroyGameObjectInternal(it);
         }
+    }
+
+    void Scene::DestroyGameObjectInternal(const std::list<GameObject>::iterator &it) {
+        for (auto &child: it->transform.GetChildren()) {
+            DestroyGameObject(child.get().gameObject);
+        }
+
+        Timer::ExecuteAfterTicks(1, [&, it]() {
+            it->Destroy();
+            _gameobjects.erase(it);
+        });
     }
 
     void Scene::SetCamera(Camera &camera) { _mainCamera = camera; }
@@ -110,13 +110,6 @@ namespace Vkxel {
     }
 
     void Scene::Update() {
-        // Destroy GameObjects
-        for (const auto &it: _destroyed_gameobjects) {
-            it->Destroy();
-            _gameobjects.erase(it);
-        }
-        _destroyed_gameobjects.clear();
-
         for (auto &game_object: _gameobjects) {
             game_object.Update();
         }

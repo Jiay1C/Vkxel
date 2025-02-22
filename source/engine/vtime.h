@@ -18,6 +18,7 @@ namespace Vkxel {
         static void Update();
 
         static TickType GetTicks();
+        static float GetSeconds();
         static float GetDeltaSeconds();
         static float GetRealDeltaSeconds();
 
@@ -30,6 +31,7 @@ namespace Vkxel {
 
     private:
         static TickType _tick_count;
+        static std::chrono::time_point<std::chrono::steady_clock> _start_timestamp;
         static std::chrono::duration<float> _last_update_duration;
         static std::chrono::time_point<std::chrono::steady_clock> _last_update_timestamp;
 

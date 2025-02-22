@@ -8,8 +8,11 @@ namespace Vkxel {
 
     float Time::timeRatio = 1.0f;
     uint64_t Time::_tick_count = 0;
-    std::chrono::time_point<std::chrono::steady_clock> Time::_last_update_timestamp =
+
+    std::chrono::time_point<std::chrono::steady_clock> Time::_start_timestamp =
             std::chrono::high_resolution_clock::now();
+
+    std::chrono::time_point<std::chrono::steady_clock> Time::_last_update_timestamp = _start_timestamp;
     std::chrono::duration<float> Time::_last_update_duration = {};
 
     void Time::Update() {
@@ -20,6 +23,13 @@ namespace Vkxel {
     }
 
     TickType Time::GetTicks() { return _tick_count; }
+
+    float Time::GetSeconds() {
+        auto timestamp = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<float> duration = timestamp - _start_timestamp;
+        return duration.count();
+    }
+
 
     float Time::GetDeltaSeconds() { return timeRatio * GetRealDeltaSeconds(); }
 
