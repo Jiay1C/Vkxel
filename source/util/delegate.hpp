@@ -20,17 +20,23 @@ namespace Vkxel {
             return *this;
         }
 
+        Delegate &Add(const Delegate<Args...> &delegate) {
+            _callbacks.insert(_callbacks.end(), delegate._callbacks.begin(), delegate._callbacks.end());
+            return *this;
+        }
+
         Delegate &operator+=(const Callback &callback) { return Add(callback); }
 
-        Delegate &Invoke(Args... args) {
+        Delegate &operator+=(const Delegate<Args...> &delegate) { return Add(delegate); }
+
+        void Invoke(Args... args) const {
             for (const auto &callback: _callbacks) {
                 if (callback)
                     callback(std::forward<Args>(args)...);
             }
-            return *this;
         }
 
-        Delegate &operator()(Args... args) { return Invoke(std::forward<Args>(args)...); }
+        void operator()(Args... args) const { Invoke(std::forward<Args>(args)...); }
 
         Delegate &Clear() {
             _callbacks.clear();

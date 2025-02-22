@@ -169,6 +169,8 @@ namespace Vkxel {
 
         _scene = scene;
 
+        _gui.AddItem(_gui_window_name.data(), [&]() { _context.uis(); });
+
         // RenderContext context;
         // _scene.value().get().Draw(context);
         // CHECK_NOTNULL_MSG(!context.objects.empty(), "Empty Scene");
@@ -400,11 +402,14 @@ namespace Vkxel {
         vkDestroyDescriptorSetLayout(_device, _descriptor_set_layout_frame, nullptr);
         vkDestroyDescriptorSetLayout(_device, _descriptor_set_layout_object, nullptr);
 
-
         vkDestroyPipeline(_device, _pipeline, nullptr);
         vkDestroyPipelineLayout(_device, _pipeline_layout, nullptr);
 
+        _gui.RemoveWindow(_gui_window_name.data());
+
         _scene = std::nullopt;
+
+        _context = {};
     }
 
     void Renderer::Render() {
@@ -416,8 +421,8 @@ namespace Vkxel {
             return;
         }
 
-        RenderContext context;
-        _scene.value().get().Draw(context);
+        _context = {};
+        _scene.value().get().Draw(_context);
 
         uint32_t image_index;
         CHECK_RESULT_VK(vkAcquireNextImageKHR(_device, _swapchain, std::numeric_limits<uint64_t>::max(),
@@ -451,7 +456,7 @@ namespace Vkxel {
         vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 
         // Upload Scene
-        for (const auto &object: context.objects) {
+        for (const auto &object: _context.objects) {
             if (_object_resource.contains(object.objectId)) {
                 ObjectResource &object_resource = _object_resource.at(object.objectId);
                 if (object.isDirty) {
@@ -469,7 +474,7 @@ namespace Vkxel {
                 _resource_manager->UpdateObjectResource(command_buffer, object, object_resource);
             }
         }
-        _resource_manager->UpdateFrameResource(command_buffer, context.scene, _frame_resource);
+        _resource_manager->UpdateFrameResource(command_buffer, _context.scene, _frame_resource);
 
         // Upload Object Mesh Data (Block Wait)
         // TODO Support Async Upload

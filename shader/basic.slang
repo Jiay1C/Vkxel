@@ -9,11 +9,11 @@ struct VertexInput
 
 struct VertexOutput
 {
-    float4 objectPosition;
+    float4 localPosition;
     float4 worldPosition;
     float4 viewPosition;
     float4 clipPosition : SV_Position;
-    float3 objectNormal;
+    float3 localNormal;
     float3 worldNormal;
     float3 viewNormal;
     float3 color;
@@ -58,14 +58,14 @@ VertexOutput vertexMain(VertexInput input)
     float3x3 v_n = GetNormalMatrix(v);
 
     // Position Transform
-    output.objectPosition = float4(input.position, 1.0);
-    output.worldPosition = mul(m, output.objectPosition);
+    output.localPosition = float4(input.position, 1.0);
+    output.worldPosition = mul(m, output.localPosition);
     output.viewPosition = mul(v, output.worldPosition);
     output.clipPosition = mul(p, output.viewPosition);
 
     // Normal Transform
-    output.objectNormal = normalize(input.normal);
-    output.worldNormal = normalize(mul(m_n, output.objectNormal));
+    output.localNormal = normalize(input.normal);
+    output.worldNormal = normalize(mul(m_n, output.localNormal));
     output.viewNormal = normalize(mul(v_n, output.worldNormal));
 
     output.color = input.color;
