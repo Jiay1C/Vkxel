@@ -26,8 +26,7 @@ namespace Vkxel {
                                 .data());
 
             if (auto camera_result = _scene.GetCamera()) {
-                GameObject &camera_object = camera_result.value().get();
-                Camera &camera = camera_object.GetComponent<Camera>().value();
+                Camera &camera = camera_result.value();
                 if (ImGui::CollapsingHeader("Camera")) {
                     ImGui::DragFloat("Near Clip Plane", &camera.nearClipPlane);
                     ImGui::DragFloat("Far Clip Plane", &camera.farClipPlane);
@@ -37,7 +36,7 @@ namespace Vkxel {
                     camera.fieldOfViewY = glm::radians(fov);
                 }
 
-                if (auto controller_result = camera_object.GetComponent<Controller>()) {
+                if (auto controller_result = camera.gameObject.GetComponent<Controller>()) {
                     Controller &camera_controller = controller_result.value();
                     if (ImGui::CollapsingHeader("Controller")) {
                         ImGui::DragFloat("Move Speed", &camera_controller.moveSpeed, 0.02f, 0.0f, 10.0f);
