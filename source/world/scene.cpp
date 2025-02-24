@@ -33,7 +33,9 @@ namespace Vkxel {
         return std::nullopt;
     }
 
-    std::list<GameObject> &Scene::GetGameObjectList() { return _gameobjects; }
+    std::ranges::ref_view<std::list<GameObject>> Scene::GetGameObjectsView() {
+        return std::ranges::views::all(_gameobjects);
+    }
 
     GameObject &Scene::CreateGameObject() {
         GameObject &game_object = _gameobjects.emplace_back(*this);
@@ -73,7 +75,7 @@ namespace Vkxel {
             DestroyGameObject(child.get().gameObject);
         }
 
-        Timer::ExecuteAfterTicks(1, [&, it]() {
+        Timer::ExecuteAfterTicks(1, [this, it]() {
             it->Destroy();
             _gameobjects.erase(it);
         });
