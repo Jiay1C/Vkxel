@@ -93,6 +93,14 @@ set(IMGUI_SOURCE_FILES
         ${EXTERNAL_PATH}/${IMGUI_PATH}/backends/imgui_impl_glfw.cpp
 )
 
+# reflect-cpp
+set(REFLECT_CPP_PATH "reflect-cpp")
+add_subdirectory(${EXTERNAL_PATH}/${REFLECT_CPP_PATH})
+
+# nameof
+set(NAMEOF_PATH "nameof")
+add_subdirectory(${EXTERNAL_PATH}/${NAMEOF_PATH})
+
 
 function(VKXEL_DEFINE_SOURCES OUT_LIST BASE_PATH)
     set(FILES "${ARGN}")
@@ -223,6 +231,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         GPUOpen::VulkanMemoryAllocator
         glm::glm
         slang
+        reflectcpp
+        nameof
 )
 
 # Enable all warnings during compile

@@ -6,7 +6,8 @@
 #define VKXEL_OBJECT_H
 
 #include <string>
-#include <typeinfo>
+
+#include "nameof.hpp"
 
 #include "engine/data_type.h"
 
@@ -26,7 +27,7 @@ namespace Vkxel {
 
         // Event Function, Do Not Call Manually
         // Call when create object
-        virtual void Init() { name = typeid(*this).name(); }
+        virtual void Init() { name = NAMEOF_SHORT_TYPE_RTTI(*this); }
 
         // Event Function, Do Not Call Manually
         // Call when create scene
