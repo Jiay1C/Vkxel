@@ -101,6 +101,14 @@ add_subdirectory(${EXTERNAL_PATH}/${REFLECT_CPP_PATH})
 set(NAMEOF_PATH "nameof")
 add_subdirectory(${EXTERNAL_PATH}/${NAMEOF_PATH})
 
+# mp11
+set(MP11_PATH "mp11")
+add_subdirectory(${EXTERNAL_PATH}/${MP11_PATH})
+
+# describe
+set(DESCRIBE_PATH "describe")
+add_subdirectory(${EXTERNAL_PATH}/${DESCRIBE_PATH})
+
 
 function(VKXEL_DEFINE_SOURCES OUT_LIST BASE_PATH)
     set(FILES "${ARGN}")
@@ -233,6 +241,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         slang
         reflectcpp
         nameof
+        Boost::mp11
+        Boost::describe
 )
 
 # Enable all warnings during compile

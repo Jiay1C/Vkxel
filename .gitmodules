@@ -31,3 +31,9 @@
 [submodule "external/nameof"]
 	path = external/nameof
 	url = https://github.com/Neargye/nameof.git
+[submodule "external/describe"]
+	path = external/describe
+	url = https://github.com/boostorg/describe.git
+[submodule "external/mp11"]
+	path = external/mp11
+	url = https://github.com/boostorg/mp11.git
