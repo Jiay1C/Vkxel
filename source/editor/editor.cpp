@@ -51,7 +51,7 @@ namespace Vkxel {
 
     void EditorEngine::SetupSceneUI() const {
         _gui->AddItem("Scene", [&]() {
-            for (auto &gameobject: _scene.GetGameObjectList()) {
+            for (auto &gameobject: _scene.GetGameObjectsView()) {
                 ImGui::PushID(gameobject.id);
                 if (ImGui::TreeNode(std::format("{0} ({1})", gameobject.name, gameobject.id).data())) {
                     // Transform
@@ -71,7 +71,7 @@ namespace Vkxel {
                     }
 
                     // Other Components
-                    for (const auto &component: gameobject.GetComponentList()) {
+                    for (const auto &component: gameobject.GetComponentsView()) {
                         ImGui::PushID(component->id);
                         if (ImGui::TreeNode(std::format("{0} ({1})", component->name, component->id).data())) {
                             if (ImGui::Button("Remove")) {

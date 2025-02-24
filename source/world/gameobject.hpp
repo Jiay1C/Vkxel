@@ -6,10 +6,13 @@
 #define VKXEL_GAMEOBJECT_H
 
 
-#include <list>
 #include <memory>
 #include <optional>
+#include <ranges>
 #include <string_view>
+#include <type_traits>
+#include <typeindex>
+#include <unordered_map>
 
 #include "component.h"
 #include "engine/timer.h"
@@ -28,17 +31,12 @@ namespace Vkxel {
 
         explicit GameObject(Scene &parentScene) : scene(parentScene) {}
 
-        void Init() override {
-            transform.Init();
-            for (auto &component: _components) {
-                component->Init();
-            }
-        }
+        void Init() override { transform.Init(); }
 
         // Event Function, Do Not Call Manually
         void Create() override {
             transform.Create();
-            for (auto &component: _components) {
+            for (const auto &component: _components | std::views::values) {
                 component->Create();
             }
         }
@@ -46,7 +44,7 @@ namespace Vkxel {
         // Event Function, Do Not Call Manually
         void Update() override {
             transform.Update();
-            for (auto &component: _components) {
+            for (const auto &component: _components | std::views::values) {
                 component->Update();
             }
         }
@@ -54,7 +52,7 @@ namespace Vkxel {
         // Event Function, Do Not Call Manually
         void Destroy() override {
             transform.Destroy();
-            for (auto &component: _components) {
+            for (const auto &component: _components | std::views::values) {
                 component->Destroy();
             }
             _components.clear();
@@ -69,16 +67,17 @@ namespace Vkxel {
             auto component = std::make_unique<T>(*this);
             T &ref = *component;
             ref.Init();
-            _components.emplace_back(std::move(component));
+            _components[typeid(T)] = std::move(component);
 
             return ref;
         }
 
         template<typename T>
         std::optional<std::reference_wrapper<T>> GetComponent() const {
-            for (auto &comp: _components) {
-                if (T *casted = dynamic_cast<T *>(comp.get())) {
-                    return *casted;
+            if (_components.contains(typeid(T))) {
+                const auto &component = _components.at(typeid(T));
+                if (T *casted_component = dynamic_cast<T *>(component.get())) {
+                    return *casted_component;
                 }
             }
 
@@ -86,9 +85,9 @@ namespace Vkxel {
         }
 
         std::optional<std::reference_wrapper<Component>> GetComponent(const IdType componentId) const {
-            for (auto &comp: _components) {
-                if (comp->id == componentId) {
-                    return *comp;
+            for (auto &component: _components | std::views::values) {
+                if (component->id == componentId) {
+                    return *component;
                 }
             }
 
@@ -96,64 +95,65 @@ namespace Vkxel {
         }
 
         std::optional<std::reference_wrapper<Component>> GetComponent(const std::string_view componentName) const {
-            for (auto &comp: _components) {
-                if (comp->name == componentName) {
-                    return *comp;
+            for (auto &component: _components | std::views::values) {
+                if (component->name == componentName) {
+                    return *component;
                 }
             }
 
             return std::nullopt;
         }
 
-        std::list<std::unique_ptr<Component>> &GetComponentList() { return _components; }
+        auto GetComponentsView() {
+            return std::views::all(_components) |
+                   std::views::transform([](auto &pair) -> auto & { return pair.second; });
+        }
 
         template<typename T>
         void RemoveComponent() {
-            std::erase_if(_components, [](std::unique_ptr<Component> &comp) {
-                if (T *casted = dynamic_cast<T *>(comp.get())) {
-                    casted->Destroy();
-                    return true;
-                }
-                return false;
-            });
+            if (std::type_index type = typeid(T); _components.contains(type)) {
+                Timer::ExecuteAfterTicks(1, [this, type]() {
+                    _components.at(type)->Destroy();
+                    _components.erase(type);
+                });
+            }
         }
 
         void RemoveComponent(const Component &component) {
-            if (auto it = std::ranges::find_if(
-                        _components, [&](const std::unique_ptr<Component> &comp) { return comp.get() == &component; });
+            if (auto it = std::ranges::find_if(_components,
+                                               [&](const auto &comp) { return comp.second.get() == &component; });
                 it != _components.end()) {
-                Timer::ExecuteAfterTicks(1, [&, it]() {
-                    it->get()->Destroy();
+                Timer::ExecuteAfterTicks(1, [this, it]() {
+                    it->second->Destroy();
                     _components.erase(it);
                 });
             }
         }
 
         void RemoveComponent(const IdType componentId) {
-            if (auto it = std::ranges::find_if(
-                        _components, [&](const std::unique_ptr<Component> &comp) { return comp->id == componentId; });
+            if (auto it = std::ranges::find_if(_components,
+                                               [&](const auto &comp) { return comp.second->id == componentId; });
                 it != _components.end()) {
-                Timer::ExecuteAfterTicks(1, [&, it]() {
-                    it->get()->Destroy();
+                Timer::ExecuteAfterTicks(1, [this, it]() {
+                    it->second->Destroy();
                     _components.erase(it);
                 });
             }
         }
 
         void RemoveComponent(const std::string_view componentName) {
-            if (auto it = std::ranges::find_if(
-                        _components,
-                        [&](const std::unique_ptr<Component> &comp) { return comp->name == componentName; });
+            if (auto it = std::ranges::find_if(_components,
+                                               [&](const auto &comp) { return comp.second->name == componentName; });
                 it != _components.end()) {
-                Timer::ExecuteAfterTicks(1, [&, it]() {
-                    it->get()->Destroy();
+                Timer::ExecuteAfterTicks(1, [this, it]() {
+                    it->second->Destroy();
                     _components.erase(it);
                 });
             }
         }
 
     private:
-        std::list<std::unique_ptr<Component>> _components;
+        std::unordered_map<std::type_index, std::unique_ptr<Component>> _components;
     };
 
 } // namespace Vkxel

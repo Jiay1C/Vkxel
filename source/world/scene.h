@@ -7,6 +7,7 @@
 
 #include <list>
 #include <optional>
+#include <ranges>
 #include <string_view>
 
 #include "camera.h"
@@ -23,7 +24,7 @@ namespace Vkxel {
 
         std::optional<std::reference_wrapper<GameObject>> GetGameObject(std::string_view gameObjectName);
         std::optional<std::reference_wrapper<GameObject>> GetGameObject(IdType gameObjectId);
-        std::list<GameObject> &GetGameObjectList();
+        std::ranges::ref_view<std::list<GameObject>> GetGameObjectsView();
 
         GameObject &CreateGameObject();
         GameObject &AddGameObject(GameObject &&gameObject);
