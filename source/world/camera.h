@@ -25,6 +25,14 @@ namespace Vkxel {
 
         glm::mat4 GetViewMatrix() const;
         glm::mat4 GetProjectionMatrix() const;
+
+        REGISTER_BEGIN(Camera)
+        REGISTER_BASE(Component)
+        REGISTER_DATA(nearClipPlane)
+        REGISTER_DATA(farClipPlane)
+        REGISTER_DATA(fieldOfViewY)
+        REGISTER_DATA(aspect)
+        REGISTER_END()
     };
 
 } // namespace Vkxel

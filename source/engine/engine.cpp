@@ -7,14 +7,17 @@
 
 #include "engine.h"
 #include "input.h"
+#include "reflect/reflect.hpp"
 #include "timer.h"
 #include "util/application.h"
 #include "vtime.h"
-#include "world/camera.h"
 
 namespace Vkxel {
 
     Engine::Engine(Scene &scene) : _scene(scene) {
+        Reflect::Register();
+
+        _scene.Init();
         _scene.Create();
 
         _window = std::make_unique<Window>();

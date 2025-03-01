@@ -10,13 +10,14 @@
 #include "nameof.hpp"
 
 #include "engine/data_type.h"
+#include "reflect/reflect.hpp"
 
 namespace Vkxel {
 
     class Object {
     public:
-        std::string name;
         IdType id;
+        std::string name;
 
         Object() { id = ObjectCount++; }
         Object(const Object &) = delete;
@@ -49,6 +50,11 @@ namespace Vkxel {
 
     private:
         inline static IdType ObjectCount = 0;
+
+        REGISTER_BEGIN(Object)
+        REGISTER_DATA(id)
+        REGISTER_DATA(name)
+        REGISTER_END()
     };
 
 } // namespace Vkxel

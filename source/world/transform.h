@@ -66,6 +66,13 @@ namespace Vkxel {
     private:
         std::optional<std::reference_wrapper<Transform>> _parent;
         std::list<std::reference_wrapper<Transform>> _children;
+
+        REGISTER_BEGIN(Transform)
+        REGISTER_BASE(Component)
+        REGISTER_DATA(position)
+        REGISTER_DATA(rotation)
+        REGISTER_DATA(scale)
+        REGISTER_END()
     };
 
 } // namespace Vkxel
