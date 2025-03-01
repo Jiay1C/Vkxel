@@ -22,6 +22,12 @@ namespace Vkxel {
         // TODO: Support Space Type Enum(Local, Relative, World)
 
         void Update() override;
+
+        REGISTER_BEGIN(Mover)
+        REGISTER_BASE(Component)
+        REGISTER_DATA(linearVelocity)
+        REGISTER_DATA(angularVelocity)
+        REGISTER_END()
     };
 
 } // namespace Vkxel

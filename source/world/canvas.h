@@ -10,13 +10,17 @@
 
 namespace Vkxel {
 
-    class Canvas : public Component {
+    class Canvas final : public Component {
     public:
         using Component::Component;
 
         GUI::GuiDelegate uiItems;
 
         virtual void OnGUI() const;
+
+        REGISTER_BEGIN(Canvas)
+        REGISTER_BASE(Component)
+        REGISTER_END()
     };
 
 } // namespace Vkxel

@@ -101,13 +101,9 @@ add_subdirectory(${EXTERNAL_PATH}/${REFLECT_CPP_PATH})
 set(NAMEOF_PATH "nameof")
 add_subdirectory(${EXTERNAL_PATH}/${NAMEOF_PATH})
 
-# mp11
-set(MP11_PATH "mp11")
-add_subdirectory(${EXTERNAL_PATH}/${MP11_PATH})
-
-# describe
-set(DESCRIBE_PATH "describe")
-add_subdirectory(${EXTERNAL_PATH}/${DESCRIBE_PATH})
+# EnTT
+set(ENTT_PATH "entt")
+add_subdirectory(${EXTERNAL_PATH}/${ENTT_PATH})
 
 
 function(VKXEL_DEFINE_SOURCES OUT_LIST BASE_PATH)
@@ -186,6 +182,11 @@ VKXEL_DEFINE_SOURCES(UTIL_SOURCES "util"
         delegate.hpp
 )
 
+VKXEL_DEFINE_SOURCES(REFLECT_SOURCES "reflect"
+        reflect.cpp
+        reflect.hpp
+)
+
 VKXEL_DEFINE_SOURCES(ENTRY_SOURCES "entry"
         model_library.cpp
         model_library.h
@@ -208,6 +209,7 @@ VKXEL_DEFINE_SOURCES(VKXEL_SOURCES ${VKXEL_SOURCE_PATH}
         ${WORLD_SOURCES}
         ${VKUTIL_SOURCES}
         ${UTIL_SOURCES}
+        ${REFLECT_SOURCES}
         ${ENTRY_SOURCES}
         ${CUSTOM_SOURCES}
 )
@@ -241,8 +243,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         slang
         reflectcpp
         nameof
-        Boost::mp11
-        Boost::describe
+        EnTT::EnTT
 )
 
 # Enable all warnings during compile

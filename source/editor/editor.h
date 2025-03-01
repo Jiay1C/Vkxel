@@ -16,6 +16,9 @@ namespace Vkxel {
     private:
         void SetupDebugUI() const;
         void SetupSceneUI() const;
+        void DrawComponent(Component *component) const;
+        void DrawComponentData(entt::meta_any &component) const;
+        void DrawElement(std::string_view name, entt::meta_any &element) const;
     };
 
 } // namespace Vkxel
