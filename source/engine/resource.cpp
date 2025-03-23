@@ -185,7 +185,7 @@ namespace Vkxel {
     FrameResource ResourceManager::CreateFrameResource(uint32_t swapchainWidth, uint32_t swapchainHeight) {
         VkUtil::Image depth_image = VkUtil::ImageBuilder(_device, _allocator)
                                             .SetImageType(VK_IMAGE_TYPE_2D)
-                                            .SetFormat(VK_FORMAT_D32_SFLOAT)
+                                            .SetFormat(Application::DefaultDepthFormat)
                                             .SetExtent({swapchainWidth, swapchainHeight, 1})
                                             .SetUsage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
                                             .SetPQueueFamilyIndices(&_queue_family)
@@ -202,7 +202,7 @@ namespace Vkxel {
         VkUtil::Image color_image =
                 VkUtil::ImageBuilder(_device, _allocator)
                         .SetImageType(VK_IMAGE_TYPE_2D)
-                        .SetFormat(Application::DefaultFramebufferFormat)
+                        .SetFormat(Application::DefaultColorFormat)
                         .SetExtent({swapchainWidth, swapchainHeight, 1})
                         .SetUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
                         .SetPQueueFamilyIndices(&_queue_family)
@@ -276,6 +276,69 @@ namespace Vkxel {
         resource.constantBuffer.Destroy();
         resource.depthImage.Destroy();
         resource.colorImage.Destroy();
+        resource.descriptorSet.Destroy();
+
+        resource = {};
+    }
+
+    ComputeResource ResourceManager::CreateComputeResource() {
+        VkUtil::BufferBuilder buffer_builder =
+                VkUtil::BufferBuilder(_device, _allocator)
+                        .SetUsage(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT)
+                        .SetPQueueFamilyIndices(&_queue_family)
+                        .SetAllocationFlags(VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT)
+                        .SetMemoryUsage(VMA_MEMORY_USAGE_AUTO_PREFER_HOST)
+                        .SetRequiredFlags(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
+                        .SetSize(ComputeResource::size);
+
+        VkUtil::Buffer input_buffer = buffer_builder.Build();
+        VkUtil::Buffer output_buffer = buffer_builder.Build();
+        input_buffer.Create();
+        output_buffer.Create();
+
+        std::byte *input_data = input_buffer.Map();
+        std::byte *output_data = output_buffer.Map();
+
+        VkUtil::DescriptorSet descriptor_set =
+                VkUtil::DescriptorSetBuilder(_device, _descriptor_pool, _descriptor_set_layout_compute).Build();
+        descriptor_set.Create();
+
+        VkDescriptorBufferInfo input_buffer_info{.buffer = input_buffer.buffer, .offset = 0, .range = VK_WHOLE_SIZE};
+        VkDescriptorBufferInfo output_buffer_info{.buffer = output_buffer.buffer, .offset = 0, .range = VK_WHOLE_SIZE};
+
+        std::array descriptor_set_write_info = {VkWriteDescriptorSet{
+                                                        .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                                                        .dstSet = descriptor_set.set,
+                                                        .dstBinding = 0,
+                                                        .dstArrayElement = 0,
+                                                        .descriptorCount = 1,
+                                                        .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                                                        .pBufferInfo = &input_buffer_info,
+                                                },
+                                                VkWriteDescriptorSet{
+                                                        .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                                                        .dstSet = descriptor_set.set,
+                                                        .dstBinding = 1,
+                                                        .dstArrayElement = 0,
+                                                        .descriptorCount = 1,
+                                                        .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                                                        .pBufferInfo = &output_buffer_info,
+                                                }};
+
+        vkUpdateDescriptorSets(_device, static_cast<uint32_t>(descriptor_set_write_info.size()),
+                               descriptor_set_write_info.data(), 0, nullptr);
+
+        return {input_data, output_data, input_buffer, output_buffer, descriptor_set};
+    }
+
+    void ResourceManager::UpdateComputeResource(VkCommandBuffer commandBuffer, ComputeResource &resource) {}
+
+    void ResourceManager::DestroyComputeResource(ComputeResource &resource) {
+        resource.inputBuffer.Unmap();
+        resource.outputBuffer.Unmap();
+
+        resource.inputBuffer.Destroy();
+        resource.outputBuffer.Destroy();
         resource.descriptorSet.Destroy();
 
         resource = {};

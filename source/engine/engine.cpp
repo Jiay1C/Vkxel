@@ -49,6 +49,9 @@ namespace Vkxel {
         _gui->Update();
         _scene.Update();
 
+        // For test purpose
+        _renderer->Compute();
+
         _renderer->Render();
 
         if (Input::GetKey(KeyCode::KEY_ESCAPE)) {

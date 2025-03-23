@@ -33,7 +33,8 @@ namespace Vkxel {
         static constexpr float DefaultFarClipPlane = 1000.0f;
 
         static constexpr VkPresentModeKHR DefaultPresentMode = VK_PRESENT_MODE_FIFO_KHR;
-        static constexpr VkFormat DefaultFramebufferFormat = VK_FORMAT_R16G16B16A16_SFLOAT;
+        static constexpr VkFormat DefaultColorFormat = VK_FORMAT_R16G16B16A16_SFLOAT;
+        static constexpr VkFormat DefaultDepthFormat = VK_FORMAT_D32_SFLOAT;
 
         static constexpr uint32_t DefaultDescriptorCount = 1000;
         static constexpr uint32_t DefaultDescriptorSetCount = 1000;
