@@ -174,6 +174,8 @@ VKXEL_DEFINE_SOURCES(VKUTIL_SOURCES "vkutil"
         command.h
         descriptor.cpp
         descriptor.h
+        pipeline.cpp
+        pipeline.h
 )
 
 VKXEL_DEFINE_SOURCES(UTIL_SOURCES "util"

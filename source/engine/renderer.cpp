@@ -14,7 +14,6 @@
 
 #include "data_type.h"
 #include "renderer.h"
-
 #include "resource.h"
 #include "shader.h"
 #include "util/application.h"
@@ -22,6 +21,7 @@
 #include "vkutil/buffer.h"
 #include "vkutil/command.h"
 #include "vkutil/image.h"
+#include "vkutil/pipeline.h"
 
 
 namespace Vkxel {
@@ -138,7 +138,7 @@ namespace Vkxel {
                                   .DescriptorPool = _descriptor_pool,
                                   .MinImageCount = _swapchain.requested_min_image_count,
                                   .ImageCount = _swapchain.image_count,
-                                  .ColorAttachmentFormat = Application::DefaultFramebufferFormat};
+                                  .ColorAttachmentFormat = Application::DefaultColorFormat};
 
         _gui.InitVK(&gui_init_info);
 
@@ -187,6 +187,7 @@ namespace Vkxel {
         CHECK_RESULT_VK(vkCreateFence(_device, &fence_create_info, nullptr, &_command_buffer_fence));
 
 
+        // Create Graphics Pipeline Descriptor Set Layout
         std::array descriptor_set_layout_binding = {
                 VkDescriptorSetLayoutBinding{.binding = 0,
                                              .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
@@ -203,15 +204,35 @@ namespace Vkxel {
         CHECK_RESULT_VK(vkCreateDescriptorSetLayout(_device, &descriptor_set_layout_create_info, nullptr,
                                                     &_descriptor_set_layout_object));
 
+        // Create Compute Pipeline Descriptor Set Layout
+        std::array compute_descriptor_set_layout_binding = {
+                VkDescriptorSetLayoutBinding{.binding = 0,
+                                             .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                                             .descriptorCount = 1,
+                                             .stageFlags = VK_SHADER_STAGE_COMPUTE_BIT},
+                VkDescriptorSetLayoutBinding{.binding = 1,
+                                             .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                                             .descriptorCount = 1,
+                                             .stageFlags = VK_SHADER_STAGE_COMPUTE_BIT}};
+
+        VkDescriptorSetLayoutCreateInfo compute_descriptor_set_layout_create_info{
+                .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+                .bindingCount = static_cast<uint32_t>(compute_descriptor_set_layout_binding.size()),
+                .pBindings = compute_descriptor_set_layout_binding.data()};
+
+        CHECK_RESULT_VK(vkCreateDescriptorSetLayout(_device, &compute_descriptor_set_layout_create_info, nullptr,
+                                                    &_descriptor_set_layout_compute));
 
         // Upload Data
-        _resource_manager = std::make_unique<ResourceManager>(_device, _queue_family_index, _queue, _command_pool,
-                                                              _descriptor_pool, _descriptor_set_layout_frame,
-                                                              _descriptor_set_layout_object, _allocator);
+        _resource_manager = std::make_unique<ResourceManager>(
+                _device, _queue_family_index, _queue, _command_pool, _descriptor_pool, _descriptor_set_layout_compute,
+                _descriptor_set_layout_frame, _descriptor_set_layout_object, _allocator);
         _resource_uploader =
                 std::make_unique<ResourceUploader>(_device, _queue_family_index, _queue, _command_pool, _allocator);
 
         _frame_resource = _resource_manager->CreateFrameResource(_swapchain.extent.width, _swapchain.extent.height);
+
+        _compute_resource = _resource_manager->CreateComputeResource();
 
         // _object_resource.reserve(context.objects.size());
         //
@@ -223,163 +244,20 @@ namespace Vkxel {
         //
         // _resource_uploader->Upload();
 
-
-        // Create Pipeline Layout
-
-        std::array pipeline_descriptor_set_layouts = {_descriptor_set_layout_frame, _descriptor_set_layout_object};
-
-        VkPipelineLayoutCreateInfo pipeline_layout_create_info{
-                .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-                .setLayoutCount = static_cast<uint32_t>(pipeline_descriptor_set_layouts.size()),
-                .pSetLayouts = pipeline_descriptor_set_layouts.data(),
-                .pushConstantRangeCount = 0};
-        CHECK_RESULT_VK(vkCreatePipelineLayout(_device, &pipeline_layout_create_info, nullptr, &_pipeline_layout));
-
-
         // Create Graphics Pipeline
+        _pipeline = VkUtil::DefaultGraphicsPipelineBuilder(_device).Build(
+                {_descriptor_set_layout_frame, _descriptor_set_layout_object});
 
-        VkShaderModule shader_module = ShaderLoader::Instance().LoadToModule(_device, "basic");
+        // Create Compute Pipeline
+        VkShaderModule compute_shader_module = ShaderLoader::Instance().LoadToModule(_device, "compute");
 
-        std::array shader_stage_create_info = {
-                VkPipelineShaderStageCreateInfo{.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-                                                .stage = VK_SHADER_STAGE_VERTEX_BIT,
-                                                .module = shader_module,
-                                                .pName = "vertexMain",
-                                                .pSpecializationInfo = nullptr},
-                VkPipelineShaderStageCreateInfo{.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-                                                .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
-                                                .module = shader_module,
-                                                .pName = "fragmentMain",
-                                                .pSpecializationInfo = nullptr},
-        };
+        _compute_pipeline = VkUtil::ComputePipelineBuilder(_device)
+                                    .SetShader(compute_shader_module)
+                                    .SetShaderName("computeMain")
+                                    .SetPipelineLayout({_descriptor_set_layout_compute})
+                                    .Build();
 
-        VkVertexInputBindingDescription vertex_input_binding_description{
-                .binding = 0, .stride = sizeof(VertexData), .inputRate = VK_VERTEX_INPUT_RATE_VERTEX};
-
-        std::array vertex_input_attribute_description = {
-                VkVertexInputAttributeDescription{.location = 0,
-                                                  .binding = 0,
-                                                  .format = VK_FORMAT_R32G32B32_SFLOAT,
-                                                  .offset = offsetof(VertexData, position)},
-                VkVertexInputAttributeDescription{.location = 1,
-                                                  .binding = 0,
-                                                  .format = VK_FORMAT_R32G32B32_SFLOAT,
-                                                  .offset = offsetof(VertexData, normal)},
-                VkVertexInputAttributeDescription{.location = 2,
-                                                  .binding = 0,
-                                                  .format = VK_FORMAT_R32G32B32_SFLOAT,
-                                                  .offset = offsetof(VertexData, color)}};
-
-        VkPipelineVertexInputStateCreateInfo input_state_create_info{
-                .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-                .vertexBindingDescriptionCount = 1,
-                .pVertexBindingDescriptions = &vertex_input_binding_description,
-                .vertexAttributeDescriptionCount = static_cast<uint32_t>(vertex_input_attribute_description.size()),
-                .pVertexAttributeDescriptions = vertex_input_attribute_description.data()};
-
-        VkPipelineInputAssemblyStateCreateInfo input_assembly_state_create_info{
-                .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-                .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-                .primitiveRestartEnable = VK_FALSE};
-
-        VkPipelineViewportStateCreateInfo viewport_state_create_info{
-                .sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
-                .viewportCount = 1,
-                .scissorCount = 1,
-        };
-
-        VkPipelineRasterizationStateCreateInfo rasterization_state_create_info{
-                .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
-                .depthClampEnable = VK_FALSE,
-                .rasterizerDiscardEnable = VK_FALSE,
-                .polygonMode = VK_POLYGON_MODE_FILL,
-                .cullMode = VK_CULL_MODE_BACK_BIT,
-                .frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
-                .depthBiasEnable = VK_FALSE,
-                .depthBiasConstantFactor = 0.0f,
-                .depthBiasClamp = 0.0f,
-                .depthBiasSlopeFactor = 0.0f,
-                .lineWidth = 1.0f};
-
-        VkPipelineMultisampleStateCreateInfo multisample_state_create_info{
-                .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-                .rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
-                .sampleShadingEnable = VK_FALSE,
-                .minSampleShading = 1.0f,
-                .pSampleMask = nullptr,
-                .alphaToCoverageEnable = VK_FALSE,
-                .alphaToOneEnable = VK_FALSE};
-
-        VkPipelineDepthStencilStateCreateInfo depth_stencil_state_create_info{
-                .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-                .depthTestEnable = VK_TRUE,
-                .depthWriteEnable = VK_TRUE,
-                .depthCompareOp = VK_COMPARE_OP_LESS,
-                .depthBoundsTestEnable = VK_FALSE,
-                .stencilTestEnable = VK_FALSE,
-                .front = {},
-                .back = {},
-                .minDepthBounds = 0.0f,
-                .maxDepthBounds = 1.0f};
-
-        VkPipelineColorBlendAttachmentState color_blend_attachment_state{
-                .blendEnable = VK_FALSE,
-                .srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA,
-                .dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
-                .colorBlendOp = VK_BLEND_OP_ADD,
-                .srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,
-                .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
-                .alphaBlendOp = VK_BLEND_OP_ADD,
-                .colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
-                                  VK_COLOR_COMPONENT_A_BIT};
-
-        VkPipelineColorBlendStateCreateInfo color_blend_state_create_info{
-                .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
-                .logicOpEnable = VK_FALSE,
-                .logicOp = VK_LOGIC_OP_COPY,
-                .attachmentCount = 1,
-                .pAttachments = &color_blend_attachment_state,
-                .blendConstants = {0.0f, 0.0f, 0.0f, 0.0f}};
-
-
-        std::array dynamic_state = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
-
-        VkPipelineDynamicStateCreateInfo dynamic_state_create_info{
-                .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
-                .dynamicStateCount = static_cast<uint32_t>(dynamic_state.size()),
-                .pDynamicStates = dynamic_state.data()};
-
-        VkPipelineRenderingCreateInfo pipeline_rendering_create_info{
-                .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
-                .colorAttachmentCount = 1,
-                .pColorAttachmentFormats = &_frame_resource.colorImage.createInfo.format,
-                .depthAttachmentFormat = _frame_resource.depthImage.createInfo.format};
-
-        VkGraphicsPipelineCreateInfo graphics_pipeline_create_info{
-                .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-                .pNext = &pipeline_rendering_create_info,
-                .stageCount = static_cast<uint32_t>(shader_stage_create_info.size()),
-                .pStages = shader_stage_create_info.data(),
-                .pVertexInputState = &input_state_create_info,
-                .pInputAssemblyState = &input_assembly_state_create_info,
-                .pTessellationState = nullptr,
-                .pViewportState = &viewport_state_create_info,
-                .pRasterizationState = &rasterization_state_create_info,
-                .pMultisampleState = &multisample_state_create_info,
-                .pDepthStencilState = &depth_stencil_state_create_info,
-                .pColorBlendState = &color_blend_state_create_info,
-                .pDynamicState = &dynamic_state_create_info,
-                .layout = _pipeline_layout,
-                .renderPass = VK_NULL_HANDLE,
-                .subpass = 0,
-                .basePipelineHandle = VK_NULL_HANDLE,
-                .basePipelineIndex = -1};
-
-
-        CHECK_RESULT_VK(
-                vkCreateGraphicsPipelines(_device, nullptr, 1, &graphics_pipeline_create_info, nullptr, &_pipeline));
-
-        vkDestroyShaderModule(_device, shader_module, nullptr);
+        vkDestroyShaderModule(_device, compute_shader_module, nullptr);
     }
 
     void Renderer::UnloadScene() {
@@ -395,15 +273,18 @@ namespace Vkxel {
 
         _resource_manager->DestroyFrameResource(_frame_resource);
 
+        _resource_manager->DestroyComputeResource(_compute_resource);
+
         vkDestroyFence(_device, _command_buffer_fence, nullptr);
         vkDestroySemaphore(_device, _image_ready_semaphore, nullptr);
         vkDestroySemaphore(_device, _render_complete_semaphore, nullptr);
 
         vkDestroyDescriptorSetLayout(_device, _descriptor_set_layout_frame, nullptr);
         vkDestroyDescriptorSetLayout(_device, _descriptor_set_layout_object, nullptr);
+        vkDestroyDescriptorSetLayout(_device, _descriptor_set_layout_compute, nullptr);
 
-        vkDestroyPipeline(_device, _pipeline, nullptr);
-        vkDestroyPipelineLayout(_device, _pipeline_layout, nullptr);
+        _pipeline.Destroy();
+        _compute_pipeline.Destroy();
 
         _gui.RemovePanel(Application::DefaultCanvasPanelName.data());
 
@@ -511,13 +392,13 @@ namespace Vkxel {
 
         VkDeviceSize offset_zero = 0;
         vkCmdBeginRendering(command_buffer, &rendering_info); // Camera Pass
-        vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
-        vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 0, 1,
+        vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline.pipeline);
+        vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline.layout, 0, 1,
                                 &_frame_resource.descriptorSet.set, 0, nullptr);
 
         for (const auto &object: _object_resource | std::views::values) {
             if (object.isActive) {
-                vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline_layout, 1, 1,
+                vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline.layout, 1, 1,
                                         &object.descriptorSet.set, 0, nullptr);
                 vkCmdBindIndexBuffer(command_buffer, object.indexBuffer.buffer, offset_zero, VK_INDEX_TYPE_UINT32);
                 vkCmdBindVertexBuffers(command_buffer, 0, 1, &object.vertexBuffer.buffer, &offset_zero);
@@ -673,6 +554,28 @@ namespace Vkxel {
 
         vkFreeCommandBuffers(_device, _command_pool, 1, &command_buffer);
     }
+
+    void Renderer::Compute() {
+        std::array<float, ComputeResource::size / 4> input{};
+        for (auto &data: input) {
+            data = std::rand();
+        }
+        std::copy_n(reinterpret_cast<std::byte *>(input.data()), ComputeResource::size, _compute_resource.inputData);
+        _compute_resource.inputBuffer.Flush();
+
+        VkUtil::ImmediateCommand immediate_command(_device, _queue, _command_pool);
+        VkCommandBuffer command_buffer = immediate_command.Begin();
+        _resource_manager->UpdateComputeResource(command_buffer, _compute_resource);
+        vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, _compute_pipeline.pipeline);
+        vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, _compute_pipeline.layout, 0, 1,
+                                &_compute_resource.descriptorSet.set, 0, nullptr);
+        vkCmdDispatch(command_buffer, ComputeResource::size / 4, 1, 1);
+        immediate_command.End();
+
+        std::array<float, ComputeResource::size / 4> output{};
+        std::copy_n(_compute_resource.outputData, ComputeResource::size, reinterpret_cast<std::byte *>(output.data()));
+    }
+
 
     void Renderer::Resize() {
         vkDeviceWaitIdle(_device);
