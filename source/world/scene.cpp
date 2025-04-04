@@ -111,6 +111,13 @@ namespace Vkxel {
         }
     }
 
+    void Scene::Start() {
+        for (auto &game_object: _gameobjects) {
+            game_object.Start();
+        }
+    }
+
+
     void Scene::Update() {
         for (auto &game_object: _gameobjects) {
             game_object.Update();

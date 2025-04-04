@@ -5,6 +5,7 @@
 #ifndef VKXEL_PIPELINE_H
 #define VKXEL_PIPELINE_H
 
+#include <string>
 #include <vector>
 
 #include "vulkan/vulkan_core.h"
@@ -159,8 +160,8 @@ namespace Vkxel::VkUtil {
 
         ComputePipeline Build() const;
 
-        ComputePipelineBuilder &SetShader(const VkShaderModule &shader);
-        ComputePipelineBuilder &SetShaderName(const std::string &name);
+        ComputePipelineBuilder &SetShader(const VkShaderModule shader);
+        ComputePipelineBuilder &SetShaderName(const std::string_view name);
         ComputePipelineBuilder &SetPipelineLayout(const std::vector<VkDescriptorSetLayout> &pipelineLayout);
 
     private:

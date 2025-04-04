@@ -204,35 +204,14 @@ namespace Vkxel {
         CHECK_RESULT_VK(vkCreateDescriptorSetLayout(_device, &descriptor_set_layout_create_info, nullptr,
                                                     &_descriptor_set_layout_object));
 
-        // Create Compute Pipeline Descriptor Set Layout
-        std::array compute_descriptor_set_layout_binding = {
-                VkDescriptorSetLayoutBinding{.binding = 0,
-                                             .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                                             .descriptorCount = 1,
-                                             .stageFlags = VK_SHADER_STAGE_COMPUTE_BIT},
-                VkDescriptorSetLayoutBinding{.binding = 1,
-                                             .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                                             .descriptorCount = 1,
-                                             .stageFlags = VK_SHADER_STAGE_COMPUTE_BIT}};
-
-        VkDescriptorSetLayoutCreateInfo compute_descriptor_set_layout_create_info{
-                .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-                .bindingCount = static_cast<uint32_t>(compute_descriptor_set_layout_binding.size()),
-                .pBindings = compute_descriptor_set_layout_binding.data()};
-
-        CHECK_RESULT_VK(vkCreateDescriptorSetLayout(_device, &compute_descriptor_set_layout_create_info, nullptr,
-                                                    &_descriptor_set_layout_compute));
-
         // Upload Data
-        _resource_manager = std::make_unique<ResourceManager>(
-                _device, _queue_family_index, _queue, _command_pool, _descriptor_pool, _descriptor_set_layout_compute,
-                _descriptor_set_layout_frame, _descriptor_set_layout_object, _allocator);
+        _resource_manager = std::make_unique<ResourceManager>(_device, _queue_family_index, _queue, _command_pool,
+                                                              _descriptor_pool, _descriptor_set_layout_frame,
+                                                              _descriptor_set_layout_object, _allocator);
         _resource_uploader =
                 std::make_unique<ResourceUploader>(_device, _queue_family_index, _queue, _command_pool, _allocator);
 
         _frame_resource = _resource_manager->CreateFrameResource(_swapchain.extent.width, _swapchain.extent.height);
-
-        _compute_resource = _resource_manager->CreateComputeResource();
 
         // _object_resource.reserve(context.objects.size());
         //
@@ -247,17 +226,6 @@ namespace Vkxel {
         // Create Graphics Pipeline
         _pipeline = VkUtil::DefaultGraphicsPipelineBuilder(_device).Build(
                 {_descriptor_set_layout_frame, _descriptor_set_layout_object});
-
-        // Create Compute Pipeline
-        VkShaderModule compute_shader_module = ShaderLoader::Instance().LoadToModule(_device, "compute");
-
-        _compute_pipeline = VkUtil::ComputePipelineBuilder(_device)
-                                    .SetShader(compute_shader_module)
-                                    .SetShaderName("computeMain")
-                                    .SetPipelineLayout({_descriptor_set_layout_compute})
-                                    .Build();
-
-        vkDestroyShaderModule(_device, compute_shader_module, nullptr);
     }
 
     void Renderer::UnloadScene() {
@@ -273,18 +241,14 @@ namespace Vkxel {
 
         _resource_manager->DestroyFrameResource(_frame_resource);
 
-        _resource_manager->DestroyComputeResource(_compute_resource);
-
         vkDestroyFence(_device, _command_buffer_fence, nullptr);
         vkDestroySemaphore(_device, _image_ready_semaphore, nullptr);
         vkDestroySemaphore(_device, _render_complete_semaphore, nullptr);
 
         vkDestroyDescriptorSetLayout(_device, _descriptor_set_layout_frame, nullptr);
         vkDestroyDescriptorSetLayout(_device, _descriptor_set_layout_object, nullptr);
-        vkDestroyDescriptorSetLayout(_device, _descriptor_set_layout_compute, nullptr);
 
         _pipeline.Destroy();
-        _compute_pipeline.Destroy();
 
         _gui.RemovePanel(Application::DefaultCanvasPanelName.data());
 
@@ -555,28 +519,6 @@ namespace Vkxel {
         vkFreeCommandBuffers(_device, _command_pool, 1, &command_buffer);
     }
 
-    void Renderer::Compute() {
-        std::array<float, ComputeResource::size / 4> input{};
-        for (auto &data: input) {
-            data = std::rand();
-        }
-        std::copy_n(reinterpret_cast<std::byte *>(input.data()), ComputeResource::size, _compute_resource.inputData);
-        _compute_resource.inputBuffer.Flush();
-
-        VkUtil::ImmediateCommand immediate_command(_device, _queue, _command_pool);
-        VkCommandBuffer command_buffer = immediate_command.Begin();
-        _resource_manager->UpdateComputeResource(command_buffer, _compute_resource);
-        vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, _compute_pipeline.pipeline);
-        vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, _compute_pipeline.layout, 0, 1,
-                                &_compute_resource.descriptorSet.set, 0, nullptr);
-        vkCmdDispatch(command_buffer, ComputeResource::size / 4, 1, 1);
-        immediate_command.End();
-
-        std::array<float, ComputeResource::size / 4> output{};
-        std::copy_n(_compute_resource.outputData, ComputeResource::size, reinterpret_cast<std::byte *>(output.data()));
-    }
-
-
     void Renderer::Resize() {
         vkDeviceWaitIdle(_device);
 
@@ -596,6 +538,10 @@ namespace Vkxel {
 
         _resource_manager->DestroyFrameResource(_frame_resource);
         _frame_resource = _resource_manager->CreateFrameResource(_swapchain.extent.width, _swapchain.extent.height);
+    }
+
+    ComputeJob Renderer::CreateComputeJob() {
+        return {_device, _queue_family_index, _queue, _command_pool, _descriptor_pool, _allocator};
     }
 
 

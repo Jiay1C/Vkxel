@@ -34,6 +34,8 @@ namespace Vkxel {
         uint32_t GetFrameCount() const;
         bool IsBackGroundMode() const;
 
+        static Engine *GetActiveEngine();
+
     protected:
         // TODO: Support Multiple Scenes
         Scene &_scene;
@@ -43,6 +45,8 @@ namespace Vkxel {
 
         uint32_t _frame_count = 0;
         bool _background_mode = false;
+
+        static Engine *s_active_engine;
     };
 
 } // namespace Vkxel

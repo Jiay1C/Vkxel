@@ -11,6 +11,7 @@
 #include "vk_mem_alloc.h"
 #include "vulkan/vulkan.h"
 
+#include "compute.h"
 #include "gui.h"
 #include "resource.h"
 #include "resource_type.h"
@@ -33,9 +34,10 @@ namespace Vkxel {
         void UnloadScene();
 
         void Render();
-        void Compute();
 
         void Resize();
+
+        ComputeJob CreateComputeJob();
 
         Window &GetWindow() const;
         GUI &GetGUI() const;
@@ -70,7 +72,6 @@ namespace Vkxel {
         // Resource Related Handle
 
         VkUtil::GraphicsPipeline _pipeline = {};
-        VkUtil::ComputePipeline _compute_pipeline = {};
 
         std::unique_ptr<ResourceManager> _resource_manager;
         std::unique_ptr<ResourceUploader> _resource_uploader;
@@ -82,11 +83,6 @@ namespace Vkxel {
         // Object Resources
         VkDescriptorSetLayout _descriptor_set_layout_object = nullptr;
         std::unordered_map<IdType, ObjectResource> _object_resource;
-
-        VkDescriptorSetLayout _descriptor_set_layout_compute = nullptr;
-        ComputeResource _compute_resource = {};
-        // VkPipelineLayout _compute_pipeline_layout = nullptr;
-        // VkPipeline _compute_pipeline = nullptr;
 
         VkSemaphore _image_ready_semaphore = nullptr;
         VkSemaphore _render_complete_semaphore = nullptr;
