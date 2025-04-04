@@ -33,19 +33,6 @@ namespace Vkxel {
         VkUtil::DescriptorSet descriptorSet = {};
     };
 
-    struct ComputeResource {
-        // For test purpose
-        static constexpr VkDeviceSize size = 4000;
-
-        std::byte *inputData = nullptr;
-        std::byte *outputData = nullptr;
-
-        VkUtil::Buffer inputBuffer = {};
-        VkUtil::Buffer outputBuffer = {};
-
-        VkUtil::DescriptorSet descriptorSet = {};
-    };
-
 } // namespace Vkxel
 
 #endif // VKXEL_RESOURCE_TYPE_H

@@ -1,5 +1,6 @@
 #include "reflect.hpp"
 #include "custom/dual_contouring.h"
+#include "custom/gpu_dual_contouring.h"
 #include "custom/sdf_surface.h"
 #include "world/camera.h"
 #include "world/canvas.h"
@@ -27,6 +28,7 @@ namespace Vkxel {
         Register<Mover>();
         Register<Transform>();
         Register<DualContouring>();
+        Register<GpuDualContouring>();
         Register<SDFSurface>();
     }
 

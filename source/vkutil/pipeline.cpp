@@ -145,7 +145,7 @@ namespace Vkxel::VkUtil {
 
         builder.SetPipelineLayout(pipelineLayout);
 
-        VkShaderModule shader_module = ShaderLoader::Instance().LoadToModule(_device, "basic");
+        VkShaderModule shader_module = ShaderLoader::Instance().LoadToModule(_device, "graphics");
 
         builder.SetShaderStages({
                 VkPipelineShaderStageCreateInfo{.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
@@ -222,12 +222,12 @@ namespace Vkxel::VkUtil {
     }
 
 
-    ComputePipelineBuilder &ComputePipelineBuilder::SetShader(const VkShaderModule &shader) {
+    ComputePipelineBuilder &ComputePipelineBuilder::SetShader(const VkShaderModule shader) {
         _shader = shader;
         return *this;
     }
 
-    ComputePipelineBuilder &ComputePipelineBuilder::SetShaderName(const std::string &name) {
+    ComputePipelineBuilder &ComputePipelineBuilder::SetShaderName(const std::string_view name) {
         _shader_name = name;
         return *this;
     }

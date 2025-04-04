@@ -17,6 +17,8 @@ namespace Vkxel {
     Engine::Engine(Scene &scene) : _scene(scene) {
         Reflect::Register();
 
+        s_active_engine = this;
+
         _scene.Init();
         _scene.Create();
 
@@ -38,9 +40,13 @@ namespace Vkxel {
         _renderer = std::make_unique<Renderer>(*_window, *_gui);
         _renderer->Init();
         _renderer->LoadScene(scene);
+
+        _scene.Start();
     }
 
     Engine::Status Engine::Tick() {
+        s_active_engine = this;
+
         Time::Update();
         Timer::Update();
         Input::Update();
@@ -48,9 +54,6 @@ namespace Vkxel {
         _window->Update();
         _gui->Update();
         _scene.Update();
-
-        // For test purpose
-        _renderer->Compute();
 
         _renderer->Render();
 
@@ -74,11 +77,15 @@ namespace Vkxel {
     }
 
     Engine::~Engine() {
+        s_active_engine = this;
+
         _renderer->UnloadScene();
         _renderer->Destroy();
         _scene.Destroy();
 
         _window->Destroy();
+
+        s_active_engine = nullptr;
     }
 
     Scene &Engine::GetScene() const { return _scene; }
@@ -87,6 +94,8 @@ namespace Vkxel {
     Renderer &Engine::GetRenderer() const { return *_renderer; }
     uint32_t Engine::GetFrameCount() const { return _frame_count; }
     bool Engine::IsBackGroundMode() const { return _background_mode; }
+    Engine *Engine::GetActiveEngine() { return s_active_engine; }
 
+    Engine *Engine::s_active_engine = nullptr;
 
 } // namespace Vkxel

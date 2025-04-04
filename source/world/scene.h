@@ -19,6 +19,7 @@ namespace Vkxel {
     class Scene final : public Object {
     public:
         void Create() override;
+        void Start() override;
         void Update() override;
         void Destroy() override;
 

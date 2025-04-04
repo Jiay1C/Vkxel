@@ -5,6 +5,7 @@
 #include <format>
 
 #include "custom/dual_contouring.h"
+#include "custom/gpu_dual_contouring.h"
 #include "model_library.h"
 #include "scene_library.h"
 #include "world/camera.h"
@@ -33,11 +34,30 @@ namespace Vkxel {
         GameObject &root_object = scene.CreateGameObject();
         root_object.name = "Root";
 
+        // Create GPU SDF Object
+        GameObject &gpu_sdf_object = scene.CreateGameObject();
+        gpu_sdf_object.name = "GPU SDF Object";
+        gpu_sdf_object.transform.SetParent(root_object.transform);
+        gpu_sdf_object.transform.position = {-2, 0, 7};
+        gpu_sdf_object.AddComponent<Mesh>();
+        gpu_sdf_object.AddComponent<Drawer>();
+
+        GpuDualContouring &gpu_dual_contouring = gpu_sdf_object.AddComponent<GpuDualContouring>();
+        gpu_dual_contouring.minBound = {-1.2, -1.2, -1.2};
+        gpu_dual_contouring.maxBound = {1.2, 1.2, 1.2};
+        gpu_dual_contouring.resolution = 20;
+
+        gpu_sdf_object.AddComponent<Canvas>().uiItems += [&]() {
+            if (ImGui::Button("GPU Generate Mesh")) {
+                gpu_dual_contouring.GenerateMesh();
+            }
+        };
+
         // Create SDF Object
         GameObject &sdf_object = scene.CreateGameObject();
         sdf_object.name = "SDF Object";
         sdf_object.transform.SetParent(root_object.transform);
-        sdf_object.transform.position = {0, 0, 7};
+        sdf_object.transform.position = {2, 0, 7};
         sdf_object.AddComponent<Mesh>();
         sdf_object.AddComponent<Drawer>();
 
@@ -54,11 +74,7 @@ namespace Vkxel {
         dual_contouring.maxBound = {1, 1, 1};
         dual_contouring.resolution = 20;
 
-        Canvas &canvas = sdf_object.AddComponent<Canvas>();
-        canvas.uiItems += [&]() {
-            ImGui::DragFloat3("Min Bound", reinterpret_cast<float *>(&dual_contouring.minBound));
-            ImGui::DragFloat3("Max Bound", reinterpret_cast<float *>(&dual_contouring.maxBound));
-            ImGui::DragFloat("Resolution", &dual_contouring.resolution);
+        sdf_object.AddComponent<Canvas>().uiItems += [&]() {
             if (ImGui::Button("Generate Mesh")) {
                 dual_contouring.GenerateMesh();
             }

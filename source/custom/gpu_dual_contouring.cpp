@@ -8,36 +8,56 @@
 
 #include "glm/glm.hpp"
 
-#include "dual_contouring.h"
 #include "engine/data_type.h"
+#include "engine/engine.h"
+#include "gpu_dual_contouring.h"
 #include "sdf_surface.h"
 #include "util/check.h"
 #include "world/gameobject.hpp"
 #include "world/mesh.h"
+#include "world/scene.h"
 
 
 namespace Vkxel {
 
-    void DualContouring::Create() { GenerateMesh(); }
+    void GpuDualContouring::Start() { GenerateMesh(); }
 
-    void DualContouring::GenerateMesh() {
+    void GpuDualContouring::GenerateMesh() {
         auto sdf_surface_result = gameObject.GetComponent<SDFSurface>();
         if (!sdf_surface_result) {
-            return;
+            sdf_surface_result = gameObject.AddComponent<SDFSurface>();
         }
 
         SDFSurface &sdf_surface = sdf_surface_result.value();
+
+        // GPU SDF is currently hard-coded in compute shader
+        sdf_surface.surfaceType = SurfaceType::Primitive;
+        sdf_surface.primitiveType = PrimitiveType::Sphere;
         sdf = sdf_surface.GetSDF();
 
         const glm::ivec3 grid_size = glm::ivec3((maxBound - minBound) * resolution);
+
+        // New Compute Job
+        ComputeJob sdfComputeJob = Engine::GetActiveEngine()->GetRenderer().CreateComputeJob();
+        sdfComputeJob.Init("dual_contouring", "computeMain",
+                           {sizeof(SDFComputeArgs), sizeof(float) * grid_size.x * grid_size.y * grid_size.z});
+
+        SDFComputeArgs compute_data = {.size = grid_size, .min_bound = minBound, .max_bound = maxBound};
+        sdfComputeJob.WriteBuffer(0, reinterpret_cast<std::byte *>(&compute_data));
+        sdfComputeJob.DispatchImmediate(grid_size.x >> 2, grid_size.y >> 2, grid_size.z >> 2);
+        std::vector<std::byte> compute_output = sdfComputeJob.ReadBuffer(1);
+
         std::vector<std::vector<std::vector<float>>> grid(
                 grid_size.x, std::vector<std::vector<float>>(grid_size.y, std::vector<float>(grid_size.z)));
 
         for (int x = 0; x < grid_size.x; ++x) {
             for (int y = 0; y < grid_size.y; ++y) {
                 for (int z = 0; z < grid_size.z; ++z) {
-                    glm::vec3 position = Grid2World({x, y, z});
-                    grid[x][y][z] = sdf(position);
+                    // glm::vec3 position = Grid2World({x, y, z});
+                    // grid[x][y][z] = sdf(position);
+
+                    grid[x][y][z] = *reinterpret_cast<float *>(
+                            &compute_output[(x * grid_size.y * grid_size.z + y * grid_size.z + z) * sizeof(float)]);
                 }
             }
         }
@@ -162,7 +182,7 @@ namespace Vkxel {
         mesh.SetMesh({.index = std::move(indices), .vertex = std::move(vertices)});
     }
 
-    glm::vec3 DualContouring::CalculateNormal(const glm::vec3 &position) const {
+    glm::vec3 GpuDualContouring::CalculateNormal(const glm::vec3 &position) const {
         glm::vec3 x_delta = {normalDelta, 0, 0};
         glm::vec3 y_delta = {0, normalDelta, 0};
         glm::vec3 z_delta = {0, 0, normalDelta};
@@ -172,7 +192,7 @@ namespace Vkxel {
                 (sdf(position + z_delta) - sdf(position - z_delta)) * 0.5f / normalDelta};
     }
 
-    glm::vec3 DualContouring::Grid2World(const glm::vec3 &index) const { return index / resolution + minBound; }
+    glm::vec3 GpuDualContouring::Grid2World(const glm::vec3 &index) const { return index / resolution + minBound; }
 
 
 } // namespace Vkxel

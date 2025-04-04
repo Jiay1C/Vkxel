@@ -42,6 +42,14 @@ namespace Vkxel {
         }
 
         // Event Function, Do Not Call Manually
+        void Start() override {
+            transform.Create();
+            for (const auto &component: _components | std::views::values) {
+                component->Start();
+            }
+        }
+
+        // Event Function, Do Not Call Manually
         void Update() override {
             transform.Update();
             for (const auto &component: _components | std::views::values) {

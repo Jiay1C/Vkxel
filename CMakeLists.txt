@@ -136,6 +136,8 @@ VKXEL_DEFINE_SOURCES(ENGINE_SOURCES "engine"
         timer.h
         engine.cpp
         engine.h
+        compute.cpp
+        compute.h
 )
 
 VKXEL_DEFINE_SOURCES(EDITOR_SOURCES "editor"
@@ -202,6 +204,8 @@ VKXEL_DEFINE_SOURCES(CUSTOM_SOURCES "custom"
         sdf_surface.h
         dual_contouring.cpp
         dual_contouring.h
+        gpu_dual_contouring.cpp
+        gpu_dual_contouring.h
 )
 
 set(VKXEL_SOURCE_PATH "source")
