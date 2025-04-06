@@ -43,8 +43,8 @@ namespace Vkxel {
         gpu_sdf_object.AddComponent<Drawer>();
 
         GpuDualContouring &gpu_dual_contouring = gpu_sdf_object.AddComponent<GpuDualContouring>();
-        gpu_dual_contouring.minBound = glm::vec3{-1.2};
-        gpu_dual_contouring.maxBound = glm::vec3{1.2};
+        gpu_dual_contouring.minBound = glm::vec3{-1.2f};
+        gpu_dual_contouring.maxBound = glm::vec3{1.2f};
         gpu_dual_contouring.resolution = 20;
 
         gpu_sdf_object.AddComponent<Canvas>().uiItems += [&]() {
@@ -70,8 +70,8 @@ namespace Vkxel {
         sdf_surface.csgSmoothFactor = 0.1f;
 
         DualContouring &dual_contouring = sdf_object.AddComponent<DualContouring>();
-        dual_contouring.minBound = glm::vec3{-1.2};
-        dual_contouring.maxBound = glm::vec3{1.2};
+        dual_contouring.minBound = glm::vec3{-1.2f};
+        dual_contouring.maxBound = glm::vec3{1.2f};
         dual_contouring.resolution = 20;
 
         sdf_object.AddComponent<Canvas>().uiItems += [&]() {
