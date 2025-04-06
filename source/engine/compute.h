@@ -8,6 +8,7 @@
 #include <string_view>
 #include <vector>
 
+#include "glm/glm.hpp"
 #include "vk_mem_alloc.h"
 #include "vulkan/vulkan_core.h"
 
@@ -25,17 +26,19 @@ namespace Vkxel {
             _device(device), _queue_family(queueFamily), _queue(queue), _command_pool(commandPool),
             _descriptor_pool(descriptorPool), _allocator(allocator) {}
 
-        void Init(std::string_view shaderPath, std::string_view shaderEntryPoint,
+        void Init(std::string_view shaderPath, const std::vector<std::string_view> &shaderKernels,
                   const std::vector<VkDeviceSize> &bufferSize);
 
-        void Dispatch(VkCommandBuffer commandBuffer, uint32_t x, uint32_t y, uint32_t z);
-        void DispatchImmediate(uint32_t x, uint32_t y, uint32_t z);
+        void Dispatch(VkCommandBuffer commandBuffer, size_t kernel, glm::uvec3 group);
+        void DispatchImmediate(size_t kernel, glm::uvec3 group);
 
         VkUtil::Buffer &GetBuffer(size_t index);
-        std::vector<std::byte> ReadBuffer(size_t index);
-        void WriteBuffer(size_t index, const std::vector<std::byte> &data);
-        void ReadBuffer(size_t index, std::byte *buffer);
-        void WriteBuffer(size_t index, std::byte *buffer);
+        std::vector<std::byte> ReadBuffer(size_t index, size_t offset = 0, size_t size = 0);
+        void WriteBuffer(size_t index, const std::vector<std::byte> &data, size_t offset = 0, size_t size = 0);
+        void ReadBuffer(size_t index, std::byte *buffer, size_t offset = 0, size_t size = 0);
+        void WriteBuffer(size_t index, std::byte *buffer, size_t offset = 0, size_t size = 0);
+
+        void Destroy();
 
         ~ComputeJob();
 
@@ -49,7 +52,7 @@ namespace Vkxel {
 
         VkDescriptorSetLayout _descriptor_set_layout = nullptr;
         std::vector<VkUtil::Buffer> _compute_buffer = {};
-        VkUtil::ComputePipeline _compute_pipeline = {};
+        std::vector<VkUtil::ComputePipeline> _compute_pipeline = {};
         VkUtil::DescriptorSet _descriptor_set = {};
     };
 

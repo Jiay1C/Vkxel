@@ -51,16 +51,14 @@ namespace Vkxel {
         _window.AddCallback(WindowEvent::Restore, [&]() { _pause = false; });
         _window.AddCallback(WindowEvent::Resize, [&]() { Resize(); });
 
-        // Select Physical Device
-        VkPhysicalDeviceVulkan13Features physical_device_vulkan13_features{.synchronization2 = VK_TRUE,
-                                                                           .dynamicRendering = VK_TRUE};
-
         vkb::PhysicalDeviceSelector physical_device_selector(_instance);
         auto physical_device_result =
                 physical_device_selector.prefer_gpu_device_type(vkb::PreferredDeviceType::discrete)
                         .set_surface(_surface)
-                        .add_required_extension(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME)
-                        .set_required_features_13(physical_device_vulkan13_features)
+                        .set_required_features_12({.scalarBlockLayout = VK_TRUE})
+                        .set_required_features_13({.synchronization2 = VK_TRUE,
+                                                   .dynamicRendering = VK_TRUE,
+                                                   .shaderIntegerDotProduct = VK_TRUE})
                         .select();
         CHECK_NOTNULL_MSG(physical_device_result, physical_device_result.error().message());
         _physical_device = physical_device_result.value();

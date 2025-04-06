@@ -10,10 +10,12 @@
 
 namespace Vkxel {
 
-    void ComputeJob::Init(const std::string_view shaderPath, const std::string_view shaderEntryPoint,
+    void ComputeJob::Init(const std::string_view shaderPath, const std::vector<std::string_view> &shaderKernels,
                           const std::vector<VkDeviceSize> &bufferSize) {
         // TODO: Allow ReInit
-        CHECK_NOTNULL_MSG(!_compute_pipeline.pipeline, "Already Init");
+        CHECK_NOTNULL_MSG(!shaderKernels.empty(), "Must Contain At Least 1 Kernel");
+
+        Destroy();
 
         std::vector<VkDescriptorSetLayoutBinding> descriptor_set_layout_binding(bufferSize.size());
         for (uint32_t index = 0; auto &binding: descriptor_set_layout_binding) {
@@ -71,77 +73,102 @@ namespace Vkxel {
 
         VkShaderModule shader_module = ShaderLoader::Instance().LoadToModule(_device, shaderPath);
 
-        _compute_pipeline = VkUtil::ComputePipelineBuilder(_device)
-                                    .SetShader(shader_module)
-                                    .SetShaderName(shaderEntryPoint)
-                                    .SetPipelineLayout({_descriptor_set_layout})
-                                    .Build();
+        _compute_pipeline.reserve(shaderKernels.size());
+        for (const auto &kernel: shaderKernels) {
+            _compute_pipeline.push_back(VkUtil::ComputePipelineBuilder(_device)
+                                                .SetShader(shader_module)
+                                                .SetShaderName(kernel)
+                                                .SetPipelineLayout({_descriptor_set_layout})
+                                                .Build());
+        }
 
         vkDestroyShaderModule(_device, shader_module, nullptr);
     }
 
-    void ComputeJob::Dispatch(const VkCommandBuffer commandBuffer, const uint32_t x, const uint32_t y,
-                              const uint32_t z) {
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, _compute_pipeline.pipeline);
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, _compute_pipeline.layout, 0, 1,
+    void ComputeJob::Dispatch(const VkCommandBuffer commandBuffer, const size_t kernel, const glm::uvec3 group) {
+        CHECK_NOTNULL_MSG(_compute_pipeline[kernel].pipeline, "Compute Job Require Init");
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, _compute_pipeline[kernel].pipeline);
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, _compute_pipeline[kernel].layout, 0, 1,
                                 &_descriptor_set.set, 0, nullptr);
-        vkCmdDispatch(commandBuffer, x, y, z);
+        vkCmdDispatch(commandBuffer, group.x, group.y, group.z);
     }
 
-    void ComputeJob::DispatchImmediate(const uint32_t x, const uint32_t y, const uint32_t z) {
+    void ComputeJob::DispatchImmediate(const size_t kernel, const glm::uvec3 group) {
         VkUtil::ImmediateCommand immediate_command(_device, _queue, _command_pool);
         VkCommandBuffer command_buffer = immediate_command.Begin();
-        Dispatch(command_buffer, x, y, z);
+        Dispatch(command_buffer, kernel, group);
         immediate_command.End();
     }
 
     VkUtil::Buffer &ComputeJob::GetBuffer(const size_t index) { return _compute_buffer[index]; }
 
-    std::vector<std::byte> ComputeJob::ReadBuffer(const size_t index) {
-        size_t buffer_size = _compute_buffer[index].allocationInfo.size;
+    std::vector<std::byte> ComputeJob::ReadBuffer(const size_t index, const size_t offset, const size_t size) {
+        size_t buffer_size = size;
+        if (buffer_size == 0 || (buffer_size + offset) > _compute_buffer[index].createInfo.size) {
+            buffer_size = _compute_buffer[index].createInfo.size - offset;
+        }
         std::vector<std::byte> data(buffer_size);
         std::byte *ptr = _compute_buffer[index].Map();
-        std::copy_n(ptr, buffer_size, data.data());
+        std::copy_n(ptr + offset, buffer_size, data.data());
         _compute_buffer[index].Unmap();
         return data;
     }
 
-    void ComputeJob::WriteBuffer(const size_t index, const std::vector<std::byte> &data) {
-        size_t buffer_size = _compute_buffer[index].allocationInfo.size;
+    void ComputeJob::WriteBuffer(const size_t index, const std::vector<std::byte> &data, const size_t offset,
+                                 const size_t size) {
+        size_t buffer_size = size;
+        if (buffer_size == 0 || (buffer_size + offset) > _compute_buffer[index].createInfo.size) {
+            buffer_size = _compute_buffer[index].createInfo.size - offset;
+        }
         CHECK_NOTNULL_MSG(buffer_size == data.size(), "Buffer Size Not Match");
         std::byte *ptr = _compute_buffer[index].Map();
-        std::copy_n(data.data(), buffer_size, ptr);
+        std::copy_n(data.data(), buffer_size, ptr + offset);
         _compute_buffer[index].Flush();
         _compute_buffer[index].Unmap();
     }
 
-    void ComputeJob::ReadBuffer(const size_t index, std::byte *buffer) {
-        size_t buffer_size = _compute_buffer[index].allocationInfo.size;
-        std::byte *ptr = _compute_buffer[index].Map();
-        std::copy_n(ptr, buffer_size, buffer);
-        _compute_buffer[index].Unmap();
-    }
-
-    void ComputeJob::WriteBuffer(const size_t index, std::byte *buffer) {
-        size_t buffer_size = _compute_buffer[index].allocationInfo.size;
-        std::byte *ptr = _compute_buffer[index].Map();
-        std::copy_n(buffer, buffer_size, ptr);
-        _compute_buffer[index].Flush();
-        _compute_buffer[index].Unmap();
-    }
-
-    ComputeJob::~ComputeJob() {
-        // TODO: Remove Sync?
-        vkDeviceWaitIdle(_device);
-
-        for (auto &buffer: _compute_buffer) {
-            buffer.Destroy();
+    void ComputeJob::ReadBuffer(const size_t index, std::byte *buffer, const size_t offset, const size_t size) {
+        size_t buffer_size = size;
+        if (buffer_size == 0 || (buffer_size + offset) > _compute_buffer[index].createInfo.size) {
+            buffer_size = _compute_buffer[index].createInfo.size - offset;
         }
-
-        _compute_pipeline.Destroy();
-        _descriptor_set.Destroy();
-        vkDestroyDescriptorSetLayout(_device, _descriptor_set_layout, nullptr);
+        std::byte *ptr = _compute_buffer[index].Map();
+        std::copy_n(ptr + offset, buffer_size, buffer);
+        _compute_buffer[index].Unmap();
     }
+
+    void ComputeJob::WriteBuffer(const size_t index, std::byte *buffer, const size_t offset, const size_t size) {
+        size_t buffer_size = size;
+        if (buffer_size == 0 || (buffer_size + offset) > _compute_buffer[index].createInfo.size) {
+            buffer_size = _compute_buffer[index].createInfo.size - offset;
+        }
+        std::byte *ptr = _compute_buffer[index].Map();
+        std::copy_n(buffer, buffer_size, ptr + offset);
+        _compute_buffer[index].Flush();
+        _compute_buffer[index].Unmap();
+    }
+
+    void ComputeJob::Destroy() {
+        if (!_compute_pipeline.empty()) {
+            // TODO: Remove Sync?
+            vkDeviceWaitIdle(_device);
+
+            for (auto &buffer: _compute_buffer) {
+                buffer.Destroy();
+            }
+            _compute_buffer = {};
+
+            for (auto &pipeline: _compute_pipeline) {
+                pipeline.Destroy();
+            }
+            _compute_pipeline = {};
+
+            _descriptor_set.Destroy();
+            vkDestroyDescriptorSetLayout(_device, _descriptor_set_layout, nullptr);
+        }
+    }
+
+    ComputeJob::~ComputeJob() { Destroy(); }
 
 
 } // namespace Vkxel

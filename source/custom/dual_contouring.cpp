@@ -27,7 +27,7 @@ namespace Vkxel {
         }
 
         SDFSurface &sdf_surface = sdf_surface_result.value();
-        sdf = sdf_surface.GetSDF();
+        _sdf = sdf_surface.GetSDF();
 
         const glm::ivec3 grid_size = glm::ivec3((maxBound - minBound) * resolution);
         std::vector<std::vector<std::vector<float>>> grid(
@@ -37,7 +37,7 @@ namespace Vkxel {
             for (int y = 0; y < grid_size.y; ++y) {
                 for (int z = 0; z < grid_size.z; ++z) {
                     glm::vec3 position = Grid2World({x, y, z});
-                    grid[x][y][z] = sdf(position);
+                    grid[x][y][z] = _sdf(position);
                 }
             }
         }
@@ -81,17 +81,17 @@ namespace Vkxel {
                         }
                         center /= intersections.size();
 
-                        for (uint32_t count = 0; count < schmitzIterationCount; ++count) {
-                            std::array<glm::vec3, 8> force = {};
+                        std::array<glm::vec3, 8> force = {};
 
-                            for (const auto &[position, normal]: intersections) {
-                                for (uint32_t index = 0; index < 8; ++index) {
-                                    float distance = glm::dot(normal, glm::vec3(_voxel_point[index]) - position);
-                                    glm::vec3 corner2plane = -distance * normal;
-                                    force[index] += corner2plane;
-                                }
+                        for (const auto &[position, normal]: intersections) {
+                            for (uint32_t index = 0; index < 8; ++index) {
+                                float distance = glm::dot(normal, glm::vec3(_voxel_point[index]) - position);
+                                glm::vec3 corner2plane = -distance * normal;
+                                force[index] += corner2plane;
                             }
+                        }
 
+                        for (uint32_t count = 0; count < schmitzIterationCount; ++count) {
                             glm::vec3 force00 = glm::mix(force[0], force[1], center.x);
                             glm::vec3 force01 = glm::mix(force[3], force[2], center.x);
                             glm::vec3 force02 = glm::mix(force[4], force[5], center.x);
@@ -142,7 +142,7 @@ namespace Vkxel {
                             }
 
                             const auto &triangle_index =
-                                    (p0_value >= 0 && p1_value <= 0) ? triangle_index_front : triangle_index_back;
+                                    (p0_value >= 0 && p1_value <= 0) ? _triangle_index_front : _triangle_index_back;
 
                             for (auto index: triangle_index) {
                                 indices.emplace_back(vertex_index[index]);
@@ -167,9 +167,9 @@ namespace Vkxel {
         glm::vec3 y_delta = {0, normalDelta, 0};
         glm::vec3 z_delta = {0, 0, normalDelta};
 
-        return {(sdf(position + x_delta) - sdf(position - x_delta)) * 0.5f / normalDelta,
-                (sdf(position + y_delta) - sdf(position - y_delta)) * 0.5f / normalDelta,
-                (sdf(position + z_delta) - sdf(position - z_delta)) * 0.5f / normalDelta};
+        return {(_sdf(position + x_delta) - _sdf(position - x_delta)) * 0.5f / normalDelta,
+                (_sdf(position + y_delta) - _sdf(position - y_delta)) * 0.5f / normalDelta,
+                (_sdf(position + z_delta) - _sdf(position - z_delta)) * 0.5f / normalDelta};
     }
 
     glm::vec3 DualContouring::Grid2World(const glm::vec3 &index) const { return index / resolution + minBound; }

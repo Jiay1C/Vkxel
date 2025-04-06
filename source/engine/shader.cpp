@@ -31,6 +31,7 @@ namespace Vkxel {
         slang::TargetDesc targetDesc = {};
         targetDesc.format = SLANG_SPIRV;
         targetDesc.profile = _slang_global_session->findProfile("spirv_1_6");
+        targetDesc.forceGLSLScalarBufferLayout = true;
 
         sessionDesc.targets = &targetDesc;
         sessionDesc.targetCount = 1;
@@ -41,6 +42,8 @@ namespace Vkxel {
                 slang::CompilerOptionEntry{slang::CompilerOptionName::VulkanUseEntryPointName,
                                            {slang::CompilerOptionValueKind::Int, 1, 0, nullptr, nullptr}},
                 slang::CompilerOptionEntry{slang::CompilerOptionName::GenerateWholeProgram,
+                                           {slang::CompilerOptionValueKind::Int, 1, 0, nullptr, nullptr}},
+                slang::CompilerOptionEntry{slang::CompilerOptionName::GLSLForceScalarLayout,
                                            {slang::CompilerOptionValueKind::Int, 1, 0, nullptr, nullptr}}};
         sessionDesc.compilerOptionEntries = options.data();
         sessionDesc.compilerOptionEntryCount = static_cast<uint32_t>(options.size());
