@@ -1,3 +1,5 @@
+import sdf;
+
 struct DualContouringArguments {
     uint3 gridSize;
     float3 minBound;
@@ -49,10 +51,6 @@ static const OffsetData POINT_OFFSET[3] = {
 
 static const uint TRIANGLE_INDEX_FRONT[6] = { 0, 2, 1, 1, 2, 3 };
 static const uint TRIANGLE_INDEX_BACK[6] = { 0, 1, 2, 1, 3, 2 };
-
-float sdf(float3 position) {
-    return length(position) - 1;
-}
 
 uint getIndex1D(uint3 size, uint3 index) {
     return dot(index, uint3(size.y * size.z, size.z, 1));
@@ -119,7 +117,7 @@ void DualContouringStep1(uint3 threadId: SV_DispatchThreadID) {
             float4 p1_data = grid[getIndex1D(p1)];
 
             if ((p0_data.w <= 0 && p1_data.w >= 0) || (p0_data.w >= 0 && p1_data.w <= 0)) {
-                float interpolate_factor = abs(p0_data.w) / (abs(p0_data.w) + abs(p1_data.w));
+                float interpolate_factor = clamp(abs(p0_data.w) / (abs(p0_data.w) + abs(p1_data.w)), 0.0, 1.0);
                 float3 position_local = lerp(float3(p0_local), float3(p1_local), interpolate_factor);
                 float3 normal_world = normalize(lerp(p0_data.xyz, p1_data.xyz, interpolate_factor));
                 intersections[intersection_count++] = {position_local, normal_world, float3(1,1,1)};

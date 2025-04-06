@@ -21,12 +21,12 @@ namespace Vkxel {
     public:
         using Component::Component;
 
-        glm::vec3 minBound = {-1.2, -1.2, -1.2};
-        glm::vec3 maxBound = {1.2, 1.2, 1.2};
+        glm::vec3 minBound = glm::vec3{-1};
+        glm::vec3 maxBound = glm::vec3{1};
         float resolution = 10;
 
         float normalDelta = 0.001f;
-        uint32_t schmitzIterationCount = 4;
+        uint32_t schmitzIterationCount = 20;
         float schmitzStepSize = 0.1f;
 
         void Start() override;
