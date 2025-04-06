@@ -20,8 +20,8 @@ namespace Vkxel {
     public:
         using Component::Component;
 
-        glm::vec3 minBound = {-1, -1, -1};
-        glm::vec3 maxBound = {1, 1, 1};
+        glm::vec3 minBound = {-1.2, -1.2, -1.2};
+        glm::vec3 maxBound = {1.2, 1.2, 1.2};
         float resolution = 10;
 
         float normalDelta = 0.001f;
@@ -33,34 +33,24 @@ namespace Vkxel {
         void GenerateMesh();
 
     private:
-        glm::vec3 CalculateNormal(const glm::vec3 &position) const;
-        glm::vec3 Grid2World(const glm::vec3 &index) const;
+        size_t GetIndex1D(const glm::ivec3 &size, const glm::ivec3 &index);
+        glm::uvec3 GetGroupSize(const glm::uvec3 &thread, const glm::uvec3 &threadPerGroup);
 
-        struct SDFComputeArgs {
-            glm::uvec3 size;
-            std::byte _padding0;
-            glm::vec3 min_bound;
-            std::byte _padding1;
-            glm::vec3 max_bound;
-            std::byte _padding2;
+        struct DualContouringArguments {
+            glm::uvec3 gridSize;
+            glm::vec3 minBound;
+            glm::vec3 maxBound;
+            float normalDelta;
+            uint32_t schmitzIterationCount;
+            float schmitzStepSize;
         };
 
-        SDFType sdf;
+        struct DualContouringResults {
+            uint32_t vertexCount;
+            uint32_t indexCount;
+        };
 
-        static constexpr std::array<glm::ivec3, 8> _voxel_point{
-                {{0, 0, 0}, {1, 0, 0}, {1, 0, 1}, {0, 0, 1}, {0, 1, 0}, {1, 1, 0}, {1, 1, 1}, {0, 1, 1}}};
-
-        static constexpr std::array<glm::ivec2, 12> _voxel_edge{
-                {{0, 1}, {1, 2}, {2, 3}, {3, 0}, {4, 5}, {5, 6}, {6, 7}, {7, 4}, {0, 4}, {1, 5}, {2, 6}, {3, 7}}};
-
-        //    (point offset, voxel offset)
-        static constexpr std::array<std::pair<glm::ivec3, std::array<glm::ivec3, 4>>, 3> _point_offset{
-                {{glm::ivec3{1, 0, 0}, std::array<glm::ivec3, 4>{{{0, -1, -1}, {0, 0, -1}, {0, -1, 0}, {0, 0, 0}}}},
-                 {glm::ivec3{0, 1, 0}, std::array<glm::ivec3, 4>{{{-1, 0, -1}, {-1, 0, 0}, {0, 0, -1}, {0, 0, 0}}}},
-                 {glm::ivec3{0, 0, 1}, std::array<glm::ivec3, 4>{{{-1, -1, 0}, {0, -1, 0}, {-1, 0, 0}, {0, 0, 0}}}}}};
-
-        static constexpr std::array<uint32_t, 6> triangle_index_front = {0, 2, 1, 1, 2, 3};
-        static constexpr std::array<uint32_t, 6> triangle_index_back = {0, 1, 2, 1, 3, 2};
+        SDFType _sdf;
 
         REGISTER_BEGIN(GpuDualContouring)
         REGISTER_BASE(Component)

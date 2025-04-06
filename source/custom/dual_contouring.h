@@ -20,8 +20,8 @@ namespace Vkxel {
     public:
         using Component::Component;
 
-        glm::vec3 minBound = {-1, -1, -1};
-        glm::vec3 maxBound = {1, 1, 1};
+        glm::vec3 minBound = {-1.2, -1.2, -1.2};
+        glm::vec3 maxBound = {1.2, 1.2, 1.2};
         float resolution = 10;
 
         float normalDelta = 0.001f;
@@ -36,7 +36,7 @@ namespace Vkxel {
         glm::vec3 CalculateNormal(const glm::vec3 &position) const;
         glm::vec3 Grid2World(const glm::vec3 &index) const;
 
-        SDFType sdf;
+        SDFType _sdf;
 
         static constexpr std::array<glm::ivec3, 8> _voxel_point{
                 {{0, 0, 0}, {1, 0, 0}, {1, 0, 1}, {0, 0, 1}, {0, 1, 0}, {1, 1, 0}, {1, 1, 1}, {0, 1, 1}}};
@@ -50,8 +50,8 @@ namespace Vkxel {
                  {glm::ivec3{0, 1, 0}, std::array<glm::ivec3, 4>{{{-1, 0, -1}, {-1, 0, 0}, {0, 0, -1}, {0, 0, 0}}}},
                  {glm::ivec3{0, 0, 1}, std::array<glm::ivec3, 4>{{{-1, -1, 0}, {0, -1, 0}, {-1, 0, 0}, {0, 0, 0}}}}}};
 
-        static constexpr std::array<uint32_t, 6> triangle_index_front = {0, 2, 1, 1, 2, 3};
-        static constexpr std::array<uint32_t, 6> triangle_index_back = {0, 1, 2, 1, 3, 2};
+        static constexpr std::array<uint32_t, 6> _triangle_index_front = {0, 2, 1, 1, 2, 3};
+        static constexpr std::array<uint32_t, 6> _triangle_index_back = {0, 1, 2, 1, 3, 2};
 
         REGISTER_BEGIN(DualContouring)
         REGISTER_BASE(Component)
