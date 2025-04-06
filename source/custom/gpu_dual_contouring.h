@@ -11,6 +11,7 @@
 
 #include "glm/glm.hpp"
 
+#include "engine/compute.h"
 #include "sdf_surface.h"
 #include "world/component.h"
 
@@ -49,6 +50,12 @@ namespace Vkxel {
             uint32_t vertexCount;
             uint32_t indexCount;
         };
+
+        glm::vec3 _min_bound_cache = {};
+        glm::vec3 _max_bound_cache = {};
+        float _resolution_cache = 0;
+
+        std::optional<ComputeJob> _compute = std::nullopt;
 
         SDFType _sdf;
 

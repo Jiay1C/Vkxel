@@ -79,9 +79,10 @@ namespace Vkxel {
     Engine::~Engine() {
         s_active_engine = this;
 
+        _scene.Destroy();
+
         _renderer->UnloadScene();
         _renderer->Destroy();
-        _scene.Destroy();
 
         _window->Destroy();
 
