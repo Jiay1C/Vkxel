@@ -150,9 +150,6 @@ namespace Vkxel {
 
     void ComputeJob::Destroy() {
         if (!_compute_pipeline.empty()) {
-            // TODO: Remove Sync?
-            vkDeviceWaitIdle(_device);
-
             for (auto &buffer: _compute_buffer) {
                 buffer.Destroy();
             }
