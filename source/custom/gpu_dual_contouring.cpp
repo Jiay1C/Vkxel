@@ -12,7 +12,6 @@
 #include "engine/engine.h"
 #include "gpu_dual_contouring.h"
 #include "sdf_surface.h"
-#include "util/check.h"
 #include "world/gameobject.hpp"
 #include "world/mesh.h"
 
@@ -71,21 +70,16 @@ namespace Vkxel {
 
         compute_job.ReadBuffer(1, reinterpret_cast<std::byte *>(&results));
 
-        std::vector<VertexType> vertices(results.vertexCount);
-        compute_job.ReadBuffer(4, reinterpret_cast<std::byte *>(vertices.data()), 0,
-                               sizeof(VertexType) * results.vertexCount);
-
-        std::vector<IndexType> indices(results.indexCount);
-        compute_job.ReadBuffer(5, reinterpret_cast<std::byte *>(indices.data()), 0,
-                               sizeof(IndexType) * results.indexCount);
-
         // Assign Vertex and Index to Mesh Component
         if (!gameObject.GetComponent<Mesh>()) {
             gameObject.AddComponent<Mesh>();
         }
 
         Mesh &mesh = gameObject.GetComponent<Mesh>().value();
-        mesh.SetMesh({.index = std::move(indices), .vertex = std::move(vertices)});
+        mesh.SetMesh(GPUMeshData{.indexCount = results.indexCount,
+                                 .vertexCount = results.vertexCount,
+                                 .index = compute_job.GetBuffer(5),
+                                 .vertex = compute_job.GetBuffer(4)});
     }
 
     size_t GpuDualContouring::GetIndex1D(const glm::ivec3 &size, const glm::ivec3 &index) {

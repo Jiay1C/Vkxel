@@ -6,9 +6,7 @@
 
 namespace Vkxel {
 
-    bool Mesh::Empty() const { return _mesh_data.index.empty(); }
-
-    const MeshData &Mesh::GetMesh() const { return _mesh_data; }
+    const std::optional<MeshData> &Mesh::GetMesh() const { return _mesh_data; }
 
     void Mesh::SetMesh(const MeshData &meshData) {
         _mesh_data = meshData;
@@ -19,7 +17,6 @@ namespace Vkxel {
         _mesh_data = std::move(meshData);
         _is_dirty = true;
     }
-
 
     bool Mesh::GetDirtyFlag() const { return _is_dirty; }
 

@@ -147,7 +147,7 @@ namespace Vkxel {
                glm::dot(f02, glm::vec4(-.01, .06, -.02, .07)) + glm::dot(f03, glm::vec4(-.05, .07, .03, .04)) - 0.16f;
     };
 
-    const MeshData ModelLibrary::TriangleMesh = {
+    const MeshData ModelLibrary::TriangleMesh = CPUMeshData{
             .index = {0, 1, 2},
             .vertex = {
                     VertexData{glm::vec3{0.0f, 0.6f, 0.0f}, glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(1.0f, 0.0f, 0.0f)},
@@ -156,7 +156,7 @@ namespace Vkxel {
                                glm::vec3(0.0f, 0.0f, 1.0f)},
             }};
 
-    const MeshData ModelLibrary::StanfordBunnyMesh = {
+    const MeshData ModelLibrary::StanfordBunnyMesh = CPUMeshData{
             .index = {1068, 1646, 1577, 1057, 908,  938,  420,  1175, 237,  1054, 1100, 1041, 237,  1058, 1125, 1253,
                       29,   1260, 1064, 1070, 0,    1036, 1129, 1119, 1569, 2380, 1584, 2433, 2501, 2472, 1631, 1653,
                       1645, 1143, 1165, 668,  1201, 1439, 304,  1070, 1089, 0,    1554, 1569, 1583, 1183, 1173, 403,

@@ -14,8 +14,7 @@ namespace Vkxel {
     public:
         using Component::Component;
 
-        bool Empty() const;
-        const MeshData &GetMesh() const;
+        const std::optional<MeshData> &GetMesh() const;
         void SetMesh(const MeshData &meshData);
         void SetMesh(MeshData &&meshData);
 
@@ -23,7 +22,7 @@ namespace Vkxel {
         void ClearDirtyFlag();
 
     private:
-        MeshData _mesh_data;
+        std::optional<MeshData> _mesh_data;
         bool _is_dirty = false;
 
         REGISTER_BEGIN(Mesh)
