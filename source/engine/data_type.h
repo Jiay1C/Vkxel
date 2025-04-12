@@ -5,10 +5,12 @@
 #ifndef VKXEL_DATA_TYPE_H
 #define VKXEL_DATA_TYPE_H
 
+#include <variant>
 #include <vector>
 
 #include "glm/glm.hpp"
 #include "util/delegate.hpp"
+#include "vkutil/buffer.h"
 #include "vulkan/vulkan.h"
 
 namespace Vkxel {
@@ -42,10 +44,19 @@ namespace Vkxel {
     using IndexType = uint32_t;
     using VertexType = VertexData;
 
-    struct MeshData {
+    struct CPUMeshData {
         std::vector<IndexType> index;
         std::vector<VertexType> vertex;
     };
+
+    struct GPUMeshData {
+        uint32_t indexCount = 0;
+        uint32_t vertexCount = 0;
+        VkUtil::Buffer index;
+        VkUtil::Buffer vertex;
+    };
+
+    using MeshData = std::variant<CPUMeshData, GPUMeshData>;
 
     struct ObjectData {
         IdType objectId;

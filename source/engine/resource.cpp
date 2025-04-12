@@ -27,25 +27,81 @@ namespace Vkxel {
         VkDeviceSize total_size = 0;
 
         for (const auto &object_wrapper: _objects | std::views::keys) {
-            const ObjectData &object = object_wrapper;
-            total_size += sizeof(IndexType) * object.mesh.index.size();
-            total_size += sizeof(VertexType) * object.mesh.vertex.size();
-            // total_size += sizeof(ConstantBufferPerObject);
+            if (const ObjectData &object = object_wrapper; std::holds_alternative<CPUMeshData>(object.mesh)) {
+                const auto &[index, vertex] = std::get<CPUMeshData>(object.mesh);
+                total_size += sizeof(IndexType) * index.size();
+                total_size += sizeof(VertexType) * vertex.size();
+                // total_size += sizeof(ConstantBufferPerObject);
+            }
         }
 
-        VkUtil::Buffer staging_buffer =
-                VkUtil::BufferBuilder(_device, _allocator)
-                        .SetSize(total_size)
-                        .SetUsage(VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT)
-                        .SetPQueueFamilyIndices(&_queue_family)
-                        .SetAllocationFlags(VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT)
-                        .SetMemoryUsage(VMA_MEMORY_USAGE_AUTO_PREFER_HOST)
-                        .SetRequiredFlags(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
-                        .Build();
-        staging_buffer.Create();
+        if (total_size > 0) {
+            VkUtil::Buffer staging_buffer =
+                    VkUtil::BufferBuilder(_device, _allocator)
+                            .SetSize(total_size)
+                            .SetUsage(VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT)
+                            .SetPQueueFamilyIndices(&_queue_family)
+                            .SetAllocationFlags(VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT)
+                            .SetMemoryUsage(VMA_MEMORY_USAGE_AUTO_PREFER_HOST)
+                            .SetRequiredFlags(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
+                            .Build();
+            staging_buffer.Create();
 
-        std::byte *host_buffer = staging_buffer.Map();
-        VkDeviceSize host_buffer_offset = 0;
+            std::byte *host_buffer = staging_buffer.Map();
+            VkDeviceSize host_buffer_offset = 0;
+
+            VkUtil::ImmediateCommand immediate_command(_device, _queue, _command_pool);
+            VkCommandBuffer command_buffer = immediate_command.Begin();
+
+            for (const auto &[object_wrapper, resource_wrapper]: _objects) {
+                const ObjectData &object = object_wrapper;
+                const ObjectResource &resource = resource_wrapper;
+
+                if (std::holds_alternative<CPUMeshData>(object.mesh)) {
+                    const auto &[index, vertex] = std::get<CPUMeshData>(object.mesh);
+
+                    // Upload Index Buffer
+                    std::ranges::copy(index, reinterpret_cast<IndexType *>(host_buffer + host_buffer_offset));
+                    VkBufferCopy index_copy_region{.srcOffset = host_buffer_offset,
+                                                   .dstOffset = 0,
+                                                   .size = resource.indexBuffer.createInfo.size};
+                    vkCmdCopyBuffer(command_buffer, staging_buffer.buffer, resource.indexBuffer.buffer, 1,
+                                    &index_copy_region);
+                    host_buffer_offset += static_cast<uint32_t>(resource.indexBuffer.createInfo.size);
+
+                    // Upload Vertex Buffer
+                    std::ranges::copy(vertex, reinterpret_cast<VertexType *>(host_buffer + host_buffer_offset));
+                    VkBufferCopy vertex_copy_region{.srcOffset = host_buffer_offset,
+                                                    .dstOffset = 0,
+                                                    .size = resource.vertexBuffer.createInfo.size};
+                    vkCmdCopyBuffer(command_buffer, staging_buffer.buffer, resource.vertexBuffer.buffer, 1,
+                                    &vertex_copy_region);
+                    host_buffer_offset += static_cast<uint32_t>(resource.vertexBuffer.createInfo.size);
+                }
+
+                // Change Constant Buffer Upload To Per Frame
+
+                // Upload Constant Buffer
+                // Change Matrix To Row Major
+                // ConstantBufferPerObject constant_buffer_per_object{.transformMatrix =
+                // glm::transpose(object.transform)}; *reinterpret_cast<ConstantBufferPerObject *>(host_buffer +
+                // host_buffer_offset) = constant_buffer_per_object;
+                //
+                // VkBufferCopy constant_copy_region{
+                //         .srcOffset = host_buffer_offset, .dstOffset = 0, .size =
+                //         resource.constantBuffer.createInfo.size};
+                // vkCmdCopyBuffer(command_buffer, staging_buffer.buffer, resource.constantBuffer.buffer, 1,
+                //                 &constant_copy_region);
+                // host_buffer_offset += static_cast<uint32_t>(resource.constantBuffer.createInfo.size);
+            }
+
+            staging_buffer.Flush();
+
+            immediate_command.End();
+
+            staging_buffer.Unmap();
+            staging_buffer.Destroy();
+        }
 
         VkUtil::ImmediateCommand immediate_command(_device, _queue, _command_pool);
         VkCommandBuffer command_buffer = immediate_command.Begin();
@@ -54,44 +110,19 @@ namespace Vkxel {
             const ObjectData &object = object_wrapper;
             const ObjectResource &resource = resource_wrapper;
 
-            // Upload Index Buffer
-            std::ranges::copy(object.mesh.index, reinterpret_cast<IndexType *>(host_buffer + host_buffer_offset));
-            VkBufferCopy index_copy_region{
-                    .srcOffset = host_buffer_offset, .dstOffset = 0, .size = resource.indexBuffer.createInfo.size};
-            vkCmdCopyBuffer(command_buffer, staging_buffer.buffer, resource.indexBuffer.buffer, 1, &index_copy_region);
-            host_buffer_offset += static_cast<uint32_t>(resource.indexBuffer.createInfo.size);
+            if (std::holds_alternative<GPUMeshData>(object.mesh)) {
+                const auto &[index_count, vertex_count, index, vertex] = std::get<GPUMeshData>(object.mesh);
 
-            // Upload Vertex Buffer
-            std::ranges::copy(object.mesh.vertex, reinterpret_cast<VertexType *>(host_buffer + host_buffer_offset));
-            VkBufferCopy vertex_copy_region{
-                    .srcOffset = host_buffer_offset, .dstOffset = 0, .size = resource.vertexBuffer.createInfo.size};
-            vkCmdCopyBuffer(command_buffer, staging_buffer.buffer, resource.vertexBuffer.buffer, 1,
-                            &vertex_copy_region);
-            host_buffer_offset += static_cast<uint32_t>(resource.vertexBuffer.createInfo.size);
+                VkBufferCopy index_copy_region{.srcOffset = 0, .dstOffset = 0, .size = index_count * sizeof(IndexType)};
+                vkCmdCopyBuffer(command_buffer, index.buffer, resource.indexBuffer.buffer, 1, &index_copy_region);
 
-
-            // Change Constant Buffer Upload To Per Frame
-
-            // Upload Constant Buffer
-            // Change Matrix To Row Major
-            // ConstantBufferPerObject constant_buffer_per_object{.transformMatrix = glm::transpose(object.transform)};
-            // *reinterpret_cast<ConstantBufferPerObject *>(host_buffer + host_buffer_offset) =
-            // constant_buffer_per_object;
-            //
-            // VkBufferCopy constant_copy_region{
-            //         .srcOffset = host_buffer_offset, .dstOffset = 0, .size =
-            //         resource.constantBuffer.createInfo.size};
-            // vkCmdCopyBuffer(command_buffer, staging_buffer.buffer, resource.constantBuffer.buffer, 1,
-            //                 &constant_copy_region);
-            // host_buffer_offset += static_cast<uint32_t>(resource.constantBuffer.createInfo.size);
+                VkBufferCopy vertex_copy_region{
+                        .srcOffset = 0, .dstOffset = 0, .size = vertex_count * sizeof(VertexType)};
+                vkCmdCopyBuffer(command_buffer, vertex.buffer, resource.vertexBuffer.buffer, 1, &vertex_copy_region);
+            }
         }
 
-        staging_buffer.Flush();
-
         immediate_command.End();
-
-        staging_buffer.Unmap();
-        staging_buffer.Destroy();
 
         _objects.clear();
     }
@@ -101,41 +132,69 @@ namespace Vkxel {
 
     ObjectResource ResourceManager::CreateObjectResource(const ObjectData &object) {
 
-        VkUtil::BufferBuilder bufferBuilder(_device, _allocator);
-        bufferBuilder.SetMemoryUsage(VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE).SetPQueueFamilyIndices(&_queue_family);
+        ObjectResource resource = {.isActive = true, .firstIndex = 0};
 
-        // Create Index Buffer
-        VkUtil::Buffer index_buffer =
-                bufferBuilder.SetSize(sizeof(IndexType) * object.mesh.index.size())
-                        .SetUsage(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT)
-                        .Build();
-        index_buffer.Create();
+        VkUtil::BufferBuilder buffer_builder(_device, _allocator);
+        buffer_builder.SetMemoryUsage(VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE).SetPQueueFamilyIndices(&_queue_family);
 
-        // Create Vertex Buffer
-        VkUtil::Buffer vertex_buffer =
-                bufferBuilder.SetSize(sizeof(VertexType) * object.mesh.vertex.size())
-                        .SetUsage(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT)
-                        .Build();
-        vertex_buffer.Create();
+        if (std::holds_alternative<GPUMeshData>(object.mesh)) {
+            const auto &[index_count, vertex_count, index, vertex] = std::get<GPUMeshData>(object.mesh);
+
+            resource.indexBuffer =
+                    VkUtil::BufferBuilder(index)
+                            .SetSize(index_count * sizeof(IndexType))
+                            .SetUsage(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT)
+                            .Build();
+            resource.indexBuffer.Create();
+
+            resource.vertexBuffer =
+                    VkUtil::BufferBuilder(vertex)
+                            .SetSize(vertex_count * sizeof(VertexType))
+                            .SetUsage(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT)
+                            .Build();
+            resource.vertexBuffer.Create();
+
+            resource.indexCount = index_count;
+        } else if (std::holds_alternative<CPUMeshData>(object.mesh)) {
+            const auto &[index, vertex] = std::get<CPUMeshData>(object.mesh);
+
+            // Create Index Buffer
+            resource.indexBuffer =
+                    buffer_builder.SetSize(sizeof(IndexType) * index.size())
+                            .SetUsage(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT)
+                            .Build();
+            resource.indexBuffer.Create();
+
+            // Create Vertex Buffer
+            resource.vertexBuffer =
+                    buffer_builder.SetSize(sizeof(VertexType) * vertex.size())
+                            .SetUsage(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT)
+                            .Build();
+            resource.vertexBuffer.Create();
+
+            resource.indexCount = index.size();
+        } else {
+            CHECK_NOTNULL_MSG(nullptr, "Error Mesh Type");
+        }
 
         // Create Constant Buffer
         // Change Matrix To Row Major
-        VkUtil::Buffer constant_buffer =
-                bufferBuilder.SetSize(sizeof(ConstantBufferPerObject))
+        resource.constantBuffer =
+                buffer_builder.SetSize(sizeof(ConstantBufferPerObject))
                         .SetUsage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT)
                         .Build();
-        constant_buffer.Create();
+        resource.constantBuffer.Create();
 
         // Create DescriptorSet
-        VkUtil::DescriptorSet descriptor_set =
+        resource.descriptorSet =
                 VkUtil::DescriptorSetBuilder(_device, _descriptor_pool, _descriptor_set_layout_object).Build();
-        descriptor_set.Create();
+        resource.descriptorSet.Create();
 
         VkDescriptorBufferInfo constant_buffer_per_object_info{
-                .buffer = constant_buffer.buffer, .offset = 0, .range = VK_WHOLE_SIZE};
+                .buffer = resource.constantBuffer.buffer, .offset = 0, .range = VK_WHOLE_SIZE};
         std::array descriptor_set_write_info = {VkWriteDescriptorSet{
                 .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                .dstSet = descriptor_set.set,
+                .dstSet = resource.descriptorSet.set,
                 .dstBinding = 0,
                 .dstArrayElement = 0,
                 .descriptorCount = 1,
@@ -146,13 +205,7 @@ namespace Vkxel {
         vkUpdateDescriptorSets(_device, static_cast<uint32_t>(descriptor_set_write_info.size()),
                                descriptor_set_write_info.data(), 0, nullptr);
 
-        return {.isActive = true,
-                .indexCount = static_cast<uint32_t>(object.mesh.index.size()),
-                .firstIndex = 0,
-                .indexBuffer = index_buffer,
-                .vertexBuffer = vertex_buffer,
-                .constantBuffer = constant_buffer,
-                .descriptorSet = descriptor_set};
+        return resource;
     }
 
     void ResourceManager::UpdateObjectResource(const VkCommandBuffer commandBuffer, const ObjectData &object,
