@@ -13,7 +13,7 @@ namespace Vkxel {
     void ComputeJob::Init(const std::string_view shaderPath, const std::vector<std::string_view> &shaderKernels,
                           const std::vector<VkDeviceSize> &bufferSize) {
         // TODO: Allow ReInit
-        CHECK_NOTNULL_MSG(!shaderKernels.empty(), "Must Contain At Least 1 Kernel");
+        CHECK(!shaderKernels.empty(), "Must Contain At Least 1 Kernel");
 
         Destroy();
 
@@ -86,7 +86,7 @@ namespace Vkxel {
     }
 
     void ComputeJob::Dispatch(const VkCommandBuffer commandBuffer, const size_t kernel, const glm::uvec3 group) {
-        CHECK_NOTNULL_MSG(_compute_pipeline[kernel].pipeline, "Compute Job Require Init");
+        CHECK(_compute_pipeline[kernel].pipeline, "Compute Job Require Init");
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, _compute_pipeline[kernel].pipeline);
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, _compute_pipeline[kernel].layout, 0, 1,
                                 &_descriptor_set.set, 0, nullptr);
@@ -120,7 +120,7 @@ namespace Vkxel {
         if (buffer_size == 0 || (buffer_size + offset) > _compute_buffer[index].createInfo.size) {
             buffer_size = _compute_buffer[index].createInfo.size - offset;
         }
-        CHECK_NOTNULL_MSG(buffer_size == data.size(), "Buffer Size Not Match");
+        CHECK(buffer_size == data.size(), "Buffer Size Not Match");
         std::byte *ptr = _compute_buffer[index].Map();
         std::copy_n(data.data(), buffer_size, ptr + offset);
         _compute_buffer[index].Flush();

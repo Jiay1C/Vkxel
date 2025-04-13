@@ -10,7 +10,7 @@
 namespace Vkxel::VkUtil {
 
     VkCommandBuffer ImmediateCommand::Begin() {
-        CHECK_NOTNULL(!_is_recording);
+        CHECK(!_is_recording);
         _is_recording = true;
 
         VkCommandBufferAllocateInfo command_buffer_allocate_info{.sType =
@@ -29,7 +29,7 @@ namespace Vkxel::VkUtil {
     }
 
     void ImmediateCommand::End() {
-        CHECK_NOTNULL(_is_recording);
+        CHECK(_is_recording);
         _is_recording = false;
 
         CHECK_RESULT_VK(vkEndCommandBuffer(_command_buffer));

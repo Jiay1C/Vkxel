@@ -6,62 +6,43 @@
 #define VKXEL_CHECK_H
 
 #include <cassert>
-#include <iostream>
 
+#include "spdlog/spdlog.h"
 #include "vulkan/vk_enum_string_helper.h"
 
-#define CHECK_NOTNULL(f)                                                                                               \
-    {                                                                                                                  \
-        if (!f) {                                                                                                      \
-            std::cerr << "Error : nullptr or false in " << __FILE__ << " at line " << __LINE__ << std::endl;           \
-            abort();                                                                                                   \
-        }                                                                                                              \
-    }
-
-#define CHECK_RESULT(success, f)                                                                                       \
-    {                                                                                                                  \
-        auto res = (f);                                                                                                \
-        if (res != success) {                                                                                          \
-            std::cerr << "Error : " << res << " in " << __FILE__ << " at line " << __LINE__ << std::endl;              \
-            abort();                                                                                                   \
-        }                                                                                                              \
-    }
-
-#define CHECK_RESULT_VK(f)                                                                                             \
-    {                                                                                                                  \
-        VkResult res = (f);                                                                                            \
-        if (res != VK_SUCCESS) {                                                                                       \
-            std::cerr << "Error : " << string_VkResult(res) << " in " << __FILE__ << " at line " << __LINE__           \
-                      << std::endl;                                                                                    \
-            abort();                                                                                                   \
-        }                                                                                                              \
-    }
-
-#define CHECK_NOTNULL_MSG(f, msg)                                                                                      \
+// Check if pointer or condition is not null/false and print expression string for context.
+#define CHECK(f, ...)                                                                                                  \
     {                                                                                                                  \
         if (!(f)) {                                                                                                    \
-            std::cerr << "Error: nullptr or false in " << __FILE__ << " at line " << __LINE__ << ". Msg: " << msg      \
-                      << std::endl;                                                                                    \
+            spdlog::error("Expression '{}' is null or false.", #f);                                                    \
+            spdlog::error("{} at line {}", __FILE__, __LINE__);                                                        \
+            __VA_OPT__(spdlog::error(__VA_ARGS__);)                                                                    \
             abort();                                                                                                   \
         }                                                                                                              \
     }
 
-#define CHECK_RESULT_MSG(success, f, msg)                                                                              \
+// Check if a function call returns the expected result.
+// 'success' is the expected value and 'f' is the expression to evaluate.
+#define CHECK_RESULT(success, f, ...)                                                                                  \
     {                                                                                                                  \
         auto res = (f);                                                                                                \
         if (res != success) {                                                                                          \
-            std::cerr << "Error: " << res << " in " << __FILE__ << " at line " << __LINE__ << ". Msg: " << msg         \
-                      << std::endl;                                                                                    \
+            spdlog::error("Expression '{}' returned '{}', expected '{}'.", #f, res, success);                          \
+            spdlog::error("{} at line {}", __FILE__, __LINE__);                                                        \
+            __VA_OPT__(spdlog::error(__VA_ARGS__);)                                                                    \
             abort();                                                                                                   \
         }                                                                                                              \
     }
 
-#define CHECK_RESULT_VK_MSG(f, msg)                                                                                    \
+// Check Vulkan-specific result and print the corresponding string representation.
+// Uses string_VkResult to translate the error code.
+#define CHECK_RESULT_VK(f, ...)                                                                                        \
     {                                                                                                                  \
         VkResult res = (f);                                                                                            \
         if (res != VK_SUCCESS) {                                                                                       \
-            std::cerr << "Error: " << string_VkResult(res) << " in " << __FILE__ << " at line " << __LINE__            \
-                      << ". Msg: " << msg << std::endl;                                                                \
+            spdlog::error("Expression '{}' returned '{}'.", #f, string_VkResult(res));                                 \
+            spdlog::error("{} at line {}", __FILE__, __LINE__);                                                        \
+            __VA_OPT__(spdlog::error(__VA_ARGS__);)                                                                    \
             abort();                                                                                                   \
         }                                                                                                              \
     }

@@ -29,7 +29,7 @@ namespace Vkxel {
 
     void Renderer::Init() {
 
-        CHECK_NOTNULL(!_init);
+        CHECK(!_init);
 
         // Create Instance
         vkb::InstanceBuilder instance_builder;
@@ -42,7 +42,7 @@ namespace Vkxel {
                                        .request_validation_layers()
 #endif
                                        .build();
-        CHECK_NOTNULL_MSG(instance_result, instance_result.error().message());
+        CHECK(instance_result, instance_result.error().message());
         _instance = instance_result.value();
 
         // Create Window
@@ -60,13 +60,13 @@ namespace Vkxel {
                                                    .dynamicRendering = VK_TRUE,
                                                    .shaderIntegerDotProduct = VK_TRUE})
                         .select();
-        CHECK_NOTNULL_MSG(physical_device_result, physical_device_result.error().message());
+        CHECK(physical_device_result, physical_device_result.error().message());
         _physical_device = physical_device_result.value();
 
         // Create Device
         vkb::DeviceBuilder device_builder(_physical_device);
         auto device_result = device_builder.build();
-        CHECK_NOTNULL_MSG(device_result, device_result.error().message());
+        CHECK(device_result, device_result.error().message());
 
         _device = device_result.value();
 
@@ -76,16 +76,16 @@ namespace Vkxel {
                                         .set_image_usage_flags(VK_IMAGE_USAGE_TRANSFER_DST_BIT)
                                         .set_desired_present_mode(Application::DefaultPresentMode)
                                         .build();
-        CHECK_NOTNULL_MSG(swapchain_result, swapchain_result.error().message());
+        CHECK(swapchain_result, swapchain_result.error().message());
         _swapchain = swapchain_result.value();
 
         auto swapchain_image_result = _swapchain.get_images();
-        CHECK_NOTNULL_MSG(swapchain_image_result, swapchain_image_result.error().message());
+        CHECK(swapchain_image_result, swapchain_image_result.error().message());
         _swapchain_image = std::move(swapchain_image_result.value());
 
         // Get Queue
         auto queue_result = _device.get_queue(vkb::QueueType::graphics);
-        CHECK_NOTNULL_MSG(queue_result, queue_result.error().message());
+        CHECK(queue_result, queue_result.error().message());
         _queue = queue_result.value();
         _queue_family_index = _device.get_queue_index(vkb::QueueType::graphics).value();
 
@@ -144,7 +144,7 @@ namespace Vkxel {
     }
 
     void Renderer::Destroy() {
-        CHECK_NOTNULL(_init);
+        CHECK(_init);
 
         vkDeviceWaitIdle(_device);
 
@@ -162,8 +162,8 @@ namespace Vkxel {
     }
 
     void Renderer::LoadScene(const Scene &scene) {
-        CHECK_NOTNULL(_init);
-        CHECK_NOTNULL(!_scene);
+        CHECK(_init);
+        CHECK(!_scene);
 
         _scene = scene;
 
@@ -227,8 +227,8 @@ namespace Vkxel {
     }
 
     void Renderer::UnloadScene() {
-        CHECK_NOTNULL(_init);
-        CHECK_NOTNULL(_scene);
+        CHECK(_init);
+        CHECK(_scene);
 
         vkDeviceWaitIdle(_device);
 
@@ -257,8 +257,8 @@ namespace Vkxel {
 
     void Renderer::Render() {
 
-        CHECK_NOTNULL(_init);
-        CHECK_NOTNULL(_scene);
+        CHECK(_init);
+        CHECK(_scene);
 
         if (_pause) {
             return;
@@ -525,12 +525,12 @@ namespace Vkxel {
                                         .set_image_usage_flags(VK_IMAGE_USAGE_TRANSFER_DST_BIT)
                                         .set_desired_present_mode(Application::DefaultPresentMode)
                                         .build();
-        CHECK_NOTNULL_MSG(swapchain_result, swapchain_result.error().message());
+        CHECK(swapchain_result, swapchain_result.error().message());
         vkb::destroy_swapchain(_swapchain);
         _swapchain = swapchain_result.value();
 
         auto swapchain_image_result = _swapchain.get_images();
-        CHECK_NOTNULL_MSG(swapchain_image_result, swapchain_image_result.error().message());
+        CHECK(swapchain_image_result, swapchain_image_result.error().message());
         _swapchain_image = std::move(swapchain_image_result.value());
 
 

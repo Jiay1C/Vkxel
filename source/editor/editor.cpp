@@ -90,6 +90,8 @@ namespace Vkxel {
                     _active_component->gameObject.RemoveComponent(*_active_component);
                     _active_component = nullptr;
                 }
+            } else {
+                ImGui::SeparatorText("");
             }
         });
     }

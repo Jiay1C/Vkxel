@@ -105,6 +105,9 @@ add_subdirectory(${EXTERNAL_PATH}/${NAMEOF_PATH})
 set(ENTT_PATH "entt")
 add_subdirectory(${EXTERNAL_PATH}/${ENTT_PATH})
 
+# spdlog
+set(SPDLOG_PATH "spdlog")
+add_subdirectory(${EXTERNAL_PATH}/${SPDLOG_PATH})
 
 function(VKXEL_DEFINE_SOURCES OUT_LIST BASE_PATH)
     set(FILES "${ARGN}")
@@ -184,6 +187,7 @@ VKXEL_DEFINE_SOURCES(UTIL_SOURCES "util"
         application.h
         check.h
         delegate.hpp
+        debug.hpp
 )
 
 VKXEL_DEFINE_SOURCES(REFLECT_SOURCES "reflect"
@@ -250,10 +254,11 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         reflectcpp
         nameof
         EnTT::EnTT
+        spdlog::spdlog
 )
 
-# Enable all warnings during compile
-target_compile_options(${PROJECT_NAME} PRIVATE /W4)
+# Enable all warnings and new preprocessor during compile
+target_compile_options(${PROJECT_NAME} PRIVATE /W4 /Zc:preprocessor)
 
 # Add RELEASE macro in Release
 target_compile_definitions(${PROJECT_NAME} PRIVATE $<$<CONFIG:Release>:RELEASE>)
