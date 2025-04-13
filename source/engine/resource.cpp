@@ -12,6 +12,7 @@
 #include "util/application.h"
 #include "util/check.h"
 #include "vkutil/command.h"
+#include "vtime.h"
 
 namespace Vkxel {
     ResourceUploader &ResourceUploader::AddObject(const ObjectData &object, ObjectResource &resource) {
@@ -312,6 +313,7 @@ namespace Vkxel {
         // Update Constant Buffer
         // Change Matrix To Row Major
         ConstantBufferPerFrame constant_buffer_per_frame{
+                .frame = {.tick = static_cast<uint32_t>(Time::GetTicks()), .time = Time::GetSeconds()},
                 .scene = {.viewMatrix = glm::transpose(scene.viewMatrix),
                           .projectionMatrix = glm::transpose(scene.projectionMatrix),
                           .cameraPosition = scene.cameraPosition}};

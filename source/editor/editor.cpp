@@ -8,17 +8,16 @@
 #include "engine/engine.h"
 #include "engine/vtime.h"
 #include "reflect/reflect.hpp"
-#include "world/camera.h"
-#include "world/controller.h"
 
 namespace Vkxel {
 
     EditorEngine::EditorEngine(Scene &scene) : Engine(scene) {
         SetupDebugUI();
         SetupSceneUI();
+        SetupInspectorUI();
     }
 
-    void EditorEngine::SetupDebugUI() const {
+    void EditorEngine::SetupDebugUI() {
         _gui->AddItem("Debug", [&]() {
             ImGui::Text(std::format("Frame {0} ({1} ms)", Time::GetTicks(), Time::GetRealDeltaSeconds() * 1000).data());
             ImGui::Text(std::format("Time {0} s", Time::GetSeconds()).data());
@@ -26,37 +25,16 @@ namespace Vkxel {
             ImGui::Text(std::format("Resolution ({0}, {1})", _window->GetFrameBufferWidth(),
                                     _window->GetFrameBufferHeight())
                                 .data());
-
-            if (auto camera_result = _scene.GetCamera()) {
-                Camera &camera = camera_result.value();
-                if (ImGui::CollapsingHeader("Camera")) {
-                    ImGui::DragFloat("Near Clip Plane", &camera.nearClipPlane);
-                    ImGui::DragFloat("Far Clip Plane", &camera.farClipPlane);
-
-                    auto fov = glm::degrees(camera.fieldOfViewY);
-                    ImGui::DragFloat("Field of View", &fov);
-                    camera.fieldOfViewY = glm::radians(fov);
-                }
-
-                if (auto controller_result = camera.gameObject.GetComponent<Controller>()) {
-                    Controller &camera_controller = controller_result.value();
-                    if (ImGui::CollapsingHeader("Controller")) {
-                        ImGui::DragFloat("Move Speed", &camera_controller.moveSpeed, 0.02f, 0.0f, 10.0f);
-                        ImGui::DragFloat("Rotate Speed", &camera_controller.rotateSpeed, 0.02f, 0.0f, 10.0f);
-                        ImGui::DragFloat("Accelerate Ratio", &camera_controller.accelerateRatio, 0.02f, 0.0f, 10.0f);
-                    }
-                }
-            }
         });
     }
 
-    void EditorEngine::SetupSceneUI() const {
+    void EditorEngine::SetupSceneUI() {
         _gui->AddItem("Scene", [&]() {
             for (auto &gameobject: _scene.GetGameObjectsView()) {
                 ImGui::PushID(gameobject.id);
 
                 // Name
-                if (ImGui::TreeNode(std::format("{0} ({1})", gameobject.name, gameobject.id).data())) {
+                if (ImGui::TreeNode(GetDisplayName(gameobject).data())) {
                     ImGui::InputText(
                             "Name", gameobject.name.data(), gameobject.name.capacity() + 1,
                             ImGuiInputTextFlags_CallbackResize,
@@ -72,17 +50,24 @@ namespace Vkxel {
 
                     // Transform
                     ImGui::PushID(gameobject.transform.id);
-                    DrawComponent(&gameobject.transform);
+                    ImGui::Bullet();
+                    if (ImGui::Button(GetDisplayName(gameobject.transform).data())) {
+                        _active_component = &gameobject.transform;
+                    }
                     ImGui::PopID();
 
                     // Other Components
                     for (const auto &component: gameobject.GetComponentsView()) {
                         ImGui::PushID(component->id);
-                        DrawComponent(component.get());
+                        ImGui::Bullet();
+                        if (ImGui::Button(GetDisplayName(*component).data())) {
+                            _active_component = component.get();
+                        }
                         ImGui::PopID();
                     }
 
-                    if (ImGui::Button("Destroy")) {
+                    if (ImGui::SmallButton("Destroy")) {
+                        _active_component = nullptr;
                         _scene.DestroyGameObject(gameobject);
                     }
 
@@ -93,24 +78,27 @@ namespace Vkxel {
         });
     }
 
-    void EditorEngine::DrawComponent(Component *component) const {
-        if (ImGui::TreeNode(std::format("{0} ({1})", component->name, component->id).data())) {
-            auto instance = Reflect::GetType(typeid(*component)).from_void(component);
-
-            DrawComponentData(instance);
-
-            if (ImGui::Button("Remove")) {
-                component->gameObject.RemoveComponent(*component);
+    void EditorEngine::SetupInspectorUI() {
+        _gui->AddItem("Inspector", [&]() {
+            if (_active_component) {
+                ImGui::SeparatorText(std::format("{0} :: {1}", GetDisplayName(_active_component->gameObject),
+                                                 GetDisplayName(*_active_component))
+                                             .data());
+                auto instance = Reflect::GetType(typeid(*_active_component)).from_void(_active_component);
+                DrawComponent(instance);
+                if (ImGui::SmallButton("Remove")) {
+                    _active_component->gameObject.RemoveComponent(*_active_component);
+                    _active_component = nullptr;
+                }
             }
-
-            ImGui::TreePop();
-        }
+        });
     }
 
-    void EditorEngine::DrawComponentData(entt::meta_any &component) const {
+
+    void EditorEngine::DrawComponent(entt::meta_any &component) {
         for (auto &&[id, base]: component.type().base()) {
             auto instance = base.from_void(component.data());
-            DrawComponentData(instance);
+            DrawComponent(instance);
         }
         for (auto &&[id, elem]: component.type().data()) {
             auto instance = elem.get(component);
@@ -119,11 +107,13 @@ namespace Vkxel {
     }
 
 
-    void EditorEngine::DrawElement(const std::string_view name, entt::meta_any &element) const {
+    void EditorEngine::DrawElement(const std::string_view name, entt::meta_any &element) {
         const auto &type = element.type();
         void *data = element.data();
 
-        if (type.is_integral()) {
+        if (type == Reflect::GetType<bool>()) {
+            ImGui::Checkbox(name.data(), static_cast<bool *>(data));
+        } else if (type.is_integral()) {
             ImGui::DragInt(name.data(), static_cast<int *>(data));
         } else if (type == Reflect::GetType<float>()) {
             ImGui::DragFloat(name.data(), static_cast<float *>(data));
@@ -165,6 +155,10 @@ namespace Vkxel {
         } else {
             ImGui::Text("%s: Unsupported Type <%s>", name.data(), type.info().name().data());
         }
+    }
+
+    std::string EditorEngine::GetDisplayName(Object &object) {
+        return std::format("{0} ({1})", object.name, object.id);
     }
 
 

@@ -13,7 +13,7 @@
 namespace Vkxel {
 
     void GUI::OnGUI() {
-        ImGui::ShowDemoWindow();
+        // ImGui::ShowDemoWindow();
 
         for (auto &[panel_name, panel_delegate]: _panel) {
             ImGui::Begin(panel_name.data());

@@ -37,6 +37,11 @@ namespace Vkxel {
         glm::vec4 cameraPosition;
     };
 
+    struct FrameData {
+        uint32_t tick;
+        float time;
+    };
+
     struct ConstantBufferPerObject {
         glm::mat4 transformMatrix;
     };
@@ -66,6 +71,7 @@ namespace Vkxel {
     };
 
     struct ConstantBufferPerFrame {
+        FrameData frame;
         SceneData scene;
     };
 
