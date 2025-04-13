@@ -144,8 +144,7 @@ namespace Vkxel {
                             for (uint32_t index = 0; index < 4; ++index) {
                                 glm::ivec3 grid_index = p0 + cell_offset[index];
                                 vertex_index[index] = grid_vertex_index[grid_index.x][grid_index.y][grid_index.z];
-                                CHECK_NOTNULL_MSG(vertex_index[index] != static_cast<IndexType>(~0),
-                                                  "Invalid Vertex Index");
+                                CHECK(vertex_index[index] != static_cast<IndexType>(~0), "Invalid Vertex Index");
                             }
 
                             const auto &triangle_index =

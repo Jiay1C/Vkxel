@@ -19,7 +19,7 @@ namespace Vkxel {
 
     std::string File::ReadTextFile(std::string_view filePath) {
         std::ifstream file(filePath.data(), std::ios::in | std::ios::binary);
-        CHECK_NOTNULL_MSG(file.good(), "Unable To Read Text File " << filePath);
+        CHECK(file.good(), "Unable To Read Text File: {}", filePath);
 
         file.seekg(0, std::ios_base::end);
         std::streampos fileSize = file.tellg();
@@ -36,7 +36,7 @@ namespace Vkxel {
 
     std::vector<uint8_t> File::ReadBinaryFile(std::string_view filePath) {
         std::ifstream file(filePath.data(), std::ios::in | std::ios::binary);
-        CHECK_NOTNULL_MSG(file.good(), "Unable To Read Binary File " << filePath);
+        CHECK(file.good(), "Unable To Read Binary File: {}", filePath);
 
         file.seekg(0, std::ios_base::end);
         std::streampos fileSize = file.tellg();
@@ -51,7 +51,7 @@ namespace Vkxel {
 
     void File::WriteTextFile(std::string_view filePath, std::string_view fileContent) {
         std::ofstream file(filePath.data(), std::ios::out | std::ios::trunc | std::ios::binary);
-        CHECK_NOTNULL_MSG(file.good(), "Unable To Write Text File " << filePath);
+        CHECK(file.good(), "Unable To Write Text File: {}", filePath);
 
         file.write(fileContent.data(), fileContent.size());
         file.close();
@@ -59,7 +59,7 @@ namespace Vkxel {
 
     void File::WriteBinaryFile(std::string_view filePath, const std::vector<uint8_t> &fileContent) {
         std::ofstream file(filePath.data(), std::ios::out | std::ios::trunc | std::ios::binary);
-        CHECK_NOTNULL_MSG(file.good(), "Unable To Write Binary File " << filePath);
+        CHECK(file.good(), "Unable To Write Binary File: {}", filePath);
 
         file.write(reinterpret_cast<const char *>(fileContent.data()), fileContent.size());
         file.close();

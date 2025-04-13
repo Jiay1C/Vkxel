@@ -34,7 +34,7 @@ namespace Vkxel {
 
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         _window = glfwCreateWindow(_width, _height, _title.data(), nullptr, nullptr);
-        CHECK_NOTNULL(_window);
+        CHECK(_window);
 
         int framebuffer_width, framebuffer_height;
         glfwGetFramebufferSize(_window, &framebuffer_width, &framebuffer_height);

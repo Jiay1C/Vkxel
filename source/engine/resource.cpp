@@ -175,7 +175,7 @@ namespace Vkxel {
 
             resource.indexCount = index.size();
         } else {
-            CHECK_NOTNULL_MSG(nullptr, "Error Mesh Type");
+            CHECK(nullptr, "Error Mesh Type");
         }
 
         // Create Constant Buffer

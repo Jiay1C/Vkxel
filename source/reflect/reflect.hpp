@@ -58,7 +58,7 @@ namespace Vkxel {
         }
 
         static const entt::meta_type &GetType(const std::type_index &type) {
-            CHECK_NOTNULL_MSG(_type_map.contains(type), "Type Not Registered");
+            CHECK(_type_map.contains(type), "Type Not Registered");
             return _type_map.at(type);
         }
 
@@ -72,7 +72,7 @@ namespace Vkxel {
         static void SetName(const entt::id_type id, const std::string_view name) { _name_map[id] = name; }
 
         static std::string_view GetName(const entt::id_type id) {
-            CHECK_NOTNULL_MSG(_name_map.contains(id), "Name Not Registered");
+            CHECK(_name_map.contains(id), "Name Not Registered");
             return _name_map.at(id);
         }
 

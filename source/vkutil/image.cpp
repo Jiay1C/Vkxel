@@ -43,7 +43,7 @@ namespace Vkxel::VkUtil {
     void Image::CmdBarrier(VkCommandBuffer commandBuffer, VkPipelineStageFlags2 srcStageMask,
                            VkAccessFlags2 srcAccessMask, VkPipelineStageFlags2 dstStageMask,
                            VkAccessFlags2 dstAccessMask, VkImageLayout newLayout) {
-        CHECK_NOTNULL_MSG(imageView, "Currently CmdBarrier Only Support Image With ImageView");
+        CHECK(imageView, "Currently CmdBarrier Only Support Image With ImageView");
 
         VkImageMemoryBarrier2 image_memory_barrier{
                 .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,

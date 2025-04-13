@@ -10,14 +10,18 @@
 #include "reflect/reflect.hpp"
 #include "timer.h"
 #include "util/application.h"
+#include "util/debug.hpp"
 #include "vtime.h"
 
 namespace Vkxel {
 
     Engine::Engine(Scene &scene) : _scene(scene) {
+        s_active_engine = this;
+
         Reflect::Register();
 
-        s_active_engine = this;
+        Debug::Init();
+        Debug::LogInfo("{}::Initializing", Application::Name);
 
         _scene.Init();
         _scene.Create();
@@ -42,6 +46,8 @@ namespace Vkxel {
         _renderer->LoadScene(scene);
 
         _scene.Start();
+
+        Debug::LogInfo("{}::Running", Application::Name);
     }
 
     Engine::Status Engine::Tick() {
@@ -78,6 +84,8 @@ namespace Vkxel {
 
     Engine::~Engine() {
         s_active_engine = this;
+
+        Debug::LogInfo("{}::Exiting", Application::Name);
 
         _scene.Destroy();
 

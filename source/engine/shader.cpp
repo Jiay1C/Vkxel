@@ -25,7 +25,7 @@ namespace Vkxel {
 
     ShaderLoader::ShaderLoader() {
         createGlobalSession(_slang_global_session.writeRef());
-        CHECK_NOTNULL(_slang_global_session);
+        CHECK(_slang_global_session);
 
         slang::SessionDesc sessionDesc = {};
         slang::TargetDesc targetDesc = {};
@@ -50,7 +50,7 @@ namespace Vkxel {
 
         _slang_global_session->createSession(sessionDesc, _slang_session.writeRef());
 
-        CHECK_NOTNULL(_slang_session);
+        CHECK(_slang_session);
     }
 
     std::vector<uint8_t> ShaderLoader::LoadToBinary(std::string_view shader, bool force_compile) {
@@ -60,7 +60,7 @@ namespace Vkxel {
         std::string slang_full_path = full_path + _slang_extension;
         bool exist_spirv = File::Exist(spirv_full_path);
         bool exist_slang = File::Exist(slang_full_path);
-        CHECK_NOTNULL_MSG(exist_slang, "Shader Not Exist: " << slang_full_path);
+        CHECK(exist_slang, "Shader Not Exist: {}", slang_full_path);
         if (exist_spirv && !force_compile) {
             return LoadSpirv(spirv_full_path);
         }
@@ -100,30 +100,27 @@ namespace Vkxel {
         {
             Slang::ComPtr<slang::IBlob> diagnosticBlob;
             module = _slang_session->loadModule(shader_file.data(), diagnosticBlob.writeRef());
-            CHECK_NOTNULL_MSG(!diagnosticBlob.get(),
-                              static_cast<const char *>(diagnosticBlob.get()->getBufferPointer()));
-            CHECK_NOTNULL(module);
+            CHECK(!diagnosticBlob.get(), static_cast<const char *>(diagnosticBlob.get()->getBufferPointer()));
+            CHECK(module);
         }
 
         Slang::ComPtr<slang::IComponentType> linkedProgram;
         {
             Slang::ComPtr<slang::IBlob> diagnosticBlob;
             module->link(linkedProgram.writeRef(), diagnosticBlob.writeRef());
-            CHECK_NOTNULL_MSG(!diagnosticBlob.get(),
-                              static_cast<const char *>(diagnosticBlob.get()->getBufferPointer()));
-            CHECK_NOTNULL(linkedProgram);
+            CHECK(!diagnosticBlob.get(), static_cast<const char *>(diagnosticBlob.get()->getBufferPointer()));
+            CHECK(linkedProgram);
         }
 
         Slang::ComPtr<slang::IBlob> code;
         {
             Slang::ComPtr<slang::IBlob> diagnosticsBlob;
             SlangResult result = linkedProgram->getTargetCode(0, code.writeRef(), diagnosticsBlob.writeRef());
-            CHECK_NOTNULL_MSG(!diagnosticsBlob.get(),
-                              static_cast<const char *>(diagnosticsBlob.get()->getBufferPointer()));
-            CHECK_NOTNULL(!result);
+            CHECK(!diagnosticsBlob.get(), static_cast<const char *>(diagnosticsBlob.get()->getBufferPointer()));
+            CHECK(!result);
         }
 
-        CHECK_NOTNULL(code->getBufferSize());
+        CHECK(code->getBufferSize());
         std::vector<uint8_t> spirv(code->getBufferSize());
         std::copy_n(static_cast<const uint8_t *>(code->getBufferPointer()), code->getBufferSize(), spirv.data());
         return spirv;
