@@ -20,6 +20,13 @@ namespace Vkxel {
 
     void DualContouring::Create() { GenerateMesh(); }
 
+    void DualContouring::Update() {
+        if (enableUpdate) {
+            GenerateMesh();
+        }
+    }
+
+
     void DualContouring::GenerateMesh() {
         auto sdf_surface_result = gameObject.GetComponent<SDFSurface>();
         if (!sdf_surface_result) {

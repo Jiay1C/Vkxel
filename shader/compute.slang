@@ -7,6 +7,7 @@ struct DualContouringArguments {
     float normalDelta;
     uint schmitzIterationCount;
     float schmitzStepSize;
+    float time;
 };
 
 struct DualContouringResults {
@@ -62,6 +63,12 @@ uint getIndex1D(uint3 index) {
 
 float3 grid2World(float3 cellIndex) {
     return cellIndex * (args[0].maxBound - args[0].minBound) / args[0].gridSize + args[0].minBound;
+}
+
+float sdf(float3 position) {
+    const float dist = 0.6;
+    float3 offset = float3(sin(args[0].time) * dist + dist, 0, 0);
+    return csgSmoothUnion(sdfSphere(position - offset), sdfSphere(position + offset), 0.5);
 }
 
 float3 calcNormal(float3 position) {

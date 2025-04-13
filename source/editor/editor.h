@@ -14,11 +14,15 @@ namespace Vkxel {
         explicit EditorEngine(Scene &scene);
 
     private:
-        void SetupDebugUI() const;
-        void SetupSceneUI() const;
-        void DrawComponent(Component *component) const;
-        void DrawComponentData(entt::meta_any &component) const;
-        void DrawElement(std::string_view name, entt::meta_any &element) const;
+        void SetupDebugUI();
+        void SetupSceneUI();
+        void SetupInspectorUI();
+        void DrawComponent(entt::meta_any &component);
+        void DrawElement(std::string_view name, entt::meta_any &element);
+
+        std::string GetDisplayName(Object &object);
+
+        Component *_active_component = nullptr;
     };
 
 } // namespace Vkxel

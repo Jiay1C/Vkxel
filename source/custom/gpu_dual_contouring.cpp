@@ -10,6 +10,7 @@
 
 #include "engine/data_type.h"
 #include "engine/engine.h"
+#include "engine/vtime.h"
 #include "gpu_dual_contouring.h"
 #include "sdf_surface.h"
 #include "world/gameobject.hpp"
@@ -18,6 +19,13 @@
 namespace Vkxel {
 
     void GpuDualContouring::Start() { GenerateMesh(); }
+
+    void GpuDualContouring::Update() {
+        if (enableUpdate) {
+            GenerateMesh();
+        }
+    }
+
 
     void GpuDualContouring::GenerateMesh() {
         auto sdf_surface_result = gameObject.GetComponent<SDFSurface>();
@@ -58,12 +66,13 @@ namespace Vkxel {
                                              .maxBound = maxBound,
                                              .normalDelta = normalDelta,
                                              .schmitzIterationCount = schmitzIterationCount,
-                                             .schmitzStepSize = schmitzStepSize};
+                                             .schmitzStepSize = schmitzStepSize,
+                                             .time = Time::GetSeconds()};
         DualContouringResults results = {};
         compute_job.WriteBuffer(0, reinterpret_cast<std::byte *>(&arguments));
         compute_job.WriteBuffer(1, reinterpret_cast<std::byte *>(&results));
 
-        glm::uvec3 group_size = GetGroupSize(grid_size, {4, 4, 4});
+        glm::uvec3 group_size = GetGroupSize(grid_size, _thread_per_group);
         compute_job.DispatchImmediate(0, group_size);
         compute_job.DispatchImmediate(1, group_size);
         compute_job.DispatchImmediate(2, group_size);

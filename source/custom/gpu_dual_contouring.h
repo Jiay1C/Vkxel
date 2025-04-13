@@ -7,7 +7,6 @@
 
 #include <array>
 #include <functional>
-#include <utility>
 
 #include "glm/glm.hpp"
 
@@ -21,6 +20,8 @@ namespace Vkxel {
     public:
         using Component::Component;
 
+        bool enableUpdate = false;
+
         glm::vec3 minBound = glm::vec3{-1};
         glm::vec3 maxBound = glm::vec3{1};
         float resolution = 10;
@@ -30,6 +31,7 @@ namespace Vkxel {
         float schmitzStepSize = 0.1f;
 
         void Start() override;
+        void Update() override;
 
         void GenerateMesh();
 
@@ -44,6 +46,7 @@ namespace Vkxel {
             float normalDelta;
             uint32_t schmitzIterationCount;
             float schmitzStepSize;
+            float time;
         };
 
         struct DualContouringResults {
@@ -55,12 +58,15 @@ namespace Vkxel {
         glm::vec3 _max_bound_cache = {};
         float _resolution_cache = 0;
 
+        const glm::uvec3 _thread_per_group = {4, 4, 4};
+
         std::optional<ComputeJob> _compute = std::nullopt;
 
         SDFType _sdf;
 
         REGISTER_BEGIN(GpuDualContouring)
         REGISTER_BASE(Component)
+        REGISTER_DATA(enableUpdate)
         REGISTER_DATA(minBound)
         REGISTER_DATA(maxBound)
         REGISTER_DATA(resolution)

@@ -20,6 +20,8 @@ namespace Vkxel {
     public:
         using Component::Component;
 
+        bool enableUpdate = false;
+
         glm::vec3 minBound = glm::vec3{-1};
         glm::vec3 maxBound = glm::vec3{1};
         float resolution = 10;
@@ -29,6 +31,7 @@ namespace Vkxel {
         float schmitzStepSize = 0.1f;
 
         void Create() override;
+        void Update() override;
 
         void GenerateMesh();
 
@@ -55,6 +58,7 @@ namespace Vkxel {
 
         REGISTER_BEGIN(DualContouring)
         REGISTER_BASE(Component)
+        REGISTER_DATA(enableUpdate)
         REGISTER_DATA(minBound)
         REGISTER_DATA(maxBound)
         REGISTER_DATA(resolution)

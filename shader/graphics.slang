@@ -19,6 +19,11 @@ struct VertexOutput
     float3 color;
 };
 
+struct FrameData{
+    uint tick;
+    float time;
+};
+
 struct SceneData{
     float4x4 viewMatrix;
     float4x4 projectionMatrix;
@@ -27,6 +32,7 @@ struct SceneData{
 
 struct ConstantBufferPerFrame
 {
+    FrameData frame;
     SceneData scene;
 };
 
@@ -76,8 +82,8 @@ VertexOutput vertexMain(VertexInput input)
 [shader("fragment")]
 float4 fragmentMain(VertexOutput input) : SV_Target
 {
-
-    float3 lightPosition = {-5,5,5};
+    float time = cbufferFrame.frame.time;
+    float3 lightPosition = {-10 * sin(time), 10, 10 * cos(time)};
     float3 lightColor = {1,1,1};
 
     float3 normal = normalize(input.worldNormal);
