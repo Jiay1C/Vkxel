@@ -299,10 +299,34 @@ namespace Vkxel {
         vkUpdateDescriptorSets(_device, static_cast<uint32_t>(descriptor_set_write_info.size()),
                                descriptor_set_write_info.data(), 0, nullptr);
 
+        VkSemaphore image_ready_semaphore = nullptr;
+        VkSemaphore render_complete_semaphore = nullptr;
+        VkSemaphoreCreateInfo semaphore_create_info{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
+        CHECK_RESULT_VK(vkCreateSemaphore(_device, &semaphore_create_info, nullptr, &image_ready_semaphore));
+        CHECK_RESULT_VK(vkCreateSemaphore(_device, &semaphore_create_info, nullptr, &render_complete_semaphore));
+
+        VkCommandBuffer command_buffer = nullptr;
+        VkCommandBufferAllocateInfo command_buffer_allocate_info{.sType =
+                                                                         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+                                                                 .commandPool = _command_pool,
+                                                                 .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+                                                                 .commandBufferCount = 1};
+
+        CHECK_RESULT_VK(vkAllocateCommandBuffers(_device, &command_buffer_allocate_info, &command_buffer));
+
+        VkFence command_fence = nullptr;
+        VkFenceCreateInfo fence_create_info{.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+                                            .flags = VK_FENCE_CREATE_SIGNALED_BIT};
+        CHECK_RESULT_VK(vkCreateFence(_device, &fence_create_info, nullptr, &command_fence));
+
         return {.constantBuffer = constant_buffer,
                 .colorImage = color_image,
                 .depthImage = depth_image,
-                .descriptorSet = descriptor_set};
+                .descriptorSet = descriptor_set,
+                .imageReadySemaphore = image_ready_semaphore,
+                .renderCompleteSemaphore = render_complete_semaphore,
+                .commandBuffer = command_buffer,
+                .commandFence = command_fence};
     }
 
     void ResourceManager::UpdateFrameResource(const VkCommandBuffer commandBuffer, const SceneData &scene,
@@ -332,6 +356,11 @@ namespace Vkxel {
         resource.depthImage.Destroy();
         resource.colorImage.Destroy();
         resource.descriptorSet.Destroy();
+
+        vkDestroySemaphore(_device, resource.imageReadySemaphore, nullptr);
+        vkDestroySemaphore(_device, resource.renderCompleteSemaphore, nullptr);
+        vkFreeCommandBuffers(_device, _command_pool, 1, &resource.commandBuffer);
+        vkDestroyFence(_device, resource.commandFence, nullptr);
 
         resource = {};
     }

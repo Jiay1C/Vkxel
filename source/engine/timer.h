@@ -20,6 +20,7 @@ namespace Vkxel {
         static void Update();
         static void ExecuteAfterTicks(TickType tick, const Action &action);
         static void ExecuteAfterSeconds(float second, const Action &action);
+        static void ImmediateExecute();
 
     private:
         using TickActionType = std::pair<TickType, Action>;

@@ -12,7 +12,6 @@
 
 #include "data_type.h"
 #include "resource_type.h"
-#include "vkutil/buffer.h"
 
 namespace Vkxel {
 
@@ -40,13 +39,11 @@ namespace Vkxel {
 
     class ResourceManager {
     public:
-        ResourceManager(const VkDevice device, const uint32_t queueFamily, const VkQueue queue,
-                        const VkCommandPool commandPool, const VkDescriptorPool descriptorPool,
-                        const VkDescriptorSetLayout descriptorSetLayoutFrame,
+        ResourceManager(const VkDevice device, const uint32_t queueFamily, const VkCommandPool commandPool,
+                        const VkDescriptorPool descriptorPool, const VkDescriptorSetLayout descriptorSetLayoutFrame,
                         const VkDescriptorSetLayout descriptorSetLayoutObject, const VmaAllocator allocator) :
-            _device(device), _queue_family(queueFamily), _queue(queue), _command_pool(commandPool),
-            _descriptor_pool(descriptorPool), _allocator(allocator),
-            _descriptor_set_layout_frame(descriptorSetLayoutFrame),
+            _device(device), _queue_family(queueFamily), _command_pool(commandPool), _descriptor_pool(descriptorPool),
+            _allocator(allocator), _descriptor_set_layout_frame(descriptorSetLayoutFrame),
             _descriptor_set_layout_object(descriptorSetLayoutObject) {}
 
         ObjectResource CreateObjectResource(const ObjectData &object);
@@ -63,7 +60,6 @@ namespace Vkxel {
     private:
         VkDevice _device = nullptr;
         uint32_t _queue_family = 0;
-        VkQueue _queue = nullptr;
         VkCommandPool _command_pool = nullptr;
         VkDescriptorPool _descriptor_pool = nullptr;
         VmaAllocator _allocator = nullptr;

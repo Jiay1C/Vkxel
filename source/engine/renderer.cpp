@@ -94,6 +94,11 @@ namespace Vkxel {
         _compute_queue = compute_queue_result.value();
         _compute_queue_family_index = _device.get_queue_index(vkb::QueueType::compute).value();
 
+        auto transfer_queue_result = _device.get_queue(vkb::QueueType::transfer);
+        CHECK(transfer_queue_result, transfer_queue_result.error().message());
+        _transfer_queue = transfer_queue_result.value();
+        _transfer_queue_family_index = _device.get_queue_index(vkb::QueueType::transfer).value();
+
         // Create Command Pool
         VkCommandPoolCreateInfo command_pool_create_info{.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
                                                          .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
@@ -108,6 +113,14 @@ namespace Vkxel {
 
         CHECK_RESULT_VK(
                 vkCreateCommandPool(_device, &compute_command_pool_create_info, nullptr, &_compute_command_pool));
+
+        VkCommandPoolCreateInfo transfer_command_pool_create_info{
+                .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+                .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+                .queueFamilyIndex = _transfer_queue_family_index};
+
+        CHECK_RESULT_VK(
+                vkCreateCommandPool(_device, &transfer_command_pool_create_info, nullptr, &_transfer_command_pool));
 
         // Create Descriptor Pool
         std::array descriptor_pool_size = {
@@ -160,12 +173,13 @@ namespace Vkxel {
     void Renderer::Destroy() {
         CHECK(_init);
 
-        vkDeviceWaitIdle(_device);
+        WaitIdle();
 
         _gui.DestroyVK();
 
         vmaDestroyAllocator(_allocator);
         vkDestroyDescriptorPool(_device, _descriptor_pool, nullptr);
+        vkDestroyCommandPool(_device, _transfer_command_pool, nullptr);
         vkDestroyCommandPool(_device, _compute_command_pool, nullptr);
         vkDestroyCommandPool(_device, _command_pool, nullptr);
         vkb::destroy_swapchain(_swapchain);
@@ -183,21 +197,6 @@ namespace Vkxel {
         _scene = scene;
 
         _gui.AddItem(Application::DefaultCanvasPanelName.data(), [&]() { _context.uis(); });
-
-        // RenderContext context;
-        // _scene.value().get().Draw(context);
-        // CHECK_NOTNULL_MSG(!context.objects.empty(), "Empty Scene");
-
-        VkSemaphoreCreateInfo semaphore_create_info{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
-
-        CHECK_RESULT_VK(vkCreateSemaphore(_device, &semaphore_create_info, nullptr, &_image_ready_semaphore));
-        CHECK_RESULT_VK(vkCreateSemaphore(_device, &semaphore_create_info, nullptr, &_render_complete_semaphore));
-
-
-        VkFenceCreateInfo fence_create_info{.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-                                            .flags = VK_FENCE_CREATE_SIGNALED_BIT};
-        CHECK_RESULT_VK(vkCreateFence(_device, &fence_create_info, nullptr, &_command_buffer_fence));
-
 
         // Create Graphics Pipeline Descriptor Set Layout
         std::array descriptor_set_layout_binding = {
@@ -217,13 +216,15 @@ namespace Vkxel {
                                                     &_descriptor_set_layout_object));
 
         // Upload Data
-        _resource_manager = std::make_unique<ResourceManager>(_device, _queue_family_index, _queue, _command_pool,
+        _resource_manager = std::make_unique<ResourceManager>(_device, _queue_family_index, _command_pool,
                                                               _descriptor_pool, _descriptor_set_layout_frame,
                                                               _descriptor_set_layout_object, _allocator);
-        _resource_uploader =
-                std::make_unique<ResourceUploader>(_device, _queue_family_index, _queue, _command_pool, _allocator);
+        _resource_uploader = std::make_unique<ResourceUploader>(_device, _transfer_queue_family_index, _transfer_queue,
+                                                                _transfer_command_pool, _allocator);
 
-        _frame_resource = _resource_manager->CreateFrameResource(_swapchain.extent.width, _swapchain.extent.height);
+        for (auto &resource: _frame_resource) {
+            resource = _resource_manager->CreateFrameResource(_swapchain.extent.width, _swapchain.extent.height);
+        }
 
         // _object_resource.reserve(context.objects.size());
         //
@@ -238,35 +239,22 @@ namespace Vkxel {
         // Create Graphics Pipeline
         _pipeline = VkUtil::DefaultGraphicsPipelineBuilder(_device).Build(
                 {_descriptor_set_layout_frame, _descriptor_set_layout_object});
-
-        // Create Command Buffer
-        VkCommandBufferAllocateInfo command_buffer_allocate_info{.sType =
-                                                                         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-                                                                 .commandPool = _command_pool,
-                                                                 .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-                                                                 .commandBufferCount = 1};
-
-        CHECK_RESULT_VK(vkAllocateCommandBuffers(_device, &command_buffer_allocate_info, &_command_buffer));
     }
 
     void Renderer::UnloadScene() {
         CHECK(_init);
         CHECK(_scene);
 
-        vkDeviceWaitIdle(_device);
-
-        vkFreeCommandBuffers(_device, _command_pool, 1, &_command_buffer);
+        WaitIdle();
 
         for (auto &object: _object_resource | std::views::values) {
             _resource_manager->DestroyObjectResource(object);
         }
         _object_resource.clear();
 
-        _resource_manager->DestroyFrameResource(_frame_resource);
-
-        vkDestroyFence(_device, _command_buffer_fence, nullptr);
-        vkDestroySemaphore(_device, _image_ready_semaphore, nullptr);
-        vkDestroySemaphore(_device, _render_complete_semaphore, nullptr);
+        for (auto &resource: _frame_resource) {
+            _resource_manager->DestroyFrameResource(resource);
+        }
 
         vkDestroyDescriptorSetLayout(_device, _descriptor_set_layout_frame, nullptr);
         vkDestroyDescriptorSetLayout(_device, _descriptor_set_layout_object, nullptr);
@@ -289,25 +277,27 @@ namespace Vkxel {
             return;
         }
 
-        CHECK_RESULT_VK(
-                vkWaitForFences(_device, 1, &_command_buffer_fence, VK_TRUE, std::numeric_limits<uint64_t>::max()));
-        CHECK_RESULT_VK(vkResetFences(_device, 1, &_command_buffer_fence));
+        FrameResource &frame = _frame_resource[_active_frame_resource_index];
 
-        vkResetCommandBuffer(_command_buffer, 0);
+        CHECK_RESULT_VK(
+                vkWaitForFences(_device, 1, &frame.commandFence, VK_TRUE, std::numeric_limits<uint64_t>::max()));
+        CHECK_RESULT_VK(vkResetFences(_device, 1, &frame.commandFence));
+
+        vkResetCommandBuffer(frame.commandBuffer, 0);
 
         _context = {};
         _scene.value().get().Draw(_context);
 
         uint32_t image_index;
         CHECK_RESULT_VK(vkAcquireNextImageKHR(_device, _swapchain, std::numeric_limits<uint64_t>::max(),
-                                              _image_ready_semaphore, nullptr, &image_index));
+                                              frame.imageReadySemaphore, nullptr, &image_index));
 
         VkImage present_image = _swapchain_image.at(image_index);
 
         VkCommandBufferBeginInfo command_buffer_begin_info{.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
                                                            .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT};
 
-        CHECK_RESULT_VK(vkBeginCommandBuffer(_command_buffer, &command_buffer_begin_info));
+        CHECK_RESULT_VK(vkBeginCommandBuffer(frame.commandBuffer, &command_buffer_begin_info));
 
         VkViewport viewport{.x = 0.0f,
                             .y = 0.0f,
@@ -317,50 +307,51 @@ namespace Vkxel {
                             .maxDepth = 1.0f};
         VkRect2D scissor{.offset = VkOffset2D{0, 0}, .extent = _swapchain.extent};
 
-        vkCmdSetViewport(_command_buffer, 0, 1, &viewport);
-        vkCmdSetScissor(_command_buffer, 0, 1, &scissor);
+        vkCmdSetViewport(frame.commandBuffer, 0, 1, &viewport);
+        vkCmdSetScissor(frame.commandBuffer, 0, 1, &scissor);
 
         // Upload Scene
         for (const auto &object: _context.objects) {
             if (_object_resource.contains(object.objectId)) {
                 ObjectResource &object_resource = _object_resource.at(object.objectId);
                 if (object.isDirty) {
-                    _resource_manager->DestroyObjectResource(object_resource);
+                    Timer::ExecuteAfterTicks(_frame_resource.size(), [&, object_resource]() mutable {
+                        _resource_manager->DestroyObjectResource(object_resource);
+                    });
                     object_resource = _resource_manager->CreateObjectResource(object);
                     _resource_uploader->AddObject(object, object_resource);
                 } else {
                     object_resource.isActive = true;
                 }
-                _resource_manager->UpdateObjectResource(_command_buffer, object, object_resource);
+                _resource_manager->UpdateObjectResource(frame.commandBuffer, object, object_resource);
             } else {
                 ObjectResource &object_resource = _object_resource[object.objectId] =
                         _resource_manager->CreateObjectResource(object);
                 _resource_uploader->AddObject(object, object_resource);
-                _resource_manager->UpdateObjectResource(_command_buffer, object, object_resource);
+                _resource_manager->UpdateObjectResource(frame.commandBuffer, object, object_resource);
             }
         }
-        _resource_manager->UpdateFrameResource(_command_buffer, _context.scene, _frame_resource);
+        _resource_manager->UpdateFrameResource(frame.commandBuffer, _context.scene, frame);
 
         // Upload Object Mesh Data (Block Wait)
         // TODO Support Async Upload
         _resource_uploader->Upload();
 
-        _frame_resource.colorImage.CmdBarrier(_command_buffer, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT, VK_ACCESS_2_NONE,
-                                              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                              VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-                                              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        frame.colorImage.CmdBarrier(frame.commandBuffer, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT, VK_ACCESS_2_NONE,
+                                    VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                    VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
 
         // Color Pass
         VkRenderingAttachmentInfo color_attachment_info{.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-                                                        .imageView = _frame_resource.colorImage.imageView,
+                                                        .imageView = frame.colorImage.imageView,
                                                         .imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
                                                         .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
                                                         .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
                                                         .clearValue = {0, 0, 0, 0}};
 
         VkRenderingAttachmentInfo depth_attachment_info{.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-                                                        .imageView = _frame_resource.depthImage.imageView,
+                                                        .imageView = frame.depthImage.imageView,
                                                         .imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
                                                         .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
                                                         .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
@@ -375,31 +366,31 @@ namespace Vkxel {
                                        .pStencilAttachment = nullptr};
 
         VkDeviceSize offset_zero = 0;
-        vkCmdBeginRendering(_command_buffer, &rendering_info); // Camera Pass
-        vkCmdBindPipeline(_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline.pipeline);
-        vkCmdBindDescriptorSets(_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline.layout, 0, 1,
-                                &_frame_resource.descriptorSet.set, 0, nullptr);
+        vkCmdBeginRendering(frame.commandBuffer, &rendering_info); // Camera Pass
+        vkCmdBindPipeline(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline.pipeline);
+        vkCmdBindDescriptorSets(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline.layout, 0, 1,
+                                &frame.descriptorSet.set, 0, nullptr);
 
         for (const auto &object: _object_resource | std::views::values) {
             if (object.isActive) {
-                vkCmdBindDescriptorSets(_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline.layout, 1, 1,
+                vkCmdBindDescriptorSets(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline.layout, 1, 1,
                                         &object.descriptorSet.set, 0, nullptr);
-                vkCmdBindIndexBuffer(_command_buffer, object.indexBuffer.buffer, offset_zero, VK_INDEX_TYPE_UINT32);
-                vkCmdBindVertexBuffers(_command_buffer, 0, 1, &object.vertexBuffer.buffer, &offset_zero);
-                vkCmdDrawIndexed(_command_buffer, object.indexCount, 1, object.firstIndex, 0, 0);
+                vkCmdBindIndexBuffer(frame.commandBuffer, object.indexBuffer.buffer, offset_zero, VK_INDEX_TYPE_UINT32);
+                vkCmdBindVertexBuffers(frame.commandBuffer, 0, 1, &object.vertexBuffer.buffer, &offset_zero);
+                vkCmdDrawIndexed(frame.commandBuffer, object.indexCount, 1, object.firstIndex, 0, 0);
             }
         }
 
-        vkCmdEndRendering(_command_buffer);
+        vkCmdEndRendering(frame.commandBuffer);
 
         // UI Pass
-        _frame_resource.colorImage.CmdBarrier(
-                _command_buffer, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT);
+        frame.colorImage.CmdBarrier(frame.commandBuffer, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                    VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                                    VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                    VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT);
 
         VkRenderingAttachmentInfo color_attachment_info_ui{.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-                                                           .imageView = _frame_resource.colorImage.imageView,
+                                                           .imageView = frame.colorImage.imageView,
                                                            .imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
                                                            .loadOp = VK_ATTACHMENT_LOAD_OP_LOAD,
                                                            .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
@@ -413,14 +404,14 @@ namespace Vkxel {
                                           .pDepthAttachment = nullptr,
                                           .pStencilAttachment = nullptr};
 
-        vkCmdBeginRendering(_command_buffer, &rendering_info_ui);
-        _gui.Render(_command_buffer);
-        vkCmdEndRendering(_command_buffer);
+        vkCmdBeginRendering(frame.commandBuffer, &rendering_info_ui);
+        _gui.Render(frame.commandBuffer);
+        vkCmdEndRendering(frame.commandBuffer);
 
-        _frame_resource.colorImage.CmdBarrier(
-                _command_buffer, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-                VK_PIPELINE_STAGE_2_BLIT_BIT, VK_ACCESS_2_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+        frame.colorImage.CmdBarrier(frame.commandBuffer, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                    VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                                    VK_PIPELINE_STAGE_2_BLIT_BIT, VK_ACCESS_2_TRANSFER_READ_BIT,
+                                    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
         VkImageMemoryBarrier2 present_image_memory_barrier{
                 .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
@@ -444,7 +435,7 @@ namespace Vkxel {
                                          .imageMemoryBarrierCount = 1,
                                          .pImageMemoryBarriers = &present_image_memory_barrier};
 
-        vkCmdPipelineBarrier2(_command_buffer, &dependency_info);
+        vkCmdPipelineBarrier2(frame.commandBuffer, &dependency_info);
 
         // Perform Blit Operation
         VkImageBlit2 blit_region{
@@ -468,7 +459,7 @@ namespace Vkxel {
         };
 
         VkBlitImageInfo2 blit_info{.sType = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2,
-                                   .srcImage = _frame_resource.colorImage.image,
+                                   .srcImage = frame.colorImage.image,
                                    .srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                                    .dstImage = present_image,
                                    .dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
@@ -476,7 +467,7 @@ namespace Vkxel {
                                    .pRegions = &blit_region,
                                    .filter = VK_FILTER_LINEAR};
 
-        vkCmdBlitImage2(_command_buffer, &blit_info);
+        vkCmdBlitImage2(frame.commandBuffer, &blit_info);
 
         present_image_memory_barrier.srcStageMask = VK_PIPELINE_STAGE_2_BLIT_BIT;
         present_image_memory_barrier.srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
@@ -485,18 +476,18 @@ namespace Vkxel {
         present_image_memory_barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
         present_image_memory_barrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
-        vkCmdPipelineBarrier2(_command_buffer, &dependency_info);
+        vkCmdPipelineBarrier2(frame.commandBuffer, &dependency_info);
 
-        CHECK_RESULT_VK(vkEndCommandBuffer(_command_buffer));
+        CHECK_RESULT_VK(vkEndCommandBuffer(frame.commandBuffer));
 
         VkCommandBufferSubmitInfo command_buffer_submit_info{.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
-                                                             .commandBuffer = _command_buffer};
+                                                             .commandBuffer = frame.commandBuffer};
         VkSemaphoreSubmitInfo image_ready_semaphore_submit_info{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
-                                                                .semaphore = _image_ready_semaphore,
+                                                                .semaphore = frame.imageReadySemaphore,
                                                                 .stageMask = VK_PIPELINE_STAGE_2_BLIT_BIT};
 
         VkSemaphoreSubmitInfo render_complete_semaphore_submit_info{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
-                                                                    .semaphore = _render_complete_semaphore,
+                                                                    .semaphore = frame.renderCompleteSemaphore,
                                                                     .stageMask =
                                                                             VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT};
 
@@ -507,12 +498,12 @@ namespace Vkxel {
                                   .pCommandBufferInfos = &command_buffer_submit_info,
                                   .signalSemaphoreInfoCount = 1,
                                   .pSignalSemaphoreInfos = &render_complete_semaphore_submit_info};
-        vkQueueSubmit2(_queue, 1, &submit_info, _command_buffer_fence);
+        vkQueueSubmit2(_queue, 1, &submit_info, frame.commandFence);
 
 
         VkPresentInfoKHR present_info{.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
                                       .waitSemaphoreCount = 1,
-                                      .pWaitSemaphores = &_render_complete_semaphore,
+                                      .pWaitSemaphores = &frame.renderCompleteSemaphore,
                                       .swapchainCount = 1,
                                       .pSwapchains = &_swapchain.swapchain,
                                       .pImageIndices = &image_index,
@@ -523,7 +514,9 @@ namespace Vkxel {
         // Release Outdated Object Resource
         for (auto it = _object_resource.begin(); it != _object_resource.end();) {
             if (auto &[object_id, object_resource] = *it; !object_resource.isActive) {
-                _resource_manager->DestroyObjectResource(object_resource);
+                Timer::ExecuteAfterTicks(_frame_resource.size(), [&, object_resource]() mutable {
+                    _resource_manager->DestroyObjectResource(object_resource);
+                });
                 it = _object_resource.erase(it);
             } else {
                 // Mark Object As Inactive
@@ -531,10 +524,14 @@ namespace Vkxel {
                 ++it;
             }
         }
+
+        if (++_active_frame_resource_index >= _frame_resource.size()) {
+            _active_frame_resource_index = 0;
+        }
     }
 
     void Renderer::Resize() {
-        vkDeviceWaitIdle(_device);
+        WaitIdle();
 
         vkb::SwapchainBuilder swapchain_builder(_device);
         auto swapchain_result = swapchain_builder.set_old_swapchain(_swapchain)
@@ -549,10 +546,14 @@ namespace Vkxel {
         CHECK(swapchain_image_result, swapchain_image_result.error().message());
         _swapchain_image = std::move(swapchain_image_result.value());
 
-
-        _resource_manager->DestroyFrameResource(_frame_resource);
-        _frame_resource = _resource_manager->CreateFrameResource(_swapchain.extent.width, _swapchain.extent.height);
+        for (auto &resource: _frame_resource) {
+            _resource_manager->DestroyFrameResource(resource);
+            resource = _resource_manager->CreateFrameResource(_swapchain.extent.width, _swapchain.extent.height);
+        }
     }
+
+    void Renderer::WaitIdle() const { vkDeviceWaitIdle(_device); }
+
 
     ComputeJob Renderer::CreateComputeJob() {
         return {_device,   _compute_queue_family_index, _compute_queue, _compute_command_pool, _descriptor_pool,

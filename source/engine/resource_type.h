@@ -31,6 +31,12 @@ namespace Vkxel {
         VkUtil::Image depthImage = {};
 
         VkUtil::DescriptorSet descriptorSet = {};
+
+        VkSemaphore imageReadySemaphore = nullptr;
+        VkSemaphore renderCompleteSemaphore = nullptr;
+
+        VkCommandBuffer commandBuffer = nullptr;
+        VkFence commandFence = nullptr;
     };
 
 } // namespace Vkxel

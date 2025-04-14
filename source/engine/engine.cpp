@@ -87,9 +87,12 @@ namespace Vkxel {
 
         Debug::LogInfo("{}::Exiting", Application::Name);
 
-        _scene.Destroy();
+        _renderer->WaitIdle();
+
+        Timer::ImmediateExecute();
 
         _renderer->UnloadScene();
+        _scene.Destroy();
         _renderer->Destroy();
 
         _window->Destroy();
