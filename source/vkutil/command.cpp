@@ -34,18 +34,18 @@ namespace Vkxel::VkUtil {
 
         CHECK_RESULT_VK(vkEndCommandBuffer(_command_buffer));
 
-        VkSubmitInfo submit_info{
-                .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-                .commandBufferCount = 1,
-                .pCommandBuffers = &_command_buffer,
-        };
-
         VkFenceCreateInfo fence_create_info{
                 .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
         };
         CHECK_RESULT_VK(vkCreateFence(_device, &fence_create_info, nullptr, &_fence));
 
-        CHECK_RESULT_VK(vkQueueSubmit(_queue, 1, &submit_info, _fence));
+        VkCommandBufferSubmitInfo command_buffer_submit_info{.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
+                                                             .commandBuffer = _command_buffer};
+
+        VkSubmitInfo2 submit_info{.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2,
+                                  .commandBufferInfoCount = 1,
+                                  .pCommandBufferInfos = &command_buffer_submit_info};
+        vkQueueSubmit2(_queue, 1, &submit_info, _fence);
 
         CHECK_RESULT_VK(vkWaitForFences(_device, 1, &_fence, VK_TRUE, std::numeric_limits<uint64_t>::max()));
         vkDestroyFence(_device, _fence, nullptr);

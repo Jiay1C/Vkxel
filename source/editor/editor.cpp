@@ -21,7 +21,7 @@ namespace Vkxel {
         _gui->AddItem("Debug", [&]() {
             ImGui::Text(std::format("Frame {0} ({1} ms)", Time::GetTicks(), Time::GetRealDeltaSeconds() * 1000).data());
             ImGui::Text(std::format("Time {0} s", Time::GetSeconds()).data());
-            ImGui::Text(std::format("Size ({0}, {1})", _window->GetWidth(), _window->GetHeight()).data());
+            ImGui::Text(std::format("Window ({0}, {1})", _window->GetWidth(), _window->GetHeight()).data());
             ImGui::Text(std::format("Resolution ({0}, {1})", _window->GetFrameBufferWidth(),
                                     _window->GetFrameBufferHeight())
                                 .data());
