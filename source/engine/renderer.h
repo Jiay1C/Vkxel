@@ -66,8 +66,11 @@ namespace Vkxel {
         VkQueue _queue = nullptr;
         VkCommandPool _command_pool = nullptr;
         VkDescriptorPool _descriptor_pool = nullptr;
-
         uint32_t _queue_family_index = 0;
+
+        VkQueue _compute_queue = nullptr;
+        VkCommandPool _compute_command_pool = nullptr;
+        uint32_t _compute_queue_family_index = 0;
 
         // Resource Related Handle
 
@@ -87,6 +90,7 @@ namespace Vkxel {
         VkSemaphore _image_ready_semaphore = nullptr;
         VkSemaphore _render_complete_semaphore = nullptr;
 
+        VkCommandBuffer _command_buffer = nullptr;
         VkFence _command_buffer_fence = nullptr;
 
         std::optional<std::reference_wrapper<const Scene>> _scene = std::nullopt;
