@@ -36,7 +36,7 @@ namespace Vkxel {
         _tickAction.emplace(_current_ticks + tick, action);
     }
 
-    void Timer::ExecuteAfterSeconds(float second, const Action &action) {
+    void Timer::ExecuteAfterSeconds(const float second, const Action &action) {
         if (second <= 0) {
             action();
             return;
@@ -44,5 +44,17 @@ namespace Vkxel {
         _timeAction.emplace(_current_seconds + second, action);
     }
 
+    void Timer::ImmediateExecute() {
+        while (!_tickAction.empty()) {
+            const auto &[ticks, action] = _tickAction.top();
+            action();
+            _tickAction.pop();
+        }
+        while (!_timeAction.empty()) {
+            const auto &[seconds, action] = _timeAction.top();
+            action();
+            _timeAction.pop();
+        }
+    }
 
 } // namespace Vkxel

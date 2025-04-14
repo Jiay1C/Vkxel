@@ -5,6 +5,9 @@
 #ifndef VKXEL_RENDERER_H
 #define VKXEL_RENDERER_H
 
+#include <array>
+#include <cstdint>
+#include <optional>
 #include <unordered_map>
 
 #include "VkBootstrap.h"
@@ -36,6 +39,8 @@ namespace Vkxel {
         void Render();
 
         void Resize();
+
+        void WaitIdle() const;
 
         ComputeJob CreateComputeJob();
 
@@ -69,8 +74,12 @@ namespace Vkxel {
         uint32_t _queue_family_index = 0;
 
         VkQueue _compute_queue = nullptr;
-        VkCommandPool _compute_command_pool = nullptr;
         uint32_t _compute_queue_family_index = 0;
+        VkCommandPool _compute_command_pool = nullptr;
+
+        VkQueue _transfer_queue = nullptr;
+        uint32_t _transfer_queue_family_index = 0;
+        VkCommandPool _transfer_command_pool = nullptr;
 
         // Resource Related Handle
 
@@ -81,17 +90,12 @@ namespace Vkxel {
 
         // Frame Resources
         VkDescriptorSetLayout _descriptor_set_layout_frame = nullptr;
-        FrameResource _frame_resource = {};
+        std::array<FrameResource, 2> _frame_resource = {};
+        size_t _active_frame_resource_index = 0;
 
         // Object Resources
         VkDescriptorSetLayout _descriptor_set_layout_object = nullptr;
         std::unordered_map<IdType, ObjectResource> _object_resource;
-
-        VkSemaphore _image_ready_semaphore = nullptr;
-        VkSemaphore _render_complete_semaphore = nullptr;
-
-        VkCommandBuffer _command_buffer = nullptr;
-        VkFence _command_buffer_fence = nullptr;
 
         std::optional<std::reference_wrapper<const Scene>> _scene = std::nullopt;
     };
