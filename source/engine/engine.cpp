@@ -74,7 +74,6 @@ namespace Vkxel {
         }
 
         if (_background_mode) {
-            _renderer->WaitIdle();
             constexpr float background_mode_sleep_seconds = 1.0f / Application::BackgroundModeMaxFps;
             std::this_thread::sleep_for(std::chrono::duration<float>(background_mode_sleep_seconds));
             return Status::Sleeping;
