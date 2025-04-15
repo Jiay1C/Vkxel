@@ -274,6 +274,7 @@ namespace Vkxel {
         CHECK(_scene);
 
         if (_pause) {
+            WaitIdle();
             return;
         }
 
