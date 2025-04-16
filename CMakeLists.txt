@@ -26,6 +26,13 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${PROJECT_NAME}/${RUNTIME
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${PROJECT_NAME}/${LIBRARY_OUTPUT_PATH})
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${PROJECT_NAME}/${ARCHIVE_OUTPUT_PATH})
 
+# Address Sanitizer
+option(ENABLE_ASAN "Enable Address Sanitizer" OFF)
+if (ENABLE_ASAN)
+    message(STATUS "Address Sanitizer enabled")
+    add_compile_options("/fsanitize=address")
+endif ()
+
 # GLFW
 find_package(glfw3 3.4 REQUIRED)
 
