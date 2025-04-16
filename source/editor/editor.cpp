@@ -30,77 +30,94 @@ namespace Vkxel {
 
     void EditorEngine::SetupSceneUI() {
         _gui->AddItem("Scene", [&]() {
-            for (auto &gameobject: _scene.GetGameObjectsView()) {
-                ImGui::PushID(gameobject.id);
-
-                // Name
-                if (ImGui::TreeNode(GetDisplayName(gameobject).data())) {
-                    ImGui::InputText(
-                            "Name", gameobject.name.data(), gameobject.name.capacity() + 1,
-                            ImGuiInputTextFlags_CallbackResize,
-                            [](ImGuiInputTextCallbackData *callback_data) {
-                                if (callback_data->EventFlag == ImGuiInputTextFlags_CallbackResize) {
-                                    std::string &callback_str = *static_cast<std::string *>(callback_data->UserData);
-                                    callback_str.resize(callback_data->BufTextLen);
-                                    callback_data->Buf = callback_str.data();
-                                }
-                                return 0;
-                            },
-                            &gameobject.name);
-
-                    // Transform
-                    ImGui::PushID(gameobject.transform.id);
-                    ImGui::Bullet();
-                    if (ImGui::Button(GetDisplayName(gameobject.transform).data())) {
-                        _active_component = &gameobject.transform;
-                    }
-                    ImGui::PopID();
-
-                    // Other Components
-                    for (const auto &component: gameobject.GetComponentsView()) {
-                        ImGui::PushID(component->id);
-                        ImGui::Bullet();
-                        if (ImGui::Button(GetDisplayName(*component).data())) {
-                            _active_component = component.get();
-                        }
-                        ImGui::PopID();
-                    }
-
-                    if (ImGui::SmallButton("Destroy")) {
-                        _active_component = nullptr;
-                        _scene.DestroyGameObject(gameobject);
-                    }
-
-                    ImGui::TreePop();
+            for (auto &gameObject: _scene.GetGameObjectsView()) {
+                if (!gameObject.transform.GetParent()) {
+                    DrawGameObjectTree(gameObject);
                 }
-                ImGui::PopID();
             }
         });
     }
 
     void EditorEngine::SetupInspectorUI() {
         _gui->AddItem("Inspector", [&]() {
-            if (_active_component) {
-                ImGui::SeparatorText(std::format("{0} :: {1}", GetDisplayName(_active_component->gameObject),
-                                                 GetDisplayName(*_active_component))
-                                             .data());
-                auto instance = Reflect::GetType(typeid(*_active_component)).from_void(_active_component);
-                DrawComponent(instance);
-                if (ImGui::SmallButton("Remove")) {
-                    _active_component->gameObject.RemoveComponent(*_active_component);
-                    _active_component = nullptr;
-                }
+            if (_active_gameobject) {
+                DrawGameObject(*_active_gameobject);
             } else {
                 ImGui::SeparatorText("");
             }
         });
     }
 
+    void EditorEngine::DrawGameObjectTree(GameObject &gameObject) {
+        ImGui::PushID(static_cast<int>(gameObject.id));
 
-    void EditorEngine::DrawComponent(entt::meta_any &component) {
+        const auto children = gameObject.transform.GetChildren();
+
+        bool showTree = false;
+        if (children.empty()) {
+            ImGui::Bullet();
+        } else {
+            showTree = ImGui::TreeNode("");
+        }
+
+        ImGui::SameLine();
+        if (ImGui::SmallButton(GetDisplayName(gameObject).data())) {
+            _active_gameobject = &gameObject;
+        }
+
+        if (showTree) {
+            for (auto &child: children) {
+                DrawGameObjectTree(child.get().gameObject);
+            }
+            ImGui::TreePop();
+        }
+        ImGui::PopID();
+    }
+
+    void EditorEngine::DrawGameObject(GameObject &gameObject) {
+        ImGui::SeparatorText(GetDisplayName(gameObject).data());
+
+        ImGui::InputText(
+                "Name", gameObject.name.data(), gameObject.name.capacity() + 1, ImGuiInputTextFlags_CallbackResize,
+                [](ImGuiInputTextCallbackData *callback_data) {
+                    if (callback_data->EventFlag == ImGuiInputTextFlags_CallbackResize) {
+                        std::string &callback_str = *static_cast<std::string *>(callback_data->UserData);
+                        callback_str.resize(callback_data->BufTextLen);
+                        callback_data->Buf = callback_str.data();
+                    }
+                    return 0;
+                },
+                &gameObject.name);
+
+        DrawComponent(gameObject.transform);
+
+        for (const auto &component: gameObject.GetComponentsView()) {
+            DrawComponent(*component);
+        }
+
+        ImGui::SeparatorText("");
+
+        if (ImGui::SmallButton("Destroy")) {
+            _active_gameobject = nullptr;
+            _scene.DestroyGameObject(gameObject);
+        }
+    }
+
+    void EditorEngine::DrawComponent(Component &component) {
+        ImGui::PushID(static_cast<int>(component.id));
+        ImGui::SeparatorText(GetDisplayName(component).data());
+        auto instance = Reflect::GetType(typeid(component)).from_void(&component);
+        DrawComponentInternal(instance);
+        if (ImGui::SmallButton("Remove")) {
+            component.gameObject.RemoveComponent(component);
+        }
+        ImGui::PopID();
+    }
+
+    void EditorEngine::DrawComponentInternal(entt::meta_any &component) {
         for (auto &&[id, base]: component.type().base()) {
             auto instance = base.from_void(component.data());
-            DrawComponent(instance);
+            DrawComponentInternal(instance);
         }
         for (auto &&[id, elem]: component.type().data()) {
             auto instance = elem.get(component);
