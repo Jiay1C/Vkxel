@@ -17,12 +17,15 @@ namespace Vkxel {
         void SetupDebugUI();
         void SetupSceneUI();
         void SetupInspectorUI();
-        void DrawComponent(entt::meta_any &component);
+        void DrawGameObjectTree(GameObject &gameObject);
+        void DrawGameObject(GameObject &gameObject);
+        void DrawComponent(Component &component);
+        void DrawComponentInternal(entt::meta_any &component);
         void DrawElement(std::string_view name, entt::meta_any &element);
 
         std::string GetDisplayName(Object &object);
 
-        Component *_active_component = nullptr;
+        GameObject *_active_gameobject = nullptr;
     };
 
 } // namespace Vkxel

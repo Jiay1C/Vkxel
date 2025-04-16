@@ -12,7 +12,7 @@ namespace Vkxel {
 
     void Transform::SetParent(std::optional<std::reference_wrapper<Transform>> newParent) {
         if (_parent) {
-            auto &currentParent = _parent.value().get();
+            Transform &currentParent = _parent.value();
             std::erase_if(currentParent._children,
                           [this](const std::reference_wrapper<Transform> &child) { return &child.get() == this; });
         }

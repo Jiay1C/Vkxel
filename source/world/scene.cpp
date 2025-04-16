@@ -75,6 +75,8 @@ namespace Vkxel {
             DestroyGameObject(child.get().gameObject);
         }
 
+        it->transform.SetParent(std::nullopt);
+
         Timer::ExecuteAfterTicks(1, [this, it]() {
             it->Destroy();
             _gameobjects.erase(it);
