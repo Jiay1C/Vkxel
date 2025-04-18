@@ -47,6 +47,7 @@ namespace Vkxel {
             uint32_t schmitzIterationCount;
             float schmitzStepSize;
             float time;
+            uint32_t numSDFSurfaceGPU;
         };
 
         struct DualContouringResults {

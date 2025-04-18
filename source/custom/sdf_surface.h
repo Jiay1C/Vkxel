@@ -16,7 +16,7 @@ namespace Vkxel {
     using SDFOutputType = float;
     using SDFType = std::function<SDFOutputType(SDFInputType)>;
 
-    enum class SurfaceType {
+    enum class SurfaceType : uint32_t {
         None,
         Primitive,
         Custom,
@@ -30,7 +30,7 @@ namespace Vkxel {
     REGISTER_ENUM(CSG)
     REGISTER_END()
 
-    enum class PrimitiveType {
+    enum class PrimitiveType : uint32_t {
         None,
         Sphere,
         Box,
@@ -44,7 +44,7 @@ namespace Vkxel {
     REGISTER_ENUM(Capsule)
     REGISTER_END()
 
-    enum class CSGType {
+    enum class CSGType : uint32_t {
         None,
         Unionize,
         Intersect,
@@ -57,6 +57,21 @@ namespace Vkxel {
     REGISTER_ENUM(Intersect)
     REGISTER_ENUM(Subtract)
     REGISTER_END()
+
+    struct SDFSurfaceGPU {
+        glm::mat4 gridToLocal; // 64
+        SurfaceType surfaceType; // 4
+        PrimitiveType primitiveType; // 4
+        CSGType csgType; // 4
+        float csgSmoothFactor; // 4
+        uint32_t numChildren; // 4
+        // ---------84 bytes----------
+        uint32_t padding0;
+        uint32_t padding1;
+        uint32_t padding2;
+        // ---------96 bytes----------
+    };
+    #define MAX_SDF_SURFACE_GPU 32
 
     class SDFSurface final : public Component {
     public:
@@ -73,6 +88,7 @@ namespace Vkxel {
 
         SDFType GetSDF() const;
         SDFOutputType GetSDFValue(SDFInputType p) const;
+        void BuildSDFTreeGPU(std::vector<SDFSurfaceGPU> &sdf_surface_gpu, const glm::mat4& gridToLocal) const;
 
     private:
         SDFType GetPrimitive() const;

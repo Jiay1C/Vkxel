@@ -21,6 +21,29 @@ namespace Vkxel {
 
     SDFOutputType SDFSurface::GetSDFValue(SDFInputType p) const { return GetSDF()(p); }
 
+    void SDFSurface::BuildSDFTreeGPU(std::vector<SDFSurfaceGPU>& sdf_surface_gpu, const glm::mat4& gridToWorld) const {
+        // we can't do recursion in shader, so we serialize the tree in post order 
+        // so that we can traverse the tree linearly to reconstruct sdf hierarchy
+
+        uint32_t numChildren = 0;
+        for (const auto &child_wrapper: gameObject.transform.GetChildren()) {
+            Transform &child = child_wrapper;
+            if (auto child_sdf_surface = child.gameObject.GetComponent<SDFSurface>()) {
+                child_sdf_surface.value().get().BuildSDFTreeGPU(sdf_surface_gpu, gridToWorld);
+                ++numChildren;
+            }
+        }
+
+        sdf_surface_gpu.emplace_back(SDFSurfaceGPU{
+            .gridToLocal = glm::transpose(gameObject.transform.GetWorldToLocalMatrix() * gridToWorld),
+            .surfaceType = surfaceType,
+            .primitiveType = primitiveType,
+            .csgType = csgType,
+            .csgSmoothFactor = csgSmoothFactor,
+            .numChildren = numChildren,
+        });
+    }
+
     SDFType SDFSurface::GetPrimitive() const {
         switch (primitiveType) {
             case PrimitiveType::Sphere:
