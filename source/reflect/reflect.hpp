@@ -14,27 +14,42 @@
 
 #include "util/check.h"
 
-#define REGISTER_NAME(NAME) Reflect::SetName(#NAME##_hs, #NAME)
+#define INTERNAL_TYPE(TYPE) VKXEL_INTERNAL_TYPE_##TYPE
+
+#define REGISTER_NAME(NAME)                                                                                            \
+    {                                                                                                                  \
+        Reflect::SetName(#NAME##_hs, #NAME);                                                                           \
+    }
 
 #define REGISTER_BASE(BASE) meta.base<BASE>();
 
 #define REGISTER_DATA(DATA)                                                                                            \
-    meta.data<&T::DATA, entt::as_ref_t>(#DATA##_hs);                                                                   \
+    meta.data<&Type::DATA, entt::as_ref_t>(#DATA##_hs);                                                                \
     REGISTER_NAME(DATA);
 
-#define REGISTER_BEGIN(CLASS)                                                                                          \
-public:                                                                                                                \
-    friend class Vkxel::Reflect;                                                                                       \
+#define REGISTER_CLASS(CLASS)                                                                                          \
+    class INTERNAL_TYPE(CLASS) {                                                                                       \
+    public:                                                                                                            \
+        INTERNAL_TYPE(CLASS)() = delete;                                                                               \
+        ~INTERNAL_TYPE(CLASS)() = delete;                                                                              \
+        friend class Vkxel::Reflect;                                                                                   \
                                                                                                                        \
-private:                                                                                                               \
-    static void Register() {                                                                                           \
-        using T = CLASS;                                                                                               \
-        using entt::literals::operator""_hs;                                                                           \
-        auto meta = entt::meta<T>();                                                                                   \
-        REGISTER_NAME(CLASS);
+    private:                                                                                                           \
+        using Type = CLASS;                                                                                            \
+        static void Register() {                                                                                       \
+            using entt::literals::operator""_hs;                                                                       \
+            auto meta = entt::meta<Type>();                                                                            \
+            REGISTER_NAME(CLASS);
 
-#define REGISTER_END() }
+#define REGISTER_END()                                                                                                 \
+    }                                                                                                                  \
+    }                                                                                                                  \
+    ;
 
+#define REGISTER(TYPE)                                                                                                 \
+    {                                                                                                                  \
+        Reflect::RegisterType<INTERNAL_TYPE(TYPE)>();                                                                  \
+    }
 
 namespace Vkxel {
 
@@ -44,21 +59,12 @@ namespace Vkxel {
         ~Reflect() = delete;
 
         template<typename T>
-        static void Register() {
-            static_assert(requires { T::Register; }, "Type Not Registered");
-            if (!_type_map.contains(typeid(T))) {
-                T::Register();
-                _type_map[typeid(T)] = entt::resolve<T>();
-            }
-        }
-
-        template<typename T>
         static entt::meta_type GetType() {
             return entt::resolve<T>();
         }
 
         static const entt::meta_type &GetType(const std::type_index &type) {
-            CHECK(_type_map.contains(type), "Type Not Registered");
+            CHECK(_type_map.contains(type), "Type Not Registered: {}", type.name());
             return _type_map.at(type);
         }
 
@@ -79,6 +85,16 @@ namespace Vkxel {
         static void Register();
 
     private:
+        template<typename InternalType>
+        static void RegisterType() {
+            static_assert(requires { InternalType::Register; }, "Type Not Registered");
+            using Type = typename InternalType::Type;
+            if (!_type_map.contains(typeid(Type))) {
+                InternalType::Register();
+                _type_map[typeid(Type)] = entt::resolve<Type>();
+            }
+        }
+
         inline static std::unordered_map<std::type_index, entt::meta_type> _type_map;
         inline static std::unordered_map<entt::id_type, std::string_view> _name_map;
     };

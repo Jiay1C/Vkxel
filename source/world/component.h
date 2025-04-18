@@ -16,11 +16,11 @@ namespace Vkxel {
         GameObject &gameObject;
 
         explicit Component(GameObject &parentGameObject) : gameObject(parentGameObject) {}
-
-        REGISTER_BEGIN(Component)
-        REGISTER_BASE(Object)
-        REGISTER_END()
     };
+
+    REGISTER_CLASS(Component)
+    REGISTER_BASE(Object)
+    REGISTER_END()
 
 } // namespace Vkxel
 

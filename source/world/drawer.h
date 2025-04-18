@@ -17,11 +17,11 @@ namespace Vkxel {
         MaterialData material = {};
 
         void Draw(RenderContext &context) const;
-
-        REGISTER_BEGIN(Drawer)
-        REGISTER_BASE(Component)
-        REGISTER_END()
     };
+
+    REGISTER_CLASS(Drawer)
+    REGISTER_BASE(Component)
+    REGISTER_END()
 
 } // namespace Vkxel
 

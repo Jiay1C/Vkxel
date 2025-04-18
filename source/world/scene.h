@@ -44,11 +44,11 @@ namespace Vkxel {
 
         std::list<GameObject> _gameobjects;
         std::optional<std::reference_wrapper<Camera>> _mainCamera;
-
-        REGISTER_BEGIN(Scene)
-        REGISTER_BASE(Object)
-        REGISTER_END()
     };
+
+    REGISTER_CLASS(Scene)
+    REGISTER_BASE(Object)
+    REGISTER_END()
 
 } // namespace Vkxel
 

@@ -162,11 +162,11 @@ namespace Vkxel {
 
     private:
         std::unordered_map<std::type_index, std::unique_ptr<Component>> _components;
-
-        REGISTER_BEGIN(GameObject)
-        REGISTER_BASE(Object)
-        REGISTER_END()
     };
+
+    REGISTER_CLASS(GameObject)
+    REGISTER_BASE(Object)
+    REGISTER_END()
 
 } // namespace Vkxel
 

@@ -69,15 +69,15 @@ namespace Vkxel {
         const static SDFType BoxSDF;
         const static SDFType CapsuleSDF;
         const static SDFType NoneSDF;
-
-        REGISTER_BEGIN(SDFSurface)
-        REGISTER_BASE(Component)
-        REGISTER_DATA(surfaceType)
-        REGISTER_DATA(primitiveType)
-        REGISTER_DATA(csgType)
-        REGISTER_DATA(csgSmoothFactor)
-        REGISTER_END()
     };
+
+    REGISTER_CLASS(SDFSurface)
+    REGISTER_BASE(Component)
+    REGISTER_DATA(surfaceType)
+    REGISTER_DATA(primitiveType)
+    REGISTER_DATA(csgType)
+    REGISTER_DATA(csgSmoothFactor)
+    REGISTER_END()
 } // namespace Vkxel
 
 #endif // VKXEL_SDF_SURFACE_H

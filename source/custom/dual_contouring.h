@@ -55,18 +55,18 @@ namespace Vkxel {
 
         static constexpr std::array<uint32_t, 6> _triangle_index_front = {0, 2, 1, 1, 2, 3};
         static constexpr std::array<uint32_t, 6> _triangle_index_back = {0, 1, 2, 1, 3, 2};
-
-        REGISTER_BEGIN(DualContouring)
-        REGISTER_BASE(Component)
-        REGISTER_DATA(enableUpdate)
-        REGISTER_DATA(minBound)
-        REGISTER_DATA(maxBound)
-        REGISTER_DATA(resolution)
-        REGISTER_DATA(normalDelta)
-        REGISTER_DATA(schmitzIterationCount)
-        REGISTER_DATA(schmitzStepSize)
-        REGISTER_END()
     };
+
+    REGISTER_CLASS(DualContouring)
+    REGISTER_BASE(Component)
+    REGISTER_DATA(enableUpdate)
+    REGISTER_DATA(minBound)
+    REGISTER_DATA(maxBound)
+    REGISTER_DATA(resolution)
+    REGISTER_DATA(normalDelta)
+    REGISTER_DATA(schmitzIterationCount)
+    REGISTER_DATA(schmitzStepSize)
+    REGISTER_END()
 
 } // namespace Vkxel
 

@@ -63,18 +63,18 @@ namespace Vkxel {
         std::optional<ComputeJob> _compute = std::nullopt;
 
         SDFType _sdf;
-
-        REGISTER_BEGIN(GpuDualContouring)
-        REGISTER_BASE(Component)
-        REGISTER_DATA(enableUpdate)
-        REGISTER_DATA(minBound)
-        REGISTER_DATA(maxBound)
-        REGISTER_DATA(resolution)
-        REGISTER_DATA(normalDelta)
-        REGISTER_DATA(schmitzIterationCount)
-        REGISTER_DATA(schmitzStepSize)
-        REGISTER_END()
     };
+
+    REGISTER_CLASS(GpuDualContouring)
+    REGISTER_BASE(Component)
+    REGISTER_DATA(enableUpdate)
+    REGISTER_DATA(minBound)
+    REGISTER_DATA(maxBound)
+    REGISTER_DATA(resolution)
+    REGISTER_DATA(normalDelta)
+    REGISTER_DATA(schmitzIterationCount)
+    REGISTER_DATA(schmitzStepSize)
+    REGISTER_END()
 
 } // namespace Vkxel
 
