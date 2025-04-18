@@ -16,20 +16,20 @@
 
 namespace Vkxel {
     void Reflect::Register() {
-        Register<Object>();
-        Register<Scene>();
-        Register<Component>();
-        Register<GameObject>();
-        Register<Camera>();
-        Register<Canvas>();
-        Register<Controller>();
-        Register<Drawer>();
-        Register<Mesh>();
-        Register<Mover>();
-        Register<Transform>();
-        Register<DualContouring>();
-        Register<GpuDualContouring>();
-        Register<SDFSurface>();
+        REGISTER(Object);
+        REGISTER(Scene);
+        REGISTER(Component);
+        REGISTER(GameObject);
+        REGISTER(Camera);
+        REGISTER(Canvas);
+        REGISTER(Controller);
+        REGISTER(Drawer);
+        REGISTER(Mesh);
+        REGISTER(Mover);
+        REGISTER(Transform);
+        REGISTER(DualContouring);
+        REGISTER(GpuDualContouring);
+        REGISTER(SDFSurface);
     }
 
 } // namespace Vkxel

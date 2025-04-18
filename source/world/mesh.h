@@ -24,11 +24,11 @@ namespace Vkxel {
     private:
         std::optional<MeshData> _mesh_data;
         bool _is_dirty = false;
-
-        REGISTER_BEGIN(Mesh)
-        REGISTER_BASE(Component)
-        REGISTER_END()
     };
+
+    REGISTER_CLASS(Mesh)
+    REGISTER_BASE(Component)
+    REGISTER_END()
 
 } // namespace Vkxel
 

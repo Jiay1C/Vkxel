@@ -50,12 +50,12 @@ namespace Vkxel {
 
     private:
         inline static IdType ObjectCount = 0;
-
-        REGISTER_BEGIN(Object)
-        REGISTER_DATA(id)
-        REGISTER_DATA(name)
-        REGISTER_END()
     };
+
+    REGISTER_CLASS(Object)
+    REGISTER_DATA(id)
+    REGISTER_DATA(name)
+    REGISTER_END()
 
 } // namespace Vkxel
 

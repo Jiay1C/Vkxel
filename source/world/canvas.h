@@ -17,11 +17,11 @@ namespace Vkxel {
         GUI::GuiDelegate uiItems;
 
         virtual void OnGUI() const;
-
-        REGISTER_BEGIN(Canvas)
-        REGISTER_BASE(Component)
-        REGISTER_END()
     };
+
+    REGISTER_CLASS(Canvas)
+    REGISTER_BASE(Component)
+    REGISTER_END()
 
 } // namespace Vkxel
 
