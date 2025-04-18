@@ -18,8 +18,6 @@ namespace Vkxel {
     Engine::Engine(Scene &scene) : _scene(scene) {
         s_active_engine = this;
 
-        Reflect::Register();
-
         Debug::Init();
         Debug::LogInfo("{}::Initializing", Application::Name);
 

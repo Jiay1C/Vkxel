@@ -23,6 +23,13 @@ namespace Vkxel {
         CSG,
     };
 
+    REGISTER_TYPE(SurfaceType)
+    REGISTER_ENUM(None)
+    REGISTER_ENUM(Primitive)
+    REGISTER_ENUM(Custom)
+    REGISTER_ENUM(CSG)
+    REGISTER_END()
+
     enum class PrimitiveType {
         None,
         Sphere,
@@ -30,12 +37,26 @@ namespace Vkxel {
         Capsule,
     };
 
+    REGISTER_TYPE(PrimitiveType)
+    REGISTER_ENUM(None)
+    REGISTER_ENUM(Sphere)
+    REGISTER_ENUM(Box)
+    REGISTER_ENUM(Capsule)
+    REGISTER_END()
+
     enum class CSGType {
         None,
         Unionize,
         Intersect,
         Subtract,
     };
+
+    REGISTER_TYPE(CSGType)
+    REGISTER_ENUM(None)
+    REGISTER_ENUM(Unionize)
+    REGISTER_ENUM(Intersect)
+    REGISTER_ENUM(Subtract)
+    REGISTER_END()
 
     class SDFSurface final : public Component {
     public:
@@ -71,7 +92,7 @@ namespace Vkxel {
         const static SDFType NoneSDF;
     };
 
-    REGISTER_CLASS(SDFSurface)
+    REGISTER_TYPE(SDFSurface)
     REGISTER_BASE(Component)
     REGISTER_DATA(surfaceType)
     REGISTER_DATA(primitiveType)

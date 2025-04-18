@@ -198,7 +198,6 @@ VKXEL_DEFINE_SOURCES(UTIL_SOURCES "util"
 )
 
 VKXEL_DEFINE_SOURCES(REFLECT_SOURCES "reflect"
-        reflect.cpp
         reflect.hpp
 )
 

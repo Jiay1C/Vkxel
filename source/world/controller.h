@@ -26,7 +26,7 @@ namespace Vkxel {
         glm::vec2 _last_mouse_position = {};
     };
 
-    REGISTER_CLASS(Controller)
+    REGISTER_TYPE(Controller)
     REGISTER_BASE(Component)
     REGISTER_DATA(moveSpeed)
     REGISTER_DATA(rotateSpeed)

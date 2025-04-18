@@ -19,7 +19,7 @@ namespace Vkxel {
         void Draw(RenderContext &context) const;
     };
 
-    REGISTER_CLASS(Drawer)
+    REGISTER_TYPE(Drawer)
     REGISTER_BASE(Component)
     REGISTER_END()
 

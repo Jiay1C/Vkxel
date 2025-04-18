@@ -46,7 +46,7 @@ namespace Vkxel {
         std::optional<std::reference_wrapper<Camera>> _mainCamera;
     };
 
-    REGISTER_CLASS(Scene)
+    REGISTER_TYPE(Scene)
     REGISTER_BASE(Object)
     REGISTER_END()
 

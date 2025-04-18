@@ -27,29 +27,32 @@
     meta.data<&Type::DATA, entt::as_ref_t>(#DATA##_hs);                                                                \
     REGISTER_NAME(DATA);
 
-#define REGISTER_CLASS(CLASS)                                                                                          \
-    class INTERNAL_TYPE(CLASS) {                                                                                       \
+#define REGISTER_ENUM(ENUM)                                                                                            \
+    meta.data<Type::ENUM>(#ENUM##_hs);                                                                                 \
+    REGISTER_NAME(ENUM);
+
+#define REGISTER_TYPE(TYPE)                                                                                            \
+    class INTERNAL_TYPE(TYPE) {                                                                                        \
     public:                                                                                                            \
-        INTERNAL_TYPE(CLASS)() = delete;                                                                               \
-        ~INTERNAL_TYPE(CLASS)() = delete;                                                                              \
+        INTERNAL_TYPE(TYPE)() = delete;                                                                                \
+        ~INTERNAL_TYPE(TYPE)() = delete;                                                                               \
         friend class Vkxel::Reflect;                                                                                   \
                                                                                                                        \
     private:                                                                                                           \
-        using Type = CLASS;                                                                                            \
+        using Type = TYPE;                                                                                             \
+        inline static bool CallRegister = []() {                                                                       \
+            Reflect::RegisterType<INTERNAL_TYPE(TYPE)>();                                                              \
+            return true;                                                                                               \
+        }();                                                                                                           \
         static void Register() {                                                                                       \
             using entt::literals::operator""_hs;                                                                       \
             auto meta = entt::meta<Type>();                                                                            \
-            REGISTER_NAME(CLASS);
+            REGISTER_NAME(TYPE);
 
 #define REGISTER_END()                                                                                                 \
     }                                                                                                                  \
     }                                                                                                                  \
     ;
-
-#define REGISTER(TYPE)                                                                                                 \
-    {                                                                                                                  \
-        Reflect::RegisterType<INTERNAL_TYPE(TYPE)>();                                                                  \
-    }
 
 namespace Vkxel {
 
@@ -57,6 +60,16 @@ namespace Vkxel {
     public:
         Reflect() = delete;
         ~Reflect() = delete;
+
+        template<typename InternalType>
+        static void RegisterType() {
+            static_assert(requires { InternalType::Register; }, "Type Not Registered");
+            using Type = typename InternalType::Type;
+            if (!_type_map.contains(typeid(Type))) {
+                InternalType::Register();
+                _type_map[typeid(Type)] = entt::resolve<Type>();
+            }
+        }
 
         template<typename T>
         static entt::meta_type GetType() {
@@ -82,19 +95,7 @@ namespace Vkxel {
             return _name_map.at(id);
         }
 
-        static void Register();
-
     private:
-        template<typename InternalType>
-        static void RegisterType() {
-            static_assert(requires { InternalType::Register; }, "Type Not Registered");
-            using Type = typename InternalType::Type;
-            if (!_type_map.contains(typeid(Type))) {
-                InternalType::Register();
-                _type_map[typeid(Type)] = entt::resolve<Type>();
-            }
-        }
-
         inline static std::unordered_map<std::type_index, entt::meta_type> _type_map;
         inline static std::unordered_map<entt::id_type, std::string_view> _name_map;
     };

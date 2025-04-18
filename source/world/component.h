@@ -18,7 +18,7 @@ namespace Vkxel {
         explicit Component(GameObject &parentGameObject) : gameObject(parentGameObject) {}
     };
 
-    REGISTER_CLASS(Component)
+    REGISTER_TYPE(Component)
     REGISTER_BASE(Object)
     REGISTER_END()
 

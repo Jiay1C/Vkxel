@@ -77,17 +77,7 @@ namespace Vkxel {
     void EditorEngine::DrawGameObject(GameObject &gameObject) {
         ImGui::SeparatorText(GetDisplayName(gameObject).data());
 
-        ImGui::InputText(
-                "Name", gameObject.name.data(), gameObject.name.capacity() + 1, ImGuiInputTextFlags_CallbackResize,
-                [](ImGuiInputTextCallbackData *callback_data) {
-                    if (callback_data->EventFlag == ImGuiInputTextFlags_CallbackResize) {
-                        std::string &callback_str = *static_cast<std::string *>(callback_data->UserData);
-                        callback_str.resize(callback_data->BufTextLen);
-                        callback_data->Buf = callback_str.data();
-                    }
-                    return 0;
-                },
-                &gameObject.name);
+        DrawString("Name", gameObject.name);
 
         DrawComponent(gameObject.transform);
 
@@ -157,24 +147,33 @@ namespace Vkxel {
             quat = glm::radians(deg);
         } else if (type == Reflect::GetType<std::string>()) {
             auto &str = *static_cast<std::string *>(data);
-            ImGui::InputText(
-                    name.data(), str.data(), str.capacity() + 1, ImGuiInputTextFlags_CallbackResize,
-                    [](ImGuiInputTextCallbackData *callback_data) {
-                        if (callback_data->EventFlag == ImGuiInputTextFlags_CallbackResize) {
-                            std::string &callback_str = *static_cast<std::string *>(callback_data->UserData);
-                            callback_str.resize(callback_data->BufTextLen);
-                            callback_data->Buf = callback_str.data();
-                        }
-                        return 0;
-                    },
-                    &str);
+            DrawString(name, str);
         } else if (type.is_enum()) {
-            // TODO: Support Enum
-            ImGui::Text("%s: Enum <%s>", name.data(), type.info().name().data());
+            std::vector<const char *> enum_names;
+            for (auto &&[id, elem]: type.data()) {
+                enum_names.push_back(Reflect::GetName(id).data());
+            }
+            // TODO: Assume Use Int To Store Enum Here, Maybe Cause Bug
+            ImGui::Combo(name.data(), static_cast<int *>(data), enum_names.data(), static_cast<int>(enum_names.size()));
         } else {
             ImGui::Text("%s: Unsupported Type <%s>", name.data(), type.info().name().data());
         }
     }
+
+    void EditorEngine::DrawString(const std::string_view name, std::string &str) {
+        ImGui::InputText(
+                name.data(), str.data(), str.capacity() + 1, ImGuiInputTextFlags_CallbackResize,
+                [](ImGuiInputTextCallbackData *callback_data) {
+                    if (callback_data->EventFlag == ImGuiInputTextFlags_CallbackResize) {
+                        std::string &callback_str = *static_cast<std::string *>(callback_data->UserData);
+                        callback_str.resize(callback_data->BufTextLen);
+                        callback_data->Buf = callback_str.data();
+                    }
+                    return 0;
+                },
+                &str);
+    }
+
 
     std::string EditorEngine::GetDisplayName(Object &object) {
         return std::format("{0} ({1})", object.name, object.id);
