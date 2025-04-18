@@ -24,7 +24,7 @@ namespace Vkxel {
         void Update() override;
     };
 
-    REGISTER_CLASS(Mover)
+    REGISTER_TYPE(Mover)
     REGISTER_BASE(Component)
     REGISTER_DATA(linearVelocity)
     REGISTER_DATA(angularVelocity)

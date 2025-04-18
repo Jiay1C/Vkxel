@@ -57,7 +57,7 @@ namespace Vkxel {
         static constexpr std::array<uint32_t, 6> _triangle_index_back = {0, 1, 2, 1, 3, 2};
     };
 
-    REGISTER_CLASS(DualContouring)
+    REGISTER_TYPE(DualContouring)
     REGISTER_BASE(Component)
     REGISTER_DATA(enableUpdate)
     REGISTER_DATA(minBound)

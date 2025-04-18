@@ -68,7 +68,7 @@ namespace Vkxel {
         std::list<std::reference_wrapper<Transform>> _children;
     };
 
-    REGISTER_CLASS(Transform)
+    REGISTER_TYPE(Transform)
     REGISTER_BASE(Component)
     REGISTER_DATA(position)
     REGISTER_DATA(rotation)

@@ -65,7 +65,7 @@ namespace Vkxel {
         SDFType _sdf;
     };
 
-    REGISTER_CLASS(GpuDualContouring)
+    REGISTER_TYPE(GpuDualContouring)
     REGISTER_BASE(Component)
     REGISTER_DATA(enableUpdate)
     REGISTER_DATA(minBound)

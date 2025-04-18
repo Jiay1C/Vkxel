@@ -26,7 +26,7 @@ namespace Vkxel {
         bool _is_dirty = false;
     };
 
-    REGISTER_CLASS(Mesh)
+    REGISTER_TYPE(Mesh)
     REGISTER_BASE(Component)
     REGISTER_END()
 

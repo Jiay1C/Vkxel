@@ -19,7 +19,7 @@ namespace Vkxel {
         virtual void OnGUI() const;
     };
 
-    REGISTER_CLASS(Canvas)
+    REGISTER_TYPE(Canvas)
     REGISTER_BASE(Component)
     REGISTER_END()
 

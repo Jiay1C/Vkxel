@@ -159,13 +159,15 @@ namespace Vkxel {
             }
         }
 
-        // Assign Vertex and Index to Mesh Component
-        if (!gameObject.GetComponent<Mesh>()) {
-            gameObject.AddComponent<Mesh>();
-        }
+        if (!indices.empty()) {
+            // Assign Vertex and Index to Mesh Component
+            if (!gameObject.GetComponent<Mesh>()) {
+                gameObject.AddComponent<Mesh>();
+            }
 
-        Mesh &mesh = gameObject.GetComponent<Mesh>().value();
-        mesh.SetMesh(CPUMeshData{.index = std::move(indices), .vertex = std::move(vertices)});
+            Mesh &mesh = gameObject.GetComponent<Mesh>().value();
+            mesh.SetMesh(CPUMeshData{.index = std::move(indices), .vertex = std::move(vertices)});
+        }
     }
 
     glm::vec3 DualContouring::CalculateNormal(const glm::vec3 &position) const {

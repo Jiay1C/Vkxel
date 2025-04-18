@@ -27,7 +27,7 @@ namespace Vkxel {
         glm::mat4 GetProjectionMatrix() const;
     };
 
-    REGISTER_CLASS(Camera)
+    REGISTER_TYPE(Camera)
     REGISTER_BASE(Component)
     REGISTER_DATA(nearClipPlane)
     REGISTER_DATA(farClipPlane)

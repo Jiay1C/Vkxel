@@ -52,7 +52,7 @@ namespace Vkxel {
         inline static IdType ObjectCount = 0;
     };
 
-    REGISTER_CLASS(Object)
+    REGISTER_TYPE(Object)
     REGISTER_DATA(id)
     REGISTER_DATA(name)
     REGISTER_END()

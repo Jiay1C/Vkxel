@@ -23,6 +23,7 @@ namespace Vkxel {
         void DrawComponentInternal(entt::meta_any &component);
         void DrawElement(std::string_view name, entt::meta_any &element);
 
+        void DrawString(std::string_view name, std::string &str);
         std::string GetDisplayName(Object &object);
 
         GameObject *_active_gameobject = nullptr;
