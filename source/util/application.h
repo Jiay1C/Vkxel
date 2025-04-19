@@ -7,7 +7,6 @@
 
 #include <cstdint>
 #include <string_view>
-#include <utility>
 
 #include "glm/glm.hpp"
 #include "vulkan/vulkan.h"
@@ -44,6 +43,7 @@ namespace Vkxel {
         static constexpr float DefaultAccelerateRatio = 5.0f;
 
         static constexpr std::string_view DefaultCanvasPanelName = "Canvas";
+        static constexpr std::string_view DefaultGameObjectName = "GameObject";
     };
 
 } // namespace Vkxel
