@@ -23,10 +23,14 @@ namespace Vkxel {
         void DrawComponentInternal(entt::meta_any &component);
         void DrawElement(std::string_view name, entt::meta_any &element);
 
+        void DrawCreateGameObject(std::optional<std::reference_wrapper<Transform>> parent = std::nullopt);
+        void DrawCreateComponent(GameObject &gameObject);
+
         void DrawString(std::string_view name, std::string &str);
         std::string GetDisplayName(Object &object);
 
         GameObject *_active_gameobject = nullptr;
+        int _selected_component = -1;
     };
 
 } // namespace Vkxel

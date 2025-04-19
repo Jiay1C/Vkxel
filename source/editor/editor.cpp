@@ -5,9 +5,17 @@
 #include <format>
 
 #include "editor.h"
+
+#include "custom/dual_contouring.h"
+#include "custom/gpu_dual_contouring.h"
 #include "engine/engine.h"
 #include "engine/vtime.h"
 #include "reflect/reflect.hpp"
+#include "world/canvas.h"
+#include "world/controller.h"
+#include "world/drawer.h"
+#include "world/mesh.h"
+#include "world/mover.h"
 
 namespace Vkxel {
 
@@ -35,6 +43,8 @@ namespace Vkxel {
                     DrawGameObjectTree(gameObject);
                 }
             }
+            ImGui::Separator();
+            DrawCreateGameObject();
         });
     }
 
@@ -53,11 +63,13 @@ namespace Vkxel {
 
         const auto children = gameObject.transform.GetChildren();
 
-        bool showTree = false;
+        bool show_tree = false;
         if (children.empty()) {
             ImGui::Bullet();
+            ImGui::SameLine();
+            ImGui::Text("");
         } else {
-            showTree = ImGui::TreeNode("");
+            show_tree = ImGui::TreeNode("");
         }
 
         ImGui::SameLine();
@@ -65,7 +77,15 @@ namespace Vkxel {
             _active_gameobject = &gameObject;
         }
 
-        if (showTree) {
+        ImGui::SameLine();
+        DrawCreateGameObject(gameObject.transform);
+        ImGui::SameLine();
+        if (ImGui::SmallButton("-")) {
+            _active_gameobject = nullptr;
+            _scene.DestroyGameObject(gameObject);
+        }
+
+        if (show_tree) {
             for (auto &child: children) {
                 DrawGameObjectTree(child.get().gameObject);
             }
@@ -86,21 +106,19 @@ namespace Vkxel {
         }
 
         ImGui::SeparatorText("");
-
-        if (ImGui::SmallButton("Destroy")) {
-            _active_gameobject = nullptr;
-            _scene.DestroyGameObject(gameObject);
-        }
+        DrawCreateComponent(gameObject);
+        ImGui::SeparatorText("");
     }
 
     void EditorEngine::DrawComponent(Component &component) {
         ImGui::PushID(static_cast<int>(component.id));
         ImGui::SeparatorText(GetDisplayName(component).data());
-        auto instance = Reflect::GetType(typeid(component)).from_void(&component);
-        DrawComponentInternal(instance);
-        if (ImGui::SmallButton("Remove")) {
+        ImGui::SameLine();
+        if (ImGui::SmallButton("-")) {
             component.gameObject.RemoveComponent(component);
         }
+        auto instance = Reflect::GetType(typeid(component)).from_void(&component);
+        DrawComponentInternal(instance);
         ImGui::PopID();
     }
 
@@ -157,6 +175,41 @@ namespace Vkxel {
             ImGui::Combo(name.data(), static_cast<int *>(data), enum_names.data(), static_cast<int>(enum_names.size()));
         } else {
             ImGui::Text("%s: Unsupported Type <%s>", name.data(), type.info().name().data());
+        }
+    }
+
+    void EditorEngine::DrawCreateGameObject(std::optional<std::reference_wrapper<Transform>> parent) {
+        if (ImGui::SmallButton("+")) {
+            GameObject &game_object = _scene.CreateGameObject();
+            game_object.name = Application::DefaultGameObjectName;
+            game_object.transform.SetParent(parent);
+        }
+    }
+
+    void EditorEngine::DrawCreateComponent(GameObject &gameObject) {
+        // Hard To Use Reflection, Hideous Hard Code Here
+        // TODO: Use Reflection
+
+        constexpr std::array component_names = {"Mover",  "Mesh",       "Drawer",         "Controller",       "Camera",
+                                                "Canvas", "SDFSurface", "DualContouring", "GpuDualContouring"};
+        std::array component_lambda = {std::function([&]() { gameObject.AddComponent<Mover>(); }),
+                                       std::function([&]() { gameObject.AddComponent<Mesh>(); }),
+                                       std::function([&]() { gameObject.AddComponent<Drawer>(); }),
+                                       std::function([&]() { gameObject.AddComponent<Controller>(); }),
+                                       std::function([&]() { gameObject.AddComponent<Camera>(); }),
+                                       std::function([&]() { gameObject.AddComponent<Canvas>(); }),
+                                       std::function([&]() { gameObject.AddComponent<SDFSurface>(); }),
+                                       std::function([&]() { gameObject.AddComponent<DualContouring>(); }),
+                                       std::function([&]() { gameObject.AddComponent<GpuDualContouring>(); })};
+
+
+        ImGui::Combo("##Component", &_selected_component, component_names.data(),
+                     static_cast<int>(component_names.size()));
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("+")) {
+            component_lambda[_selected_component]();
         }
     }
 
