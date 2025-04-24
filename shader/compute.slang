@@ -8,6 +8,7 @@ struct DualContouringArguments {
     uint schmitzIterationCount;
     float schmitzStepSize;
     float time;
+    uint numSDFSurfaceGPU;
 };
 
 struct DualContouringResults {
@@ -28,10 +29,11 @@ struct OffsetData {
 
 [[vk::binding(0)]] StructuredBuffer<DualContouringArguments> args;
 [[vk::binding(1)]] RWStructuredBuffer<DualContouringResults> results;
-[[vk::binding(2)]] RWStructuredBuffer<float4> grid;
-[[vk::binding(3)]] RWStructuredBuffer<uint> grid_vertex_index;
-[[vk::binding(4)]] RWStructuredBuffer<VertexData> vertices;
-[[vk::binding(5)]] RWStructuredBuffer<uint> indices;
+[[vk::binding(2)]] StructuredBuffer<SDFSurfaceGPU> sdf_surfaces;
+[[vk::binding(3)]] RWStructuredBuffer<float4> grid;
+[[vk::binding(4)]] RWStructuredBuffer<uint> grid_vertex_index;
+[[vk::binding(5)]] RWStructuredBuffer<VertexData> vertices;
+[[vk::binding(6)]] RWStructuredBuffer<uint> indices;
 
 static const int3 VOXEL_POINT[8] = {
     int3(0, 0, 0), int3(1, 0, 0), int3(1, 0, 1), int3(0, 0, 1),
@@ -65,10 +67,74 @@ float3 grid2World(float3 cellIndex) {
     return cellIndex * (args[0].maxBound - args[0].minBound) / args[0].gridSize + args[0].minBound;
 }
 
+float sdfTreeTraversal(float3 position, uint numSDFSurfaceGPU) {
+    float sdf_values[MAX_SDF_SURFACE_GPU] = {0.0};
+    uint ptr = 0; // place to insert new sdf value
+    for (uint i = 0; i < numSDFSurfaceGPU; ++i)
+    {
+        switch (sdf_surfaces[i].surfaceType)
+        {
+            case SurfaceType::Primitive:
+                float4 positionLS_H = mul(sdf_surfaces[i].gridToLocal, float4(position, 1.0));
+                float3 positionLS = float3(positionLS_H.x, positionLS_H.y, positionLS_H.z);
+                switch (sdf_surfaces[i].primitiveType)
+                {
+                    case PrimitiveType::Sphere:
+                        sdf_values[ptr] = sdfSphere(positionLS);
+                        break;
+                    case PrimitiveType::Box:
+                        sdf_values[ptr] = sdfBox(positionLS);
+                        break;
+                    case PrimitiveType::Capsule:
+                        sdf_values[ptr] = sdfCapsule(positionLS);
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            case SurfaceType::Custom:
+                // we don't surpport custom surface yet
+                sdf_values[ptr] = 0.0;
+                break;
+            case SurfaceType::CSG:
+                ptr -= sdf_surfaces[i].numChildren; // move to the first child
+                for (uint j = 1; j < sdf_surfaces[i].numChildren; ++j) // scan from the second child
+                {
+                    switch (sdf_surfaces[i].csgType)
+                    {
+                        case CSGType::Unionize:
+                            sdf_values[ptr] = sdf_surfaces[i].csgSmoothFactor <= 0.0 ?
+                                 csgUnion(sdf_values[ptr], sdf_values[ptr+j]) :
+                                 csgSmoothUnion(sdf_values[ptr], sdf_values[ptr+j], sdf_surfaces[i].csgSmoothFactor);
+                            break;
+                        case CSGType::Intersect:
+                            sdf_values[ptr] = sdf_surfaces[i].csgSmoothFactor <= 0.0 ?
+                                 csgIntersection(sdf_values[ptr], sdf_values[ptr+j]) :
+                                 csgSmoothIntersection(sdf_values[ptr], sdf_values[ptr+j], sdf_surfaces[i].csgSmoothFactor);
+                            break;
+                        case CSGType::Subtract:
+                            sdf_values[ptr] = sdf_surfaces[i].csgSmoothFactor <= 0.0 ?
+                                 csgSubtraction(sdf_values[ptr], sdf_values[ptr+j]) :
+                                 csgSmoothSubtraction(sdf_values[ptr], sdf_values[ptr+j], sdf_surfaces[i].csgSmoothFactor);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                break;
+            default:
+                break;
+        }
+        ++ptr;
+    }
+    return sdf_values[0];
+}
+
 float sdf(float3 position) {
-    const float dist = 0.6;
-    float3 offset = float3(sin(args[0].time) * dist + dist, 0, 0);
-    return csgSmoothUnion(sdfSphere(position - offset), sdfSphere(position + offset), 0.5);
+    // const float dist = 0.6;
+    // float3 offset = float3(sin(args[0].time) * dist + dist, 0, 0);
+    // return csgSmoothUnion(sdfSphere(position - offset), sdfSphere(position + offset), 0.5);
+    return sdfTreeTraversal(position, args[0].numSDFSurfaceGPU);
 }
 
 float3 calcNormal(float3 position) {

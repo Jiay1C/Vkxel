@@ -38,15 +38,18 @@ namespace Vkxel {
         GameObject &gpu_sdf_object = scene.CreateGameObject();
         gpu_sdf_object.name = "GPU SDF Object";
         gpu_sdf_object.transform.SetParent(root_object.transform);
-        gpu_sdf_object.transform.position = {-2, 0, 7};
+        gpu_sdf_object.transform.position = {-3, 0, 7};
         gpu_sdf_object.AddComponent<Mesh>();
         gpu_sdf_object.AddComponent<Drawer>();
 
         GpuDualContouring &gpu_dual_contouring = gpu_sdf_object.AddComponent<GpuDualContouring>();
         gpu_dual_contouring.enableUpdate = true;
-        gpu_dual_contouring.minBound = glm::vec3{-2.5f, -1.2f, -1.2f};
-        gpu_dual_contouring.maxBound = glm::vec3{2.5f, 1.2f, 1.2f};
-        gpu_dual_contouring.resolution = 20;
+        // gpu_dual_contouring.minBound = glm::vec3{-10.0f};
+        // gpu_dual_contouring.maxBound = glm::vec3{10.0f};
+        // gpu_dual_contouring.resolution = 10;
+        gpu_dual_contouring.minBound = glm::vec3{-2.0f};
+        gpu_dual_contouring.maxBound = glm::vec3{2.0f};
+        gpu_dual_contouring.resolution = 40;
 
         gpu_sdf_object.AddComponent<Canvas>().uiItems += [&]() {
             if (ImGui::Button("GPU Generate Mesh")) {
@@ -57,29 +60,31 @@ namespace Vkxel {
         // Create SDF Object
         GameObject &sdf_object = scene.CreateGameObject();
         sdf_object.name = "SDF Object";
-        sdf_object.transform.SetParent(root_object.transform);
-        sdf_object.transform.position = {2, 0, 7};
+        // sdf_object.transform.SetParent(root_object.transform);
+        sdf_object.transform.SetParent(gpu_sdf_object.transform);
+        // sdf_object.transform.position = glm::vec3(3, 0, 7) - gpu_sdf_object.transform.position;
+        // sdf_object.transform.position = glm::vec3(2, 0, 7);
         sdf_object.AddComponent<Mesh>();
         sdf_object.AddComponent<Drawer>();
 
-        Mover &sdf_mover = sdf_object.AddComponent<Mover>();
-        sdf_mover.angularVelocity = glm::radians(glm::vec3{0, 20, 0});
+        // Mover &sdf_mover = sdf_object.AddComponent<Mover>();
+        // sdf_mover.angularVelocity = glm::radians(glm::vec3{0, 20, 0});
 
         SDFSurface &sdf_surface = sdf_object.AddComponent<SDFSurface>();
         sdf_surface.surfaceType = SurfaceType::CSG;
         sdf_surface.csgType = CSGType::Subtract;
         sdf_surface.csgSmoothFactor = 0.1f;
 
-        DualContouring &dual_contouring = sdf_object.AddComponent<DualContouring>();
-        dual_contouring.minBound = glm::vec3{-1.2f};
-        dual_contouring.maxBound = glm::vec3{1.2f};
-        dual_contouring.resolution = 20;
+        // DualContouring &dual_contouring = sdf_object.AddComponent<DualContouring>();
+        // dual_contouring.minBound = glm::vec3{-2.0f};
+        // dual_contouring.maxBound = glm::vec3{2.0f};
+        // dual_contouring.resolution = 20;
 
-        sdf_object.AddComponent<Canvas>().uiItems += [&]() {
-            if (ImGui::Button("Generate Mesh")) {
-                dual_contouring.GenerateMesh();
-            }
-        };
+        // sdf_object.AddComponent<Canvas>().uiItems += [&]() {
+        //     if (ImGui::Button("Generate Mesh")) {
+        //         dual_contouring.GenerateMesh();
+        //     }
+        // };
 
         // GameObject &sdf_bunny = scene.CreateGameObject();
         // sdf_bunny.name = "SDF Bunny";

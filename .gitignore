@@ -902,3 +902,8 @@ FodyWeavers.xsd
 
 # Manually disable all jetbrains file
 .idea
+
+# Exclude all build files
+build
+shader/*.spirv
+imgui.ini
