@@ -34,8 +34,10 @@ namespace Vkxel {
         void Update() override;
 
         void GenerateMesh();
+        void RequestOBJ();
 
     private:
+        void ExportOBJ(const std::vector<IndexType>& indices, const std::vector<VertexType>& vertices);
         size_t GetIndex1D(const glm::ivec3 &size, const glm::ivec3 &index);
         glm::uvec3 GetGroupSize(const glm::uvec3 &thread, const glm::uvec3 &threadPerGroup);
 
@@ -64,6 +66,8 @@ namespace Vkxel {
         std::optional<ComputeJob> _compute = std::nullopt;
 
         SDFType _sdf;
+
+        bool _request_obj = false;
     };
 
     REGISTER_TYPE(GpuDualContouring)
