@@ -55,6 +55,9 @@ namespace Vkxel {
             if (ImGui::Button("GPU Generate Mesh")) {
                 gpu_dual_contouring.GenerateMesh();
             }
+            if (ImGui::Button("GPU Export OBJ")) {
+                gpu_dual_contouring.RequestOBJ();
+            }
         };
 
         // Create SDF Object
