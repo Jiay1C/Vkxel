@@ -45,12 +45,9 @@ namespace Vkxel {
                                                          {slang::CompilerOptionValueKind::Int, 1, 0, nullptr, nullptr}},
                               slang::CompilerOptionEntry{slang::CompilerOptionName::GLSLForceScalarLayout,
                                                          {slang::CompilerOptionValueKind::Int, 1, 0, nullptr, nullptr}},
-#if defined(__APPLE__) && defined(__MACH__) // disable slang optimization on macOS temporarily due to bug in slang impl
                               slang::CompilerOptionEntry{slang::CompilerOptionName::Optimization,
                                                          {slang::CompilerOptionValueKind::Int,
-                                                          SLANG_OPTIMIZATION_LEVEL_NONE, 0, nullptr, nullptr}}
-#endif
-        };
+                                                          SLANG_OPTIMIZATION_LEVEL_HIGH, 0, nullptr, nullptr}}};
         sessionDesc.compilerOptionEntries = options.data();
         sessionDesc.compilerOptionEntryCount = static_cast<uint32_t>(options.size());
 
