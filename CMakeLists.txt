@@ -1,13 +1,21 @@
 cmake_minimum_required(VERSION 3.25)
 project(Vkxel)
 
-# Ensure the compiler is MSVC
-if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    message(FATAL_ERROR "${PROJECT_NAME} requires the MSVC toolchain. Current toolchain is ${CMAKE_CXX_COMPILER_ID}")
+# Supported platforms/toolchains
+if (WIN32)
+    if (NOT MSVC)
+        message(FATAL_ERROR "${PROJECT_NAME} requires the MSVC toolchain on Windows. Current toolchain is ${CMAKE_CXX_COMPILER_ID}")
+    endif ()
+elseif (APPLE)
+    if (NOT CMAKE_CXX_COMPILER_ID MATCHES "AppleClang|Clang")
+        message(FATAL_ERROR "${PROJECT_NAME} requires Clang on macOS. Current toolchain is ${CMAKE_CXX_COMPILER_ID}")
+    endif ()
+    set(CMAKE_OSX_ARCHITECTURES "arm64")
+else ()
+    message(FATAL_ERROR "${PROJECT_NAME} currently supports Windows and macOS only.")
 endif ()
 
 # Set C++ Standard to 20
-set(CMAKE_CXX_STANDARD LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -28,10 +36,6 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${PROJECT_NAME}/${ARCHIVE
 
 # Address Sanitizer
 option(ENABLE_ASAN "Enable Address Sanitizer" OFF)
-if (ENABLE_ASAN)
-    message(STATUS "Address Sanitizer enabled")
-    add_compile_options("/fsanitize=address")
-endif ()
 
 # GLFW
 find_package(glfw3 3.4 REQUIRED)
@@ -240,6 +244,28 @@ set(SOURCES
 # Define the executable
 add_executable(${PROJECT_NAME} ${SOURCES})
 
+set(VKXEL_COMPILE_OPTIONS "")
+set(VKXEL_LINK_OPTIONS "")
+
+if (MSVC)
+    list(APPEND VKXEL_COMPILE_OPTIONS /W4 /Zc:preprocessor)
+elseif (CMAKE_CXX_COMPILER_ID MATCHES "AppleClang|Clang|GNU")
+    list(APPEND VKXEL_COMPILE_OPTIONS -Wall -Wextra -Wpedantic)
+endif ()
+
+if (ENABLE_ASAN)
+    message(STATUS "Address Sanitizer enabled")
+    if (MSVC)
+        list(APPEND VKXEL_COMPILE_OPTIONS /fsanitize=address)
+        list(APPEND VKXEL_LINK_OPTIONS /fsanitize=address)
+    elseif (CMAKE_CXX_COMPILER_ID MATCHES "AppleClang|Clang|GNU")
+        list(APPEND VKXEL_COMPILE_OPTIONS -fsanitize=address -fno-omit-frame-pointer)
+        list(APPEND VKXEL_LINK_OPTIONS -fsanitize=address)
+    else ()
+        message(WARNING "Address Sanitizer is not configured for ${CMAKE_CXX_COMPILER_ID}.")
+    endif ()
+endif ()
+
 # Include directories
 include_directories(
         ${Vulkan_INCLUDE_DIR}
@@ -263,11 +289,24 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         spdlog::spdlog
 )
 
-# Enable all warnings and new preprocessor during compile
-target_compile_options(${PROJECT_NAME} PRIVATE /W4 /Zc:preprocessor)
+if (VKXEL_COMPILE_OPTIONS)
+    target_compile_options(${PROJECT_NAME} PRIVATE ${VKXEL_COMPILE_OPTIONS})
+endif ()
+
+if (VKXEL_LINK_OPTIONS)
+    target_link_options(${PROJECT_NAME} PRIVATE ${VKXEL_LINK_OPTIONS})
+endif ()
 
 # Add RELEASE macro in Release
 target_compile_definitions(${PROJECT_NAME} PRIVATE $<$<CONFIG:Release>:RELEASE>)
+
+if (APPLE)
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+            BUILD_RPATH "@loader_path;@loader_path/../lib"
+            INSTALL_RPATH "@loader_path;@loader_path/../lib"
+            MACOSX_RPATH ON
+    )
+endif ()
 
 # Copy shader folder to the binary directory after building
 set(SOURCE_SHADER_PATH "shader")

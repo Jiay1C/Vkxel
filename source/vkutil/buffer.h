@@ -5,6 +5,7 @@
 #ifndef VKXEL_BUFFER_H
 #define VKXEL_BUFFER_H
 
+#include <cstddef>
 #include <utility>
 
 #include "vk_mem_alloc.h"

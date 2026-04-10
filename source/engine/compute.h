@@ -5,6 +5,7 @@
 #ifndef VKXEL_COMPUTE_H
 #define VKXEL_COMPUTE_H
 
+#include <cstddef>
 #include <string_view>
 #include <vector>
 
