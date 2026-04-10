@@ -97,21 +97,21 @@ namespace Vkxel {
         if (auto compute_queue_result = _device.get_queue(vkb::QueueType::compute)) {
             _compute_queue = compute_queue_result.value();
             _compute_queue_family_index = _device.get_queue_index(vkb::QueueType::compute).value();
-        }
-        else {
+        } else {
             _compute_queue = _queue;
             _compute_queue_family_index = _queue_family_index;
-            Debug::LogWarning("compute queue not available, fallback to graphics queue: {}", compute_queue_result.error().message());
+            Debug::LogWarning("compute queue not available, fallback to graphics queue: {}",
+                              compute_queue_result.error().message());
         }
 
         if (auto transfer_queue_result = _device.get_queue(vkb::QueueType::transfer)) {
             _transfer_queue = transfer_queue_result.value();
             _transfer_queue_family_index = _device.get_queue_index(vkb::QueueType::transfer).value();
-        }
-        else {
+        } else {
             _transfer_queue = _queue;
             _transfer_queue_family_index = _queue_family_index;
-            Debug::LogWarning("transfer queue not available, fallback to graphics queue: {}", transfer_queue_result.error().message());
+            Debug::LogWarning("transfer queue not available, fallback to graphics queue: {}",
+                              transfer_queue_result.error().message());
         }
 
         // Create Command Pool
