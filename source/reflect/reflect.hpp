@@ -46,7 +46,7 @@
         }();                                                                                                           \
         static void Register() {                                                                                       \
             using entt::literals::operator""_hs;                                                                       \
-            auto meta = entt::meta<Type>();                                                                            \
+            auto meta = entt::meta_factory<Type>();                                                                    \
             REGISTER_NAME(TYPE);
 
 #define REGISTER_END()                                                                                                 \

@@ -2,6 +2,8 @@
 // Created by jiayi on 2/9/2025.
 //
 
+#include <array>
+#include <cmath>
 #include <cstdint>
 #include <ranges>
 #include <vector>

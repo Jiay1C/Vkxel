@@ -2,6 +2,8 @@
 // Created by jiayi on 2/7/2025.
 //
 
+#include <limits>
+
 #include "vulkan/vulkan.h"
 
 #include "command.h"

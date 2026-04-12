@@ -2,6 +2,7 @@
 // Created by jiayi on 1/19/2025.
 //
 
+#include <algorithm>
 #include <array>
 #include <filesystem>
 #include <string>
@@ -36,15 +37,17 @@ namespace Vkxel {
         sessionDesc.targets = &targetDesc;
         sessionDesc.targetCount = 1;
 
-        std::array options = {
-                slang::CompilerOptionEntry{slang::CompilerOptionName::EmitSpirvDirectly,
-                                           {slang::CompilerOptionValueKind::Int, 1, 0, nullptr, nullptr}},
-                slang::CompilerOptionEntry{slang::CompilerOptionName::VulkanUseEntryPointName,
-                                           {slang::CompilerOptionValueKind::Int, 1, 0, nullptr, nullptr}},
-                slang::CompilerOptionEntry{slang::CompilerOptionName::GenerateWholeProgram,
-                                           {slang::CompilerOptionValueKind::Int, 1, 0, nullptr, nullptr}},
-                slang::CompilerOptionEntry{slang::CompilerOptionName::GLSLForceScalarLayout,
-                                           {slang::CompilerOptionValueKind::Int, 1, 0, nullptr, nullptr}}};
+        std::array options = {slang::CompilerOptionEntry{slang::CompilerOptionName::EmitSpirvDirectly,
+                                                         {slang::CompilerOptionValueKind::Int, 1, 0, nullptr, nullptr}},
+                              slang::CompilerOptionEntry{slang::CompilerOptionName::VulkanUseEntryPointName,
+                                                         {slang::CompilerOptionValueKind::Int, 1, 0, nullptr, nullptr}},
+                              slang::CompilerOptionEntry{slang::CompilerOptionName::GenerateWholeProgram,
+                                                         {slang::CompilerOptionValueKind::Int, 1, 0, nullptr, nullptr}},
+                              slang::CompilerOptionEntry{slang::CompilerOptionName::GLSLForceScalarLayout,
+                                                         {slang::CompilerOptionValueKind::Int, 1, 0, nullptr, nullptr}},
+                              slang::CompilerOptionEntry{slang::CompilerOptionName::Optimization,
+                                                         {slang::CompilerOptionValueKind::Int,
+                                                          SLANG_OPTIMIZATION_LEVEL_HIGH, 0, nullptr, nullptr}}};
         sessionDesc.compilerOptionEntries = options.data();
         sessionDesc.compilerOptionEntryCount = static_cast<uint32_t>(options.size());
 

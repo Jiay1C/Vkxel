@@ -3,6 +3,8 @@
 //
 
 #include <array>
+#include <cstdlib>
+#include <limits>
 #include <ranges>
 #include <utility>
 #include <vector>
@@ -18,6 +20,7 @@
 #include "shader.h"
 #include "util/application.h"
 #include "util/check.h"
+#include "util/debug.hpp"
 #include "vkutil/buffer.h"
 #include "vkutil/command.h"
 #include "vkutil/image.h"
@@ -63,6 +66,8 @@ namespace Vkxel {
         CHECK(physical_device_result, physical_device_result.error().message());
         _physical_device = physical_device_result.value();
 
+        Debug::Log("Device : {}", _physical_device.name);
+
         // Create Device
         vkb::DeviceBuilder device_builder(_physical_device);
         auto device_result = device_builder.build();
@@ -89,15 +94,25 @@ namespace Vkxel {
         _queue = queue_result.value();
         _queue_family_index = _device.get_queue_index(vkb::QueueType::graphics).value();
 
-        auto compute_queue_result = _device.get_queue(vkb::QueueType::compute);
-        CHECK(compute_queue_result, compute_queue_result.error().message());
-        _compute_queue = compute_queue_result.value();
-        _compute_queue_family_index = _device.get_queue_index(vkb::QueueType::compute).value();
+        if (auto compute_queue_result = _device.get_queue(vkb::QueueType::compute)) {
+            _compute_queue = compute_queue_result.value();
+            _compute_queue_family_index = _device.get_queue_index(vkb::QueueType::compute).value();
+        } else {
+            _compute_queue = _queue;
+            _compute_queue_family_index = _queue_family_index;
+            Debug::LogWarning("compute queue not available, fallback to graphics queue: {}",
+                              compute_queue_result.error().message());
+        }
 
-        auto transfer_queue_result = _device.get_queue(vkb::QueueType::transfer);
-        CHECK(transfer_queue_result, transfer_queue_result.error().message());
-        _transfer_queue = transfer_queue_result.value();
-        _transfer_queue_family_index = _device.get_queue_index(vkb::QueueType::transfer).value();
+        if (auto transfer_queue_result = _device.get_queue(vkb::QueueType::transfer)) {
+            _transfer_queue = transfer_queue_result.value();
+            _transfer_queue_family_index = _device.get_queue_index(vkb::QueueType::transfer).value();
+        } else {
+            _transfer_queue = _queue;
+            _transfer_queue_family_index = _queue_family_index;
+            Debug::LogWarning("transfer queue not available, fallback to graphics queue: {}",
+                              transfer_queue_result.error().message());
+        }
 
         // Create Command Pool
         VkCommandPoolCreateInfo command_pool_create_info{.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,

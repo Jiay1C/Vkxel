@@ -124,7 +124,7 @@ namespace Vkxel {
 
     void EditorEngine::DrawComponentInternal(entt::meta_any &component) {
         for (auto &&[id, base]: component.type().base()) {
-            auto instance = base.from_void(component.data());
+            auto instance = base.from_void(component.cast<void *>());
             DrawComponentInternal(instance);
         }
         for (auto &&[id, elem]: component.type().data()) {
@@ -136,7 +136,7 @@ namespace Vkxel {
 
     void EditorEngine::DrawElement(const std::string_view name, entt::meta_any &element) {
         const auto &type = element.type();
-        void *data = element.data();
+        const auto data = element.cast<void *>();
 
         if (type == Reflect::GetType<bool>()) {
             ImGui::Checkbox(name.data(), static_cast<bool *>(data));

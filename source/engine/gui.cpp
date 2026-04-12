@@ -8,6 +8,7 @@
 
 #include "gui.h"
 #include "input.h"
+#include "util/application.h"
 #include "window.h"
 
 namespace Vkxel {
@@ -34,20 +35,23 @@ namespace Vkxel {
 
         ImGui_ImplGlfw_InitForVulkan(_window.GetWindow(), true);
 
-        ImGui_ImplVulkan_InitInfo imgui_init_info = {.Instance = pInfo->Instance,
-                                                     .PhysicalDevice = pInfo->PhysicalDevice,
-                                                     .Device = pInfo->Device,
-                                                     .QueueFamily = pInfo->QueueFamily,
-                                                     .Queue = pInfo->Queue,
-                                                     .DescriptorPool = pInfo->DescriptorPool,
-                                                     .MinImageCount = pInfo->MinImageCount,
-                                                     .ImageCount = pInfo->ImageCount,
-                                                     .UseDynamicRendering = true,
-                                                     .PipelineRenderingCreateInfo = VkPipelineRenderingCreateInfo{
-                                                             .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
-                                                             .colorAttachmentCount = 1,
-                                                             .pColorAttachmentFormats = &(pInfo->ColorAttachmentFormat),
-                                                     }};
+        ImGui_ImplVulkan_InitInfo imgui_init_info = {
+                .ApiVersion = Application::VulkanVersion,
+                .Instance = pInfo->Instance,
+                .PhysicalDevice = pInfo->PhysicalDevice,
+                .Device = pInfo->Device,
+                .QueueFamily = pInfo->QueueFamily,
+                .Queue = pInfo->Queue,
+                .DescriptorPool = pInfo->DescriptorPool,
+                .MinImageCount = pInfo->MinImageCount,
+                .ImageCount = pInfo->ImageCount,
+                .PipelineInfoMain = {.PipelineRenderingCreateInfo =
+                                             {
+                                                     .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+                                                     .colorAttachmentCount = 1,
+                                                     .pColorAttachmentFormats = &(pInfo->ColorAttachmentFormat),
+                                             }},
+                .UseDynamicRendering = true};
 
         ImGui_ImplVulkan_Init(&imgui_init_info);
 
