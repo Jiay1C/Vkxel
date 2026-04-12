@@ -41,7 +41,7 @@ jobs:
         run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
 
       - name: Build
-        run: cmake --build build --config ${{ matrix.build_type }}
+        run: cmake --build build --config ${{ matrix.build_type }} --target ${{ env.PROJECT_NAME }}
 
       - name: Test
         run: ctest --test-dir build -C ${{ matrix.build_type }}
