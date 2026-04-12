@@ -2,6 +2,8 @@
 // Created by jiayi on 4/3/2025.
 //
 
+#include <algorithm>
+
 #include "compute.h"
 #include "shader.h"
 #include "util/check.h"

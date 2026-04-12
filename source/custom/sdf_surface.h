@@ -6,6 +6,7 @@
 #define VKXEL_SDF_SURFACE_H
 
 #include <functional>
+#include <vector>
 
 #include "glm/glm.hpp"
 #include "world/component.h"

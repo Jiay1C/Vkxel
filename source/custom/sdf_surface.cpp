@@ -2,6 +2,9 @@
 // Created by jiayi on 2/9/2025.
 //
 
+#include <algorithm>
+#include <limits>
+
 #include "sdf_surface.h"
 
 #include "world/gameobject.hpp"

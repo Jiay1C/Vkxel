@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ windows-latest ]
+        os: [ windows-latest, macos-latest ]
         build_type: [ Debug, RelWithDebInfo, Release ]
     env:
       PROJECT_NAME: Vkxel
@@ -24,6 +24,7 @@ jobs:
 
       - name: MSVC
         uses: ilammy/msvc-dev-cmd@v1.13.0
+        if: runner.os == 'Windows'
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -31,11 +32,16 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
-      - name: Generate
+      - name: Generate (Windows)
+        if: runner.os == 'Windows'
         run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl
 
+      - name: Generate (macOS)
+        if: runner.os == 'macOS'
+        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+
       - name: Build
-        run: cmake --build build --config ${{ matrix.build_type }}
+        run: cmake --build build --config ${{ matrix.build_type }} --target ${{ env.PROJECT_NAME }}
 
       - name: Test
         run: ctest --test-dir build -C ${{ matrix.build_type }}
