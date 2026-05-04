@@ -20,7 +20,6 @@ namespace Vkxel {
         void DrawGameObjectTree(GameObject &gameObject);
         void DrawGameObject(GameObject &gameObject);
         void DrawComponent(Component &component);
-        void DrawComponentInternal(entt::meta_any &component);
         void DrawElement(std::string_view name, entt::meta_any &element);
 
         void DrawCreateGameObject(std::optional<std::reference_wrapper<Transform>> parent = std::nullopt);

@@ -2,7 +2,9 @@
 // Created by jiayi on 2/21/2025.
 //
 
+#include <cstdint>
 #include <format>
+#include <vector>
 
 #include "editor.h"
 
@@ -18,6 +20,24 @@
 #include "world/mover.h"
 
 namespace Vkxel {
+
+    namespace {
+
+        template<typename Type>
+        bool DrawIntegral(const std::string_view name, entt::meta_any &element, const entt::meta_type &type,
+                          const ImGuiDataType data_type) {
+            if (type != Reflect::GetType<Type>()) {
+                return false;
+            }
+
+            if (auto *value = element.try_cast<Type>(); value) {
+                ImGui::DragScalar(name.data(), data_type, value);
+            }
+
+            return true;
+        }
+
+    } // namespace
 
     EditorEngine::EditorEngine(Scene &scene) : Engine(scene) {
         SetupDebugUI();
@@ -118,61 +138,101 @@ namespace Vkxel {
             component.gameObject.RemoveComponent(component);
         }
         auto instance = Reflect::GetType(typeid(component)).from_void(&component);
-        DrawComponentInternal(instance);
+
+        const auto draw_type = [&](const auto &self, const entt::meta_type &type) -> void {
+            for (auto &&[id, base]: type.base()) {
+                self(self, base);
+            }
+            for (auto &&[id, elem]: type.data()) {
+                if (auto element = elem.get(instance); element) {
+                    DrawElement(Reflect::GetName(id), element);
+                }
+            }
+        };
+
+        draw_type(draw_type, instance.type());
         ImGui::PopID();
     }
 
-    void EditorEngine::DrawComponentInternal(entt::meta_any &component) {
-        for (auto &&[id, base]: component.type().base()) {
-            auto instance = base.from_void(component.cast<void *>());
-            DrawComponentInternal(instance);
-        }
-        for (auto &&[id, elem]: component.type().data()) {
-            auto instance = elem.get(component);
-            DrawElement(Reflect::GetName(id), instance);
-        }
-    }
-
-
     void EditorEngine::DrawElement(const std::string_view name, entt::meta_any &element) {
+        if (!element) {
+            ImGui::Text("%s: Unavailable", name.data());
+            return;
+        }
+
         const auto &type = element.type();
-        const auto data = element.cast<void *>();
 
         if (type == Reflect::GetType<bool>()) {
-            ImGui::Checkbox(name.data(), static_cast<bool *>(data));
-        } else if (type.is_integral()) {
-            ImGui::DragInt(name.data(), static_cast<int *>(data));
+            if (auto *value = element.try_cast<bool>(); value) {
+                ImGui::Checkbox(name.data(), value);
+            }
+        } else if (DrawIntegral<std::int8_t>(name, element, type, ImGuiDataType_S8) ||
+                   DrawIntegral<std::uint8_t>(name, element, type, ImGuiDataType_U8) ||
+                   DrawIntegral<std::int16_t>(name, element, type, ImGuiDataType_S16) ||
+                   DrawIntegral<std::uint16_t>(name, element, type, ImGuiDataType_U16) ||
+                   DrawIntegral<std::int32_t>(name, element, type, ImGuiDataType_S32) ||
+                   DrawIntegral<std::uint32_t>(name, element, type, ImGuiDataType_U32) ||
+                   DrawIntegral<std::int64_t>(name, element, type, ImGuiDataType_S64) ||
+                   DrawIntegral<std::uint64_t>(name, element, type, ImGuiDataType_U64)) {
         } else if (type == Reflect::GetType<float>()) {
-            ImGui::DragFloat(name.data(), static_cast<float *>(data));
+            if (auto *value = element.try_cast<float>(); value) {
+                ImGui::DragFloat(name.data(), value);
+            }
         } else if (type == Reflect::GetType<double>()) {
-            ImGui::InputDouble(name.data(), static_cast<double *>(data));
+            if (auto *value = element.try_cast<double>(); value) {
+                ImGui::InputDouble(name.data(), value);
+            }
         } else if (type == Reflect::GetType<glm::vec2>()) {
-            ImGui::DragFloat2(name.data(), static_cast<float *>(data));
+            if (auto *value = element.try_cast<glm::vec2>(); value) {
+                ImGui::DragFloat2(name.data(), reinterpret_cast<float *>(value));
+            }
         } else if (type == Reflect::GetType<glm::vec3>()) {
-            ImGui::DragFloat3(name.data(), static_cast<float *>(data));
+            if (auto *value = element.try_cast<glm::vec3>(); value) {
+                ImGui::DragFloat3(name.data(), reinterpret_cast<float *>(value));
+            }
         } else if (type == Reflect::GetType<glm::vec4>()) {
-            ImGui::DragFloat4(name.data(), static_cast<float *>(data));
+            if (auto *value = element.try_cast<glm::vec4>(); value) {
+                ImGui::DragFloat4(name.data(), reinterpret_cast<float *>(value));
+            }
         } else if (type == Reflect::GetType<glm::ivec2>()) {
-            ImGui::DragInt2(name.data(), static_cast<int *>(data));
+            if (auto *value = element.try_cast<glm::ivec2>(); value) {
+                ImGui::DragInt2(name.data(), reinterpret_cast<int *>(value));
+            }
         } else if (type == Reflect::GetType<glm::ivec3>()) {
-            ImGui::DragInt3(name.data(), static_cast<int *>(data));
+            if (auto *value = element.try_cast<glm::ivec3>(); value) {
+                ImGui::DragInt3(name.data(), reinterpret_cast<int *>(value));
+            }
         } else if (type == Reflect::GetType<glm::ivec4>()) {
-            ImGui::DragInt4(name.data(), static_cast<int *>(data));
+            if (auto *value = element.try_cast<glm::ivec4>(); value) {
+                ImGui::DragInt4(name.data(), reinterpret_cast<int *>(value));
+            }
         } else if (type == Reflect::GetType<glm::quat>()) {
-            auto &quat = *static_cast<glm::quat *>(data);
-            auto deg = glm::degrees(glm::eulerAngles(quat));
-            ImGui::DragFloat3(name.data(), reinterpret_cast<float *>(&deg));
-            quat = glm::radians(deg);
+            if (auto *quat = element.try_cast<glm::quat>(); quat) {
+                auto deg = glm::degrees(glm::eulerAngles(*quat));
+                ImGui::DragFloat3(name.data(), reinterpret_cast<float *>(&deg));
+                *quat = glm::radians(deg);
+            }
         } else if (type == Reflect::GetType<std::string>()) {
-            auto &str = *static_cast<std::string *>(data);
-            DrawString(name, str);
+            if (auto *str = element.try_cast<std::string>(); str) {
+                DrawString(name, *str);
+            }
         } else if (type.is_enum()) {
             std::vector<const char *> enum_names;
+            std::vector<entt::meta_any> enum_values;
+            int selected_enum = 0;
+            int current_index = 0;
             for (auto &&[id, elem]: type.data()) {
                 enum_names.push_back(Reflect::GetName(id).data());
+                enum_values.push_back(elem.get(entt::meta_handle{}));
+                if (enum_values.back() == element) {
+                    selected_enum = current_index;
+                }
+                ++current_index;
             }
-            // TODO: Assume Use Int To Store Enum Here, Maybe Cause Bug
-            ImGui::Combo(name.data(), static_cast<int *>(data), enum_names.data(), static_cast<int>(enum_names.size()));
+            if (!enum_names.empty() &&
+                ImGui::Combo(name.data(), &selected_enum, enum_names.data(), static_cast<int>(enum_names.size()))) {
+                element.assign(enum_values[static_cast<size_t>(selected_enum)]);
+            }
         } else {
             ImGui::Text("%s: Unsupported Type <%s>", name.data(), type.info().name().data());
         }
