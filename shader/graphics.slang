@@ -45,7 +45,7 @@ struct ConstantBufferPerObject
 ConstantBuffer<ConstantBufferPerFrame> cbufferFrame;
 
 [[vk::binding(0,1)]]
-ConstantBuffer<ConstantBufferPerObject> cbufferObject;
+StructuredBuffer<ConstantBufferPerObject> cbufferObject;
 
 float3x3 GetNormalMatrix(float4x4 m)
 {
@@ -53,10 +53,10 @@ float3x3 GetNormalMatrix(float4x4 m)
 }
 
 [shader("vertex")]
-VertexOutput vertexMain(VertexInput input)
+VertexOutput vertexMain(VertexInput input, uint objectIndex : SV_StartInstanceLocation)
 {
     VertexOutput output;
-    float4x4 m = cbufferObject.transformMatrix;
+    float4x4 m = cbufferObject[objectIndex].transformMatrix;
     float4x4 v = cbufferFrame.scene.viewMatrix;
     float4x4 p = cbufferFrame.scene.projectionMatrix;
 

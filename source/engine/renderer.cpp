@@ -214,20 +214,32 @@ namespace Vkxel {
         _gui.AddItem(Application::DefaultCanvasPanelName.data(), [&]() { _context.uis(); });
 
         // Create Graphics Pipeline Descriptor Set Layout
-        std::array descriptor_set_layout_binding = {
+        std::array descriptor_set_layout_binding_frame = {
                 VkDescriptorSetLayoutBinding{.binding = 0,
                                              .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
                                              .descriptorCount = 1,
                                              .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT}};
 
-        VkDescriptorSetLayoutCreateInfo descriptor_set_layout_create_info{
+        VkDescriptorSetLayoutCreateInfo descriptor_set_layout_create_info_frame{
                 .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-                .bindingCount = static_cast<uint32_t>(descriptor_set_layout_binding.size()),
-                .pBindings = descriptor_set_layout_binding.data()};
+                .bindingCount = static_cast<uint32_t>(descriptor_set_layout_binding_frame.size()),
+                .pBindings = descriptor_set_layout_binding_frame.data()};
 
-        CHECK_RESULT_VK(vkCreateDescriptorSetLayout(_device, &descriptor_set_layout_create_info, nullptr,
+        CHECK_RESULT_VK(vkCreateDescriptorSetLayout(_device, &descriptor_set_layout_create_info_frame, nullptr,
                                                     &_descriptor_set_layout_frame));
-        CHECK_RESULT_VK(vkCreateDescriptorSetLayout(_device, &descriptor_set_layout_create_info, nullptr,
+
+        std::array descriptor_set_layout_binding_object = {
+                VkDescriptorSetLayoutBinding{.binding = 0,
+                                             .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                                             .descriptorCount = 1,
+                                             .stageFlags = VK_SHADER_STAGE_VERTEX_BIT}};
+
+        VkDescriptorSetLayoutCreateInfo descriptor_set_layout_create_info_object{
+                .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+                .bindingCount = static_cast<uint32_t>(descriptor_set_layout_binding_object.size()),
+                .pBindings = descriptor_set_layout_binding_object.data()};
+
+        CHECK_RESULT_VK(vkCreateDescriptorSetLayout(_device, &descriptor_set_layout_create_info_object, nullptr,
                                                     &_descriptor_set_layout_object));
 
         // Upload Data
@@ -240,16 +252,6 @@ namespace Vkxel {
         for (auto &resource: _frame_resource) {
             resource = _resource_manager->CreateFrameResource(_swapchain.extent.width, _swapchain.extent.height);
         }
-
-        // _object_resource.reserve(context.objects.size());
-        //
-        // for (const auto &object: context.objects) {
-        //     ObjectResource &resource =
-        //     _object_resource.emplace_back(_resource_manager->CreateObjectResource(object));
-        //     _resource_uploader->AddObject(object, resource);
-        // }
-        //
-        // _resource_uploader->Upload();
 
         // Create Graphics Pipeline
         _pipeline = VkUtil::DefaultGraphicsPipelineBuilder(_device).Build(
@@ -327,6 +329,7 @@ namespace Vkxel {
         vkCmdSetScissor(frame.commandBuffer, 0, 1, &scissor);
 
         // Upload Scene
+        uint32_t current_object_index = 0;
         for (const auto &object: _context.objects) {
             if (_object_resource.contains(object.objectId)) {
                 ObjectResource &object_resource = _object_resource.at(object.objectId);
@@ -339,15 +342,15 @@ namespace Vkxel {
                 } else {
                     object_resource.isActive = true;
                 }
-                _resource_manager->UpdateObjectResource(frame.commandBuffer, object, object_resource);
+                object_resource.instanceId = current_object_index++;
             } else {
                 ObjectResource &object_resource = _object_resource[object.objectId] =
                         _resource_manager->CreateObjectResource(object);
                 _resource_uploader->AddObject(object, object_resource);
-                _resource_manager->UpdateObjectResource(frame.commandBuffer, object, object_resource);
+                object_resource.instanceId = current_object_index++;
             }
         }
-        _resource_manager->UpdateFrameResource(frame.commandBuffer, _context.scene, frame);
+        _resource_manager->UpdateFrameResource(frame.commandBuffer, _context.scene, _context.objects, frame);
 
         // Upload Object Mesh Data (Block Wait)
         // TODO Support Async Upload
@@ -386,14 +389,15 @@ namespace Vkxel {
         vkCmdBindPipeline(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline.pipeline);
         vkCmdBindDescriptorSets(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline.layout, 0, 1,
                                 &frame.descriptorSet.set, 0, nullptr);
+        vkCmdBindDescriptorSets(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline.layout, 1, 1,
+                                &frame.objectDescriptorSet.set, 0, nullptr);
 
         for (const auto &object: _object_resource | std::views::values) {
             if (object.isActive) {
-                vkCmdBindDescriptorSets(frame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline.layout, 1, 1,
-                                        &object.descriptorSet.set, 0, nullptr);
                 vkCmdBindIndexBuffer(frame.commandBuffer, object.indexBuffer.buffer, offset_zero, VK_INDEX_TYPE_UINT32);
                 vkCmdBindVertexBuffers(frame.commandBuffer, 0, 1, &object.vertexBuffer.buffer, &offset_zero);
-                vkCmdDrawIndexed(frame.commandBuffer, object.indexCount, 1, object.firstIndex, 0, 0);
+                vkCmdDrawIndexed(frame.commandBuffer, object.indexCount, 1, object.firstIndex, 0,
+                                 object.instanceId);
             }
         }
 

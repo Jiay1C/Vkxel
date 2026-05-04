@@ -2,9 +2,11 @@
 // Created by jiayi on 2/7/2025.
 //
 
+#include <algorithm>
 #include <array>
-#include <list>
+#include <bit>
 #include <ranges>
+#include <span>
 #include <vector>
 
 #include "resource.h"
@@ -15,6 +17,25 @@
 #include "vtime.h"
 
 namespace Vkxel {
+    namespace {
+        void UpdateBufferDescriptorSet(const VkDevice device, const VkDescriptorSet descriptorSet,
+                                       const VkDescriptorType descriptorType, const VkBuffer buffer) {
+            VkDescriptorBufferInfo buffer_info{.buffer = buffer, .offset = 0, .range = VK_WHOLE_SIZE};
+            std::array descriptor_set_write_info = {VkWriteDescriptorSet{
+                    .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                    .dstSet = descriptorSet,
+                    .dstBinding = 0,
+                    .dstArrayElement = 0,
+                    .descriptorCount = 1,
+                    .descriptorType = descriptorType,
+                    .pBufferInfo = &buffer_info,
+            }};
+
+            vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptor_set_write_info.size()),
+                                   descriptor_set_write_info.data(), 0, nullptr);
+        }
+    } // namespace
+
     ResourceUploader &ResourceUploader::AddObject(const ObjectData &object, ObjectResource &resource) {
         _objects.emplace_back(object, resource);
         return *this;
@@ -173,65 +194,17 @@ namespace Vkxel {
                             .Build();
             resource.vertexBuffer.Create();
 
-            resource.indexCount = index.size();
+            resource.indexCount = static_cast<uint32_t>(index.size());
         } else {
             CHECK(nullptr, "Error Mesh Type");
         }
 
-        // Create Constant Buffer
-        // Change Matrix To Row Major
-        resource.constantBuffer =
-                buffer_builder.SetSize(sizeof(ConstantBufferPerObject))
-                        .SetUsage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT)
-                        .Build();
-        resource.constantBuffer.Create();
-
-        // Create DescriptorSet
-        resource.descriptorSet =
-                VkUtil::DescriptorSetBuilder(_device, _descriptor_pool, _descriptor_set_layout_object).Build();
-        resource.descriptorSet.Create();
-
-        VkDescriptorBufferInfo constant_buffer_per_object_info{
-                .buffer = resource.constantBuffer.buffer, .offset = 0, .range = VK_WHOLE_SIZE};
-        std::array descriptor_set_write_info = {VkWriteDescriptorSet{
-                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                .dstSet = resource.descriptorSet.set,
-                .dstBinding = 0,
-                .dstArrayElement = 0,
-                .descriptorCount = 1,
-                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                .pBufferInfo = &constant_buffer_per_object_info,
-        }};
-
-        vkUpdateDescriptorSets(_device, static_cast<uint32_t>(descriptor_set_write_info.size()),
-                               descriptor_set_write_info.data(), 0, nullptr);
-
         return resource;
     }
-
-    void ResourceManager::UpdateObjectResource(const VkCommandBuffer commandBuffer, const ObjectData &object,
-                                               ObjectResource &objectResource) {
-        objectResource.constantBuffer.CmdBarrier(commandBuffer, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT, VK_ACCESS_2_NONE,
-                                                 VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT);
-
-        // Update Constant Buffer
-        // Change Matrix To Row Major
-        ConstantBufferPerObject constant_buffer_per_object = {.transformMatrix = glm::transpose(object.transform)};
-        vkCmdUpdateBuffer(commandBuffer, objectResource.constantBuffer.buffer, 0, sizeof(ConstantBufferPerObject),
-                          &constant_buffer_per_object);
-
-        objectResource.constantBuffer.CmdBarrier(
-                commandBuffer, VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT_KHR | VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-                VK_ACCESS_2_UNIFORM_READ_BIT);
-    }
-
 
     void ResourceManager::DestroyObjectResource(ObjectResource &resource) {
         resource.indexBuffer.Destroy();
         resource.vertexBuffer.Destroy();
-        resource.constantBuffer.Destroy();
-        resource.descriptorSet.Destroy();
 
         resource = {};
     }
@@ -279,25 +252,31 @@ namespace Vkxel {
                         .Build();
         constant_buffer.Create();
 
+        VkUtil::Buffer object_buffer =
+                VkUtil::BufferBuilder(_device, _allocator)
+                        .SetMemoryUsage(VMA_MEMORY_USAGE_AUTO_PREFER_HOST)
+                        .SetPQueueFamilyIndices(&_queue_family)
+                        .SetAllocationFlags(VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT)
+                        .SetRequiredFlags(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
+                        .SetSize(sizeof(ConstantBufferPerObject))
+                        .SetUsage(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)
+                        .Build();
+        object_buffer.Create();
+
         // Create Scene DescriptorSet
         VkUtil::DescriptorSet descriptor_set =
                 VkUtil::DescriptorSetBuilder(_device, _descriptor_pool, _descriptor_set_layout_frame).Build();
         descriptor_set.Create();
 
-        VkDescriptorBufferInfo constant_buffer_per_frame_info{
-                .buffer = constant_buffer.buffer, .offset = 0, .range = VK_WHOLE_SIZE};
-        std::array descriptor_set_write_info = {VkWriteDescriptorSet{
-                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                .dstSet = descriptor_set.set,
-                .dstBinding = 0,
-                .dstArrayElement = 0,
-                .descriptorCount = 1,
-                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                .pBufferInfo = &constant_buffer_per_frame_info,
-        }};
+        UpdateBufferDescriptorSet(_device, descriptor_set.set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                                  constant_buffer.buffer);
 
-        vkUpdateDescriptorSets(_device, static_cast<uint32_t>(descriptor_set_write_info.size()),
-                               descriptor_set_write_info.data(), 0, nullptr);
+        VkUtil::DescriptorSet object_descriptor_set =
+                VkUtil::DescriptorSetBuilder(_device, _descriptor_pool, _descriptor_set_layout_object).Build();
+        object_descriptor_set.Create();
+
+        UpdateBufferDescriptorSet(_device, object_descriptor_set.set, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                                  object_buffer.buffer);
 
         VkSemaphore image_ready_semaphore = nullptr;
         VkSemaphore render_complete_semaphore = nullptr;
@@ -320,9 +299,12 @@ namespace Vkxel {
         CHECK_RESULT_VK(vkCreateFence(_device, &fence_create_info, nullptr, &command_fence));
 
         return {.constantBuffer = constant_buffer,
+                .objectBuffer = object_buffer,
                 .colorImage = color_image,
                 .depthImage = depth_image,
                 .descriptorSet = descriptor_set,
+                .objectDescriptorSet = object_descriptor_set,
+                .objectCapacity = 1,
                 .imageReadySemaphore = image_ready_semaphore,
                 .renderCompleteSemaphore = render_complete_semaphore,
                 .commandBuffer = command_buffer,
@@ -330,7 +312,7 @@ namespace Vkxel {
     }
 
     void ResourceManager::UpdateFrameResource(const VkCommandBuffer commandBuffer, const SceneData &scene,
-                                              FrameResource &frameResource) {
+                                              std::span<const ObjectData> objects, FrameResource &frameResource) {
         frameResource.constantBuffer.CmdBarrier(commandBuffer, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT, VK_ACCESS_2_NONE,
                                                 VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT);
 
@@ -348,14 +330,57 @@ namespace Vkxel {
                 commandBuffer, VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT,
                 VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT_KHR | VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
                 VK_ACCESS_2_UNIFORM_READ_BIT);
+
+
+        if (!objects.empty()) {
+
+            if (objects.size() > frameResource.objectCapacity) {
+                const size_t new_capacity = std::bit_ceil(std::max<size_t>(1, objects.size()));
+                if (frameResource.objectBuffer.buffer) {
+                    frameResource.objectBuffer.Destroy();
+                }
+
+                frameResource.objectBuffer =
+                        VkUtil::BufferBuilder(_device, _allocator)
+                                .SetMemoryUsage(VMA_MEMORY_USAGE_AUTO_PREFER_HOST)
+                                .SetPQueueFamilyIndices(&_queue_family)
+                                .SetAllocationFlags(VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT)
+                                .SetRequiredFlags(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
+                                .SetSize(sizeof(ConstantBufferPerObject) * new_capacity)
+                                .SetUsage(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)
+                                .Build();
+                frameResource.objectBuffer.Create();
+                frameResource.objectCapacity = new_capacity;
+
+                UpdateBufferDescriptorSet(_device, frameResource.objectDescriptorSet.set, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                                          frameResource.objectBuffer.buffer);
+            }
+
+            frameResource.objectBuffer.CmdBarrier(commandBuffer, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT, VK_ACCESS_2_NONE,
+                                                 VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT);
+
+            auto *buffer_data = reinterpret_cast<ConstantBufferPerObject *>(frameResource.objectBuffer.Map());
+            for (size_t index = 0; index < objects.size(); ++index) {
+                buffer_data[index] = {.transformMatrix = glm::transpose(objects[index].transform)};
+            }
+            frameResource.objectBuffer.Flush(0, sizeof(ConstantBufferPerObject) * objects.size());
+            frameResource.objectBuffer.Unmap();
+
+            frameResource.objectBuffer.CmdBarrier(
+                    commandBuffer, VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                    VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT_KHR | VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                    VK_ACCESS_2_SHADER_READ_BIT);
+        }
     }
 
 
     void ResourceManager::DestroyFrameResource(FrameResource &resource) {
         resource.constantBuffer.Destroy();
+        resource.objectBuffer.Destroy();
         resource.depthImage.Destroy();
         resource.colorImage.Destroy();
         resource.descriptorSet.Destroy();
+        resource.objectDescriptorSet.Destroy();
 
         vkDestroySemaphore(_device, resource.imageReadySemaphore, nullptr);
         vkDestroySemaphore(_device, resource.renderCompleteSemaphore, nullptr);

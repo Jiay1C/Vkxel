@@ -18,19 +18,21 @@ namespace Vkxel {
         bool isActive = false;
         uint32_t indexCount = 0;
         uint32_t firstIndex = 0;
+        uint32_t instanceId = 0;
         VkUtil::Buffer indexBuffer = {};
         VkUtil::Buffer vertexBuffer = {};
-        VkUtil::Buffer constantBuffer = {};
-        VkUtil::DescriptorSet descriptorSet = {};
     };
 
     struct FrameResource {
         VkUtil::Buffer constantBuffer = {};
+        VkUtil::Buffer objectBuffer = {};
 
         VkUtil::Image colorImage = {};
         VkUtil::Image depthImage = {};
 
         VkUtil::DescriptorSet descriptorSet = {};
+        VkUtil::DescriptorSet objectDescriptorSet = {};
+        size_t objectCapacity = 0;
 
         VkSemaphore imageReadySemaphore = nullptr;
         VkSemaphore renderCompleteSemaphore = nullptr;

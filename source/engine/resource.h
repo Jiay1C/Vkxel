@@ -5,6 +5,7 @@
 #ifndef VKXEL_RESOURCE_H
 #define VKXEL_RESOURCE_H
 
+#include <span>
 #include <vector>
 
 #include "vk_mem_alloc.h"
@@ -47,14 +48,11 @@ namespace Vkxel {
             _descriptor_set_layout_object(descriptorSetLayoutObject) {}
 
         ObjectResource CreateObjectResource(const ObjectData &object);
-        // TODO: Might modify function signature to support more members
-        void UpdateObjectResource(VkCommandBuffer commandBuffer, const ObjectData &object,
-                                  ObjectResource &objectResource);
         void DestroyObjectResource(ObjectResource &resource);
 
         FrameResource CreateFrameResource(uint32_t swapchainWidth, uint32_t swapchainHeight);
         // TODO: Might modify function signature to support more members
-        void UpdateFrameResource(VkCommandBuffer commandBuffer, const SceneData &scene, FrameResource &frameResource);
+        void UpdateFrameResource(VkCommandBuffer commandBuffer, const SceneData &scene, std::span<const ObjectData> objects, FrameResource &frameResource);
         void DestroyFrameResource(FrameResource &resource);
 
     private:
