@@ -14,6 +14,7 @@ namespace Vkxel {
         explicit EditorEngine(Scene &scene);
 
     private:
+        void InitializeComponents();
         void SetupDebugUI();
         void SetupSceneUI();
         void SetupInspectorUI();
@@ -30,6 +31,8 @@ namespace Vkxel {
 
         GameObject *_active_gameobject = nullptr;
         int _selected_component = -1;
+
+        std::vector<Reflect::Type> _available_components;
     };
 
 } // namespace Vkxel

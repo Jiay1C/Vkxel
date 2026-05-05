@@ -46,7 +46,7 @@
         }();                                                                                                           \
         static void Register() {                                                                                       \
             using entt::literals::operator""_hs;                                                                       \
-            auto meta = entt::meta_factory<Type>();                                                                    \
+            auto meta = Reflect::Factory<Type>();                                                                      \
             REGISTER_NAME(TYPE);
 
 #define REGISTER_END()                                                                                                 \
@@ -56,6 +56,11 @@
 
 namespace Vkxel {
 
+    template<typename T>
+    struct ReflectPlugin{
+        static void Apply() {}
+    };
+
     class Reflect {
     public:
         Reflect() = delete;
@@ -63,6 +68,10 @@ namespace Vkxel {
 
         using ID = entt::id_type;
         using Type = entt::meta_type;
+        using Any = entt::any;
+
+        template<typename T>
+        using Factory = entt::meta_factory<T>;
 
         template<typename InternalType>
         static void RegisterType() {
@@ -73,9 +82,11 @@ namespace Vkxel {
                 auto type = GetType<TargetType>();
                 std::type_index index = typeid(TargetType);
                 _type_map[index] = type;
+                _derived_map[type.id()]; // Ensure KV is created
                 for (auto &&[id, base]: type.base()) {
                     _derived_map[id].push_back(type);
                 }
+                ReflectPlugin<TargetType>::Apply();
             }
         }
 

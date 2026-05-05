@@ -40,9 +40,27 @@ namespace Vkxel {
     } // namespace
 
     EditorEngine::EditorEngine(Scene &scene) : Engine(scene) {
+        InitializeComponents();
         SetupDebugUI();
         SetupSceneUI();
         SetupInspectorUI();
+    }
+
+    void EditorEngine::InitializeComponents() {
+        auto populateComponentList = [&](const auto& self, const Reflect::Type &type) -> void {
+            for (const auto &derived: Reflect::GetDerived(type)) {
+                if (derived != Reflect::GetType<Transform>()) {
+                    _available_components.push_back(derived);
+                }
+                self(self, derived);
+            }
+        };
+
+        populateComponentList(populateComponentList, Reflect::GetType<Component>());
+
+        std::ranges::sort(_available_components, [](const Reflect::Type &lhs, const Reflect::Type &rhs) {
+            return lhs.info().name() < rhs.info().name();
+        });
     }
 
     void EditorEngine::SetupDebugUI() {
@@ -247,21 +265,33 @@ namespace Vkxel {
     }
 
     void EditorEngine::DrawCreateComponent(GameObject &gameObject) {
-        // Hard To Use Reflection, Hideous Hard Code Here
-        // TODO: Use Reflection
+        std::vector<Reflect::Type> available_types;
 
-        constexpr std::array component_names = {"Mover",  "Mesh",       "Drawer",         "Controller",       "Camera",
-                                                "Canvas", "SDFSurface", "DualContouring", "GpuDualContouring"};
-        std::array component_lambda = {std::function([&]() { gameObject.AddComponent<Mover>(); }),
-                                       std::function([&]() { gameObject.AddComponent<Mesh>(); }),
-                                       std::function([&]() { gameObject.AddComponent<Drawer>(); }),
-                                       std::function([&]() { gameObject.AddComponent<Controller>(); }),
-                                       std::function([&]() { gameObject.AddComponent<Camera>(); }),
-                                       std::function([&]() { gameObject.AddComponent<Canvas>(); }),
-                                       std::function([&]() { gameObject.AddComponent<SDFSurface>(); }),
-                                       std::function([&]() { gameObject.AddComponent<DualContouring>(); }),
-                                       std::function([&]() { gameObject.AddComponent<GpuDualContouring>(); })};
+        for (const auto &type: _available_components) {
+            if (!gameObject.GetComponent(type)) {
+                available_types.push_back(type);
+            }
+        }
 
+        std::vector<const char *> component_names;
+        component_names.reserve(available_types.size());
+        for (const auto &type: available_types) {
+            component_names.push_back(type.info().name().data());
+        }
+
+        if (available_types.empty()) {
+            const char *empty_label = "No Components";
+            int empty_index = 0;
+            ImGui::BeginDisabled();
+            ImGui::Combo("##Component", &empty_index, &empty_label, 1);
+            ImGui::SameLine();
+            ImGui::Button("+");
+            ImGui::EndDisabled();
+            _selected_component = -1;
+            return;
+        }
+
+        _selected_component = std::clamp(_selected_component, 0, static_cast<int>(available_types.size()) - 1);
 
         ImGui::Combo("##Component", &_selected_component, component_names.data(),
                      static_cast<int>(component_names.size()));
@@ -269,7 +299,7 @@ namespace Vkxel {
         ImGui::SameLine();
 
         if (ImGui::Button("+")) {
-            component_lambda[_selected_component]();
+            gameObject.AddComponent(available_types[static_cast<size_t>(_selected_component)]);
         }
     }
 

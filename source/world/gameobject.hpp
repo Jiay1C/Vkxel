@@ -75,17 +75,42 @@ namespace Vkxel {
             auto component = std::make_unique<T>(*this);
             T &ref = *component;
             ref.Init();
-            _components[typeid(T)] = std::move(component);
+            _components[Reflect::GetType<T>().id()] = std::move(component);
+
+            return ref;
+        }
+
+        Component &AddComponent(const Reflect::Type &type) {
+            CHECK(type, "Type must be valid");
+            CHECK(type.can_convert(Reflect::GetType<Component>()), "Type must be derived from Component");
+            CHECK(type != Reflect::GetType<Transform>(), "Transform is a built-in component");
+            CHECK(!GetComponent(type), "Only support one instance for each Type");
+
+            auto component = ComponentFactory::Create(type, *this);
+            Component &ref = *component;
+            ref.Init();
+            _components[type.id()] = std::move(component);
 
             return ref;
         }
 
         template<typename T>
         std::optional<std::reference_wrapper<T>> GetComponent() const {
-            if (_components.contains(typeid(T))) {
-                const auto &component = _components.at(typeid(T));
+            auto typeId = Reflect::GetType<T>().id();
+            if (_components.contains(typeId)) {
+                const auto &component = _components.at(typeId);
                 if (T *casted_component = dynamic_cast<T *>(component.get())) {
                     return *casted_component;
+                }
+            }
+
+            return std::nullopt;
+        }
+
+        std::optional<std::reference_wrapper<Component>> GetComponent(const Reflect::Type &type) const {
+            for (const auto &component: _components | std::views::values) {
+                if (Reflect::GetType(typeid(*component)).id() == type.id()) {
+                    return *component;
                 }
             }
 
@@ -119,10 +144,11 @@ namespace Vkxel {
 
         template<typename T>
         void RemoveComponent() {
-            if (std::type_index type = typeid(T); _components.contains(type)) {
-                Timer::ExecuteAfterTicks(1, [this, type]() {
-                    _components.at(type)->Destroy();
-                    _components.erase(type);
+            auto typeId = Reflect::GetType<T>().id();
+            if (std::type_index type = typeid(T); _components.contains(typeId)) {
+                Timer::ExecuteAfterTicks(1, [this, typeId]() {
+                    _components.at(typeId)->Destroy();
+                    _components.erase(typeId);
                 });
             }
         }
@@ -161,7 +187,7 @@ namespace Vkxel {
         }
 
     private:
-        std::unordered_map<std::type_index, std::unique_ptr<Component>> _components;
+        std::unordered_map<Reflect::ID, std::unique_ptr<Component>> _components;
     };
 
     REGISTER_TYPE(GameObject)
