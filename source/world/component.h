@@ -20,20 +20,21 @@ namespace Vkxel {
 
     class ComponentFactory final {
     public:
-        using FactoryFunction = std::function<Component*(GameObject &gameObject)>;
+        using FactoryFunction = std::function<std::unique_ptr<Component>(GameObject &gameObject)>;
 
         ComponentFactory() = delete;
         ~ComponentFactory() = delete;
 
-        static std::unique_ptr<Component> Create(const Reflect::Type& type, GameObject &gameObject) {
+        static std::unique_ptr<Component> Create(const Reflect::Type &type, GameObject &gameObject) {
             CHECK(factoryMap.contains(type.id()), "Factory Not Registered For Type: {}", type.info().name());
-            return std::unique_ptr<Component>(factoryMap.at(type.id())(gameObject));
+            return factoryMap.at(type.id())(gameObject);
         }
 
         template<typename T>
+            requires std::derived_from<T, Component>
         static void Register() {
-            factoryMap[Reflect::GetType<T>().id()] = [](GameObject &gameObject) -> Component* {
-                return new T(gameObject);
+            factoryMap[Reflect::GetType<T>().id()] = [](GameObject &gameObject) {
+                return std::make_unique<T>(gameObject);
             };
         }
 
@@ -41,16 +42,17 @@ namespace Vkxel {
         inline static std::unordered_map<Reflect::ID, FactoryFunction> factoryMap;
     };
 
+    template<typename T>
+        requires std::derived_from<T, Component>
+    struct ReflectPlugin<T> {
+        static void Apply() { ComponentFactory::Register<T>(); }
+    };
+
+    // Due to static initialization order
+    // Must use those macros after Component Factory
     REGISTER_TYPE(Component)
     REGISTER_BASE(Object)
     REGISTER_END()
-
-    template <typename T> requires std::derived_from<T, Component>
-    struct ReflectPlugin<T> {
-        static void Apply() {
-            ComponentFactory::Register<T>();
-        }
-    };
 
 } // namespace Vkxel
 

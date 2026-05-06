@@ -52,7 +52,8 @@ namespace Vkxel {
 
         FrameResource CreateFrameResource(uint32_t swapchainWidth, uint32_t swapchainHeight);
         // TODO: Might modify function signature to support more members
-        void UpdateFrameResource(VkCommandBuffer commandBuffer, const SceneData &scene, std::span<const ObjectData> objects, FrameResource &frameResource);
+        void UpdateFrameResource(VkCommandBuffer commandBuffer, const SceneData &scene,
+                                 std::span<const ObjectData> objects, FrameResource &frameResource);
         void DestroyFrameResource(FrameResource &resource);
 
     private:

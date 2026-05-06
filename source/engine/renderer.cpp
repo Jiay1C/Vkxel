@@ -396,8 +396,7 @@ namespace Vkxel {
             if (object.isActive) {
                 vkCmdBindIndexBuffer(frame.commandBuffer, object.indexBuffer.buffer, offset_zero, VK_INDEX_TYPE_UINT32);
                 vkCmdBindVertexBuffers(frame.commandBuffer, 0, 1, &object.vertexBuffer.buffer, &offset_zero);
-                vkCmdDrawIndexed(frame.commandBuffer, object.indexCount, 1, object.firstIndex, 0,
-                                 object.instanceId);
+                vkCmdDrawIndexed(frame.commandBuffer, object.indexCount, 1, object.firstIndex, 0, object.instanceId);
             }
         }
 

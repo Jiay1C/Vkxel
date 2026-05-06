@@ -47,7 +47,7 @@ namespace Vkxel {
     }
 
     void EditorEngine::InitializeComponents() {
-        auto populateComponentList = [&](const auto& self, const Reflect::Type &type) -> void {
+        auto populateComponentList = [&](const auto &self, const Reflect::Type &type) -> void {
             for (const auto &derived: Reflect::GetDerived(type)) {
                 if (derived != Reflect::GetType<Transform>()) {
                     _available_components.push_back(derived);

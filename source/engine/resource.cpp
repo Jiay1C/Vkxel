@@ -352,12 +352,12 @@ namespace Vkxel {
                 frameResource.objectBuffer.Create();
                 frameResource.objectCapacity = new_capacity;
 
-                UpdateBufferDescriptorSet(_device, frameResource.objectDescriptorSet.set, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                                          frameResource.objectBuffer.buffer);
+                UpdateBufferDescriptorSet(_device, frameResource.objectDescriptorSet.set,
+                                          VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, frameResource.objectBuffer.buffer);
             }
 
             frameResource.objectBuffer.CmdBarrier(commandBuffer, VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT, VK_ACCESS_2_NONE,
-                                                 VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT);
+                                                  VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT);
 
             auto *buffer_data = reinterpret_cast<ConstantBufferPerObject *>(frameResource.objectBuffer.Map());
             for (size_t index = 0; index < objects.size(); ++index) {

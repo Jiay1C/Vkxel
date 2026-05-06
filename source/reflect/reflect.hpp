@@ -57,7 +57,7 @@
 namespace Vkxel {
 
     template<typename T>
-    struct ReflectPlugin{
+    struct ReflectPlugin {
         static void Apply() {}
     };
 

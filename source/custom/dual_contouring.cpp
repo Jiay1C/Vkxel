@@ -88,7 +88,7 @@ namespace Vkxel {
                         for (const auto &position: intersections | std::views::keys) {
                             center += position;
                         }
-                        center /= intersections.size();
+                        center /= static_cast<float>(intersections.size());
 
                         std::array<glm::vec3, 8> force = {};
 
