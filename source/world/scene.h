@@ -38,6 +38,7 @@ namespace Vkxel {
         std::optional<std::reference_wrapper<Camera>> GetCamera() const;
 
         void Draw(RenderContext &context) const;
+        void Simulate(PhysicsContext &context) const;
 
     private:
         void DestroyGameObjectInternal(const std::list<GameObject>::iterator &it);

@@ -89,6 +89,7 @@ namespace Vkxel {
                                  .vertexCount = results.vertexCount,
                                  .index = compute_job.GetBuffer(5),
                                  .vertex = compute_job.GetBuffer(4)});
+        mesh.SetBounds(MeshBounds{.min = minBound, .max = maxBound});
     }
 
     size_t GpuDualContouring::GetIndex1D(const glm::ivec3 &size, const glm::ivec3 &index) {

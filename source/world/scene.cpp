@@ -11,6 +11,7 @@
 #include "drawer.h"
 #include "engine/timer.h"
 #include "gameobject.hpp"
+#include "rigidbody.h"
 #include "scene.h"
 
 namespace Vkxel {
@@ -95,13 +96,22 @@ namespace Vkxel {
                              .cameraPosition = glm::vec4(camera.gameObject.transform.position, 1.0)};
             for (auto &game_object: _gameobjects) {
                 if (auto drawer_result = game_object.GetComponent<Drawer>()) {
-                    const Drawer &drawer = drawer_result.value();
+                    Drawer &drawer = drawer_result.value();
                     drawer.Draw(context);
                 }
                 if (auto canvas_result = game_object.GetComponent<Canvas>()) {
                     const Canvas &canvas = canvas_result.value();
                     context.uis += [&]() { canvas.OnGUI(); };
                 }
+            }
+        }
+    }
+
+    void Scene::Simulate(PhysicsContext &context) const {
+        for (auto &game_object: _gameobjects) {
+            if (auto rigidbody_result = game_object.GetComponent<Rigidbody>()) {
+                Rigidbody &rigidbody = rigidbody_result.value();
+                rigidbody.Simulate(context);
             }
         }
     }

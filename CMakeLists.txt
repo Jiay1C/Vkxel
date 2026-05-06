@@ -116,6 +116,19 @@ add_subdirectory(${EXTERNAL_PATH}/${ENTT_PATH})
 set(SPDLOG_PATH "spdlog")
 add_subdirectory(${EXTERNAL_PATH}/${SPDLOG_PATH})
 
+# Jolt Physics
+set(JOLT_PHYSICS_PATH "JoltPhysics")
+set(ENABLE_ALL_WARNINGS OFF)
+set(ENABLE_INSTALL OFF)
+set(OVERRIDE_CXX_FLAGS OFF)
+set(USE_STATIC_MSVC_RUNTIME_LIBRARY OFF)
+set(TARGET_UNIT_TESTS OFF)
+set(TARGET_HELLO_WORLD OFF)
+set(TARGET_PERFORMANCE_TEST OFF)
+set(TARGET_SAMPLES OFF)
+set(TARGET_VIEWER OFF)
+add_subdirectory(${EXTERNAL_PATH}/${JOLT_PHYSICS_PATH}/Build)
+
 function(VKXEL_DEFINE_SOURCES OUT_LIST BASE_PATH)
     set(FILES "${ARGN}")
     list(TRANSFORM FILES PREPEND ${BASE_PATH}/)
@@ -148,6 +161,8 @@ VKXEL_DEFINE_SOURCES(ENGINE_SOURCES "engine"
         engine.h
         compute.cpp
         compute.h
+        physics.cpp
+        physics.h
 )
 
 VKXEL_DEFINE_SOURCES(EDITOR_SOURCES "editor"
@@ -173,6 +188,8 @@ VKXEL_DEFINE_SOURCES(WORLD_SOURCES "world"
         mover.h
         canvas.cpp
         canvas.h
+        rigidbody.cpp
+        rigidbody.h
         scene.cpp
         scene.h
 )
@@ -283,6 +300,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         nameof
         EnTT::EnTT
         spdlog::spdlog
+        Jolt::Jolt
 )
 
 if (VKXEL_COMPILE_OPTIONS)

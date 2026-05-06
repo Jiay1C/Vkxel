@@ -2,6 +2,7 @@
 // Created by jiayi on 2/22/2025.
 //
 
+#include <array>
 #include <format>
 
 #include "custom/dual_contouring.h"
@@ -15,9 +16,46 @@
 #include "world/gameobject.hpp"
 #include "world/mesh.h"
 #include "world/mover.h"
+#include "world/rigidbody.h"
 #include "world/scene.h"
 
 namespace Vkxel {
+
+    namespace {
+
+        CPUMeshData CreateBoxMesh(const glm::vec3 &halfExtent, const glm::vec3 &color) {
+            CPUMeshData mesh;
+
+            const auto add_face = [&](const glm::vec3 &normal, const glm::vec3 &a, const glm::vec3 &b,
+                                      const glm::vec3 &c, const glm::vec3 &d) {
+                const IndexType base = static_cast<IndexType>(mesh.vertex.size());
+                mesh.vertex.emplace_back(VertexData{a, normal, color});
+                mesh.vertex.emplace_back(VertexData{b, normal, color});
+                mesh.vertex.emplace_back(VertexData{c, normal, color});
+                mesh.vertex.emplace_back(VertexData{d, normal, color});
+                mesh.index.insert(mesh.index.end(), {base, base + 1, base + 2, base, base + 2, base + 3});
+            };
+
+            const glm::vec3 p000{-halfExtent.x, -halfExtent.y, -halfExtent.z};
+            const glm::vec3 p001{-halfExtent.x, -halfExtent.y, halfExtent.z};
+            const glm::vec3 p010{-halfExtent.x, halfExtent.y, -halfExtent.z};
+            const glm::vec3 p011{-halfExtent.x, halfExtent.y, halfExtent.z};
+            const glm::vec3 p100{halfExtent.x, -halfExtent.y, -halfExtent.z};
+            const glm::vec3 p101{halfExtent.x, -halfExtent.y, halfExtent.z};
+            const glm::vec3 p110{halfExtent.x, halfExtent.y, -halfExtent.z};
+            const glm::vec3 p111{halfExtent.x, halfExtent.y, halfExtent.z};
+
+            add_face({0.0f, 0.0f, 1.0f}, p001, p101, p111, p011);
+            add_face({0.0f, 0.0f, -1.0f}, p100, p000, p010, p110);
+            add_face({1.0f, 0.0f, 0.0f}, p101, p100, p110, p111);
+            add_face({-1.0f, 0.0f, 0.0f}, p000, p001, p011, p010);
+            add_face({0.0f, 1.0f, 0.0f}, p011, p111, p110, p010);
+            add_face({0.0f, -1.0f, 0.0f}, p000, p100, p101, p001);
+
+            return mesh;
+        }
+
+    } // namespace
 
     Scene SceneLibrary::TestScene() {
         Scene scene;
@@ -33,6 +71,67 @@ namespace Vkxel {
 
         GameObject &root_object = scene.CreateGameObject();
         root_object.name = "Root";
+
+        GameObject &physics_floor = scene.CreateGameObject();
+        physics_floor.name = "Physics Floor";
+        physics_floor.transform.SetParent(root_object.transform);
+        physics_floor.transform.position = {0.0f, -2.5f, 7.0f};
+        physics_floor.AddComponent<Mesh>().SetMesh(CreateBoxMesh({5.0f, 0.12f, 3.0f}, {0.34f, 0.39f, 0.42f}));
+        physics_floor.AddComponent<Drawer>();
+
+        Rigidbody &floor_body = physics_floor.AddComponent<Rigidbody>();
+        floor_body.config.motionType = RigidbodyMotionType::Static;
+        floor_body.config.colliderType = RigidbodyColliderType::TriangleMesh;
+        floor_body.config.friction = 0.85f;
+        floor_body.config.restitution = 0.05f;
+
+        constexpr std::array cube_colors{
+                glm::vec3{0.96f, 0.42f, 0.28f}, glm::vec3{0.20f, 0.62f, 0.86f}, glm::vec3{0.35f, 0.78f, 0.45f},
+                glm::vec3{0.92f, 0.72f, 0.22f}, glm::vec3{0.70f, 0.48f, 0.92f}, glm::vec3{0.88f, 0.38f, 0.62f},
+        };
+        for (uint32_t index = 0; index < cube_colors.size(); ++index) {
+            GameObject &cube = scene.CreateGameObject();
+            cube.name = std::format("Physics Cube {}", index);
+            cube.transform.SetParent(root_object.transform);
+            cube.transform.position = {-1.75f + static_cast<float>(index) * 0.7f,
+                                       1.1f + static_cast<float>(index) * 0.42f,
+                                       6.4f + static_cast<float>(index % 2) * 0.5f};
+            cube.transform.rotation =
+                    glm::radians(glm::vec3{12.0f * static_cast<float>(index), 21.0f * static_cast<float>(index), 8.0f});
+            cube.AddComponent<Mesh>().SetMesh(CreateBoxMesh(glm::vec3{0.35f}, cube_colors[index]));
+            cube.AddComponent<Drawer>();
+
+            Rigidbody &cube_body = cube.AddComponent<Rigidbody>();
+            cube_body.config.motionType = RigidbodyMotionType::Dynamic;
+            cube_body.config.colliderType = RigidbodyColliderType::BoundsBox;
+            cube_body.config.mass = 0.8f + static_cast<float>(index) * 0.15f;
+            cube_body.config.friction = 0.55f;
+            cube_body.config.restitution = 0.25f;
+            cube_body.config.angularVelocity =
+                    glm::radians(glm::vec3{20.0f + 7.0f * static_cast<float>(index), 35.0f, 12.0f});
+        }
+
+        for (uint32_t index = 0; index < 3; ++index) {
+            GameObject &bunny = scene.CreateGameObject();
+            bunny.name = std::format("Physics Bunny {}", index);
+            bunny.transform.SetParent(root_object.transform);
+            bunny.transform.position = {-1.2f + static_cast<float>(index) * 1.2f,
+                                        3.7f + static_cast<float>(index) * 0.55f, 8.55f};
+            bunny.transform.rotation = glm::radians(glm::vec3{0.0f, 35.0f * static_cast<float>(index), 0.0f});
+            bunny.transform.scale = {4.0f, 4.0f, 4.0f};
+
+            Mesh &bunny_mesh = bunny.AddComponent<Mesh>();
+            bunny_mesh.SetMesh(ModelLibrary::StanfordBunnyMesh);
+            bunny.AddComponent<Drawer>();
+
+            Rigidbody &bunny_body = bunny.AddComponent<Rigidbody>();
+            bunny_body.config.motionType = RigidbodyMotionType::Dynamic;
+            bunny_body.config.colliderType = RigidbodyColliderType::TriangleMesh;
+            bunny_body.config.mass = 0.7f;
+            bunny_body.config.friction = 0.45f;
+            bunny_body.config.restitution = 0.3f;
+            bunny_body.config.angularVelocity = glm::radians(glm::vec3{5.0f, 40.0f, 18.0f});
+        }
 
         // Create GPU SDF Object
         GameObject &gpu_sdf_object = scene.CreateGameObject();

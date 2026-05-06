@@ -2,7 +2,6 @@
 // Created by jiayi on 2/21/2025.
 //
 
-#include <cstdint>
 #include <format>
 #include <vector>
 
@@ -11,13 +10,9 @@
 #include "custom/dual_contouring.h"
 #include "custom/gpu_dual_contouring.h"
 #include "engine/engine.h"
+#include "engine/gui.h"
 #include "engine/vtime.h"
 #include "reflect/reflect.hpp"
-#include "world/canvas.h"
-#include "world/controller.h"
-#include "world/drawer.h"
-#include "world/mesh.h"
-#include "world/mover.h"
 
 namespace Vkxel {
 
@@ -250,6 +245,15 @@ namespace Vkxel {
             if (!enum_names.empty() &&
                 ImGui::Combo(name.data(), &selected_enum, enum_names.data(), static_cast<int>(enum_names.size()))) {
                 element.assign(enum_values[static_cast<size_t>(selected_enum)]);
+            }
+        } else if (type.data().begin() != type.data().end()) {
+            if (ImGui::TreeNode(name.data())) {
+                for (auto &&[id, elem]: type.data()) {
+                    if (auto child = elem.get(element); child) {
+                        DrawElement(Reflect::GetName(id), child);
+                    }
+                }
+                ImGui::TreePop();
             }
         } else {
             ImGui::Text("%s: Unsupported Type <%s>", name.data(), type.info().name().data());

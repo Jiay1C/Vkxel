@@ -8,8 +8,10 @@
 #include <memory>
 
 #include "gui.h"
+#include "physics.h"
 #include "renderer.h"
 #include "window.h"
+#include "world/scene.h"
 
 namespace Vkxel {
 
@@ -42,6 +44,7 @@ namespace Vkxel {
         std::unique_ptr<GUI> _gui;
         std::unique_ptr<Window> _window;
         std::unique_ptr<Renderer> _renderer;
+        std::unique_ptr<Physics> _physics;
 
         uint32_t _frame_count = 0;
         bool _background_mode = false;

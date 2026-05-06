@@ -8,16 +8,16 @@
 
 namespace Vkxel {
 
-    void Drawer::Draw(RenderContext &context) const {
+    void Drawer::Draw(RenderContext &context) {
         if (const auto mesh_result = gameObject.GetComponent<Mesh>()) {
             Mesh &mesh = mesh_result.value();
             if (const auto &mesh_data = mesh.GetMesh()) {
                 context.objects.push_back({.objectId = gameObject.id,
                                            .transform = gameObject.transform.GetLocalToWorldMatrix(),
                                            .mesh = mesh_data.value(),
-                                           .isDirty = mesh.GetDirtyFlag()});
+                                           .isDirty = mesh.GetRevision() != _last_mesh_revision});
             }
-            mesh.ClearDirtyFlag();
+            _last_mesh_revision = mesh.GetRevision();
         }
     }
 

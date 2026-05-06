@@ -16,7 +16,10 @@ namespace Vkxel {
 
         MaterialData material = {};
 
-        void Draw(RenderContext &context) const;
+        void Draw(RenderContext &context);
+
+    private:
+        uint64_t _last_mesh_revision = 0;
     };
 
     REGISTER_TYPE(Drawer)

@@ -5,6 +5,9 @@
 #ifndef VKXEL_MESH_H
 #define VKXEL_MESH_H
 
+#include <cstdint>
+#include <optional>
+
 #include "component.h"
 #include "engine/data_type.h"
 
@@ -15,19 +18,26 @@ namespace Vkxel {
         using Component::Component;
 
         const std::optional<MeshData> &GetMesh() const;
+        const MeshBounds &GetBounds() const;
+        uint64_t GetRevision() const;
+
         void SetMesh(const MeshData &meshData);
         void SetMesh(MeshData &&meshData);
+        void SetBounds(const MeshBounds &bounds);
 
-        bool GetDirtyFlag() const;
-        void ClearDirtyFlag();
+        bool autoUpdateBounds = true;
 
     private:
+        void UpdateBounds();
+
         std::optional<MeshData> _mesh_data;
-        bool _is_dirty = false;
+        MeshBounds _mesh_bounds = {{-0.5f, -0.5f, -0.5f}, {0.5f, 0.5f, 0.5f}};
+        uint64_t _revision = 0;
     };
 
     REGISTER_TYPE(Mesh)
     REGISTER_BASE(Component)
+    REGISTER_DATA(autoUpdateBounds)
     REGISTER_END()
 
 } // namespace Vkxel

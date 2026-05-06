@@ -7,7 +7,8 @@
 
 #include "engine.h"
 #include "input.h"
-#include "reflect/reflect.hpp"
+#include "physics.h"
+#include "renderer.h"
 #include "timer.h"
 #include "util/application.h"
 #include "util/debug.hpp"
@@ -43,6 +44,8 @@ namespace Vkxel {
         _renderer->Init();
         _renderer->LoadScene(scene);
 
+        _physics = std::make_unique<Physics>();
+
         _scene.Start();
 
         Debug::LogInfo("{}::Running", Application::Name);
@@ -58,6 +61,8 @@ namespace Vkxel {
         _window->Update();
         _gui->Update();
         _scene.Update();
+
+        _physics->Step(_scene, Time::GetDeltaSeconds());
 
         _renderer->Render();
 

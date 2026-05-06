@@ -49,6 +49,11 @@ namespace Vkxel {
     using IndexType = uint32_t;
     using VertexType = VertexData;
 
+    struct MeshBounds {
+        glm::vec3 min = {};
+        glm::vec3 max = {};
+    };
+
     struct CPUMeshData {
         std::vector<IndexType> index;
         std::vector<VertexType> vertex;
@@ -79,6 +84,11 @@ namespace Vkxel {
         std::vector<ObjectData> objects;
         SceneData scene;
         Delegate<> uis;
+    };
+
+    class Rigidbody;
+    struct PhysicsContext {
+        std::vector<std::reference_wrapper<Rigidbody>> rigidbodies;
     };
 
 } // namespace Vkxel
