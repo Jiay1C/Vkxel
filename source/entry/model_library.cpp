@@ -10,6 +10,38 @@
 
 namespace Vkxel {
 
+    MeshData ModelLibrary::CreateBoxMesh(const glm::vec3 &halfExtent, const glm::vec3 &color) {
+        CPUMeshData mesh;
+
+        const auto add_face = [&](const glm::vec3 &normal, const glm::vec3 &a, const glm::vec3 &b, const glm::vec3 &c,
+                                  const glm::vec3 &d) {
+            const IndexType base = static_cast<IndexType>(mesh.vertex.size());
+            mesh.vertex.emplace_back(VertexData{a, normal, color});
+            mesh.vertex.emplace_back(VertexData{b, normal, color});
+            mesh.vertex.emplace_back(VertexData{c, normal, color});
+            mesh.vertex.emplace_back(VertexData{d, normal, color});
+            mesh.index.insert(mesh.index.end(), {base, base + 1, base + 2, base, base + 2, base + 3});
+        };
+
+        const glm::vec3 p000{-halfExtent.x, -halfExtent.y, -halfExtent.z};
+        const glm::vec3 p001{-halfExtent.x, -halfExtent.y, halfExtent.z};
+        const glm::vec3 p010{-halfExtent.x, halfExtent.y, -halfExtent.z};
+        const glm::vec3 p011{-halfExtent.x, halfExtent.y, halfExtent.z};
+        const glm::vec3 p100{halfExtent.x, -halfExtent.y, -halfExtent.z};
+        const glm::vec3 p101{halfExtent.x, -halfExtent.y, halfExtent.z};
+        const glm::vec3 p110{halfExtent.x, halfExtent.y, -halfExtent.z};
+        const glm::vec3 p111{halfExtent.x, halfExtent.y, halfExtent.z};
+
+        add_face({0.0f, 0.0f, 1.0f}, p001, p101, p111, p011);
+        add_face({0.0f, 0.0f, -1.0f}, p100, p000, p010, p110);
+        add_face({1.0f, 0.0f, 0.0f}, p101, p100, p110, p111);
+        add_face({-1.0f, 0.0f, 0.0f}, p000, p001, p011, p010);
+        add_face({0.0f, 1.0f, 0.0f}, p011, p111, p110, p010);
+        add_face({0.0f, -1.0f, 0.0f}, p000, p100, p101, p001);
+
+        return mesh;
+    }
+
     // From:https://www.shadertoy.com/view/wtVyWK
     const SDFType ModelLibrary::StanfordBunnySDF = [](const glm::vec3 &p) -> float {
         if (glm::length(p) > 1.0f) {

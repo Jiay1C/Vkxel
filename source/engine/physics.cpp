@@ -2,8 +2,6 @@
 // Created by jiayi on 5/6/2026.
 //
 
-#include "physics.h"
-
 #include <algorithm>
 #include <cmath>
 #include <cstdarg>
@@ -33,12 +31,13 @@
 #include "Jolt/Physics/PhysicsSystem.h"
 #include "Jolt/RegisterTypes.h"
 
+#include "physics.h"
+#include "util/debug.hpp"
 #include "world/gameobject.hpp"
 #include "world/mesh.h"
 #include "world/rigidbody.h"
 #include "world/scene.h"
 #include "world/transform.h"
-#include "util/debug.hpp"
 
 namespace Vkxel {
 
@@ -203,8 +202,7 @@ namespace Vkxel {
         JPH::ShapeRefC CreateBoundsBoxShape(const Rigidbody &rigidbody) {
             const MeshBounds mesh_bounds = GetMeshBounds(rigidbody);
             const glm::vec3 scale = SafeScale(rigidbody.gameObject.transform.GetWorldScale());
-            const glm::vec3 half_extent =
-                    SafeHalfExtent((mesh_bounds.max - mesh_bounds.min) * glm::abs(scale) * 0.5f);
+            const glm::vec3 half_extent = SafeHalfExtent((mesh_bounds.max - mesh_bounds.min) * glm::abs(scale) * 0.5f);
             const glm::vec3 center = (mesh_bounds.max + mesh_bounds.min) * scale * 0.5f;
 
             JPH::ShapeRefC box = new JPH::BoxShape(ToJoltVector(half_extent), 0.0f);
@@ -362,8 +360,8 @@ namespace Vkxel {
         }
 
         void DestroyAllBodies() {
-            for (const auto &entry: bodyResources) {
-                DestroyBody(entry.second);
+            for (const auto &val: bodyResources | std::views::values) {
+                DestroyBody(val);
             }
             bodyResources.clear();
         }
@@ -390,14 +388,15 @@ namespace Vkxel {
 
         JPH::BodyInterface &body_interface = _runtime->GetBodyInterface();
 
-        for (const std::reference_wrapper<Rigidbody> &rigidbody_ref: context.rigidbodies) {
+        for (const auto &rigidbody_ref: context.rigidbodies) {
             Rigidbody &rigidbody = rigidbody_ref.get();
             RigidbodyConfig &config = rigidbody.config;
             Transform &transform = rigidbody.gameObject.transform;
             active_body_ids.insert(rigidbody.id);
 
             auto body_resource_it = _runtime->bodyResources.find(rigidbody.id);
-            if (body_resource_it == _runtime->bodyResources.end() || NeedsRebuild(rigidbody, body_resource_it->second)) {
+            if (body_resource_it == _runtime->bodyResources.end() ||
+                NeedsRebuild(rigidbody, body_resource_it->second)) {
                 if (body_resource_it != _runtime->bodyResources.end()) {
                     _runtime->DestroyBody(body_resource_it->second);
                     _runtime->bodyResources.erase(body_resource_it);
@@ -461,8 +460,8 @@ namespace Vkxel {
             switch (config.motionType) {
                 case RigidbodyMotionType::Static:
                     body_interface.SetPositionAndRotationWhenChanged(body_id, ToJoltPosition(world_position),
-                                                                      ToJoltRotation(world_rotation),
-                                                                      JPH::EActivation::DontActivate);
+                                                                     ToJoltRotation(world_rotation),
+                                                                     JPH::EActivation::DontActivate);
                     resource.position = world_position;
                     resource.rotation = world_rotation;
                     break;
@@ -472,8 +471,8 @@ namespace Vkxel {
                                                      ToJoltRotation(world_rotation), deltaSeconds);
                     } else {
                         body_interface.SetPositionAndRotationWhenChanged(body_id, ToJoltPosition(world_position),
-                                                                          ToJoltRotation(world_rotation),
-                                                                          JPH::EActivation::Activate);
+                                                                         ToJoltRotation(world_rotation),
+                                                                         JPH::EActivation::Activate);
                     }
                     resource.position = world_position;
                     resource.rotation = world_rotation;
@@ -482,8 +481,8 @@ namespace Vkxel {
                     if (!ApproximatelyEqual(world_position, resource.position) ||
                         !ApproximatelyEqual(world_rotation, resource.rotation)) {
                         body_interface.SetPositionAndRotationWhenChanged(body_id, ToJoltPosition(world_position),
-                                                                          ToJoltRotation(world_rotation),
-                                                                          JPH::EActivation::Activate);
+                                                                         ToJoltRotation(world_rotation),
+                                                                         JPH::EActivation::Activate);
                         resource.position = world_position;
                         resource.rotation = world_rotation;
                     }
@@ -509,8 +508,9 @@ namespace Vkxel {
         }
 
         if (deltaSeconds > 0) {
-            _fixed_step_accumulator = std::min(_fixed_step_accumulator + std::min(deltaSeconds, max_frame_delta_seconds),
-                                               fixed_delta_seconds * max_physics_steps_per_frame);
+            _fixed_step_accumulator =
+                    std::min(_fixed_step_accumulator + std::min(deltaSeconds, max_frame_delta_seconds),
+                             fixed_delta_seconds * max_physics_steps_per_frame);
 
             while (_fixed_step_accumulator >= fixed_delta_seconds) {
                 _runtime->physicsSystem->Update(fixed_delta_seconds, collision_steps, _runtime->tempAllocator.get(),

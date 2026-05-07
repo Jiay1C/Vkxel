@@ -17,6 +17,8 @@ namespace Vkxel {
         ModelLibrary() = delete;
         ~ModelLibrary() = delete;
 
+        static MeshData CreateBoxMesh(const glm::vec3 &halfExtent, const glm::vec3 &color);
+
         static const SDFType StanfordBunnySDF;
 
         static const MeshData TriangleMesh;
